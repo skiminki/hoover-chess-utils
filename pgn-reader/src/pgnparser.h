@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#ifndef HOOVER_CHESS_UTILS__PGN_READER__PGNPARSER_H_INCLUDED
+#define HOOVER_CHESS_UTILS__PGN_READER__PGNPARSER_H_INCLUDED
+
+
 // Used PGN parsing rules are as follows:
 //
 // PGN                 = (COMMENT | GAME)* <end_of_file>
@@ -51,9 +55,6 @@
 // The rules are derived from the informal description in
 // https://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm .
 
-
-#ifndef CHESS_UTILS__PGN_READER__PGN_PARSER_H_INCLUDED
-#define CHESS_UTILS__PGN_READER__PGN_PARSER_H_INCLUDED
 
 #include "chessboard.h"
 #include "pgnreader-types.h"

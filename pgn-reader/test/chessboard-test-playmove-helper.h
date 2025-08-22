@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef CHESS_UTILS__PGN_READER__CHESSBOARD_TEST_PLAYMOVE_HELPER_H_INCLUDED
-#define CHESS_UTILS__PGN_READER__CHESSBOARD_TEST_PLAYMOVE_HELPER_H_INCLUDED
+#ifndef HOOVER_CHESS_UTILS__PGN_READER__CHESSBOARD_TEST_PLAYMOVE_HELPER_H_INCLUDED
+#define HOOVER_CHESS_UTILS__PGN_READER__CHESSBOARD_TEST_PLAYMOVE_HELPER_H_INCLUDED
 
 #include "chessboard.h"
 #include "pgnreader-string-utils.h"

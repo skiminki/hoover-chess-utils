@@ -35,7 +35,7 @@ def checkLicense(filename, lineCommentStart, skipLines):
 
     lineMatchers = [
         r'Hoover Chess Utilities / .*',
-        r'Copyright \(C\) 20[2-9][0-9](-20[2-9][0-9])?  .*',
+        r'Copyright \(C\) 20[1-9][0-9](-20[2-9][0-9])?  .*',
         r'',
         r'This program is free software: you can redistribute it and/or modify',
         r'it under the terms of the GNU General Public License as published by',
@@ -78,6 +78,32 @@ def checkLicense(filename, lineCommentStart, skipLines):
 
             lineNum = lineNum + 1
 
+def checkCppHeaderGuardian(filename):
+    guardianToken = (
+        "HOOVER_CHESS_UTILS__" + filename.replace('/include/', '/').replace('/src/', '/').replace('/test/', '/').
+        replace("-", "_").replace("/", "__").replace(".", "_").upper()) + "_INCLUDED"
+
+    lineNum = 0
+    with open(filename) as f:
+        for line in f:
+            lineNum = lineNum + 1
+
+            if lineNum <= 16:
+                continue
+            if lineNum >= 19:
+                break
+
+            line = line.strip()
+
+            if lineNum == 17:
+                expectedLine = '#ifndef ' + guardianToken
+            else:
+                expectedLine = '#define ' + guardianToken
+
+            if line != expectedLine:
+                print(f"Expected line         : '{expectedLine}'")
+                print(f"Input                 : '{line}'")
+                fatal("Header guardian check failed", 3)
 
 
 def checkFile(filename):
@@ -96,7 +122,7 @@ def checkFile(filename):
         skipLines = 1
     elif filename.endswith(".h"):
         lineCommentStart = '//'
-        # TODO: check the header include guardian
+        checkCppHeaderGuardian(filename)
     elif (filename.endswith(".pgn") or filename.endswith(".epd") or filename.endswith(".css") or
           filename.endswith("pgn-reader/src/slider-attacks-pext-pdep-bishop.inc") or
           filename.endswith("pgn-reader/src/slider-attacks-pext-pdep-rook.inc") or
