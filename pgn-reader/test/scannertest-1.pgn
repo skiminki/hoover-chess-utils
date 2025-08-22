@@ -1,0 +1,165 @@
+[Event "Unknown event"]
+[Site    "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "White player"]
+[Black "Black player"]
+[Result "1/2-1/2"]
+[ECO "B00"]
+
+{ Starting comment } 1. e4 $1 f5 $2 2. exf5 $4 Nc6 $5 ( 2... g6 $6)3.
+f6 e6 4. fxg7 Nge7 { multi
+    line \
+
+  comment
+\\\} 5. gxh8=Q $3 Ne5 $2 6. h4 N7g6 7. h5 d5 8. hxg6 Bd7 9. g7 ; rest of the line comment
+Qe7 10. g8=Q! O-O-O? 11. Bd3!! { C:\Syzygy - escape test } Kb8?? 12. Qdg4!? Ka8?! 13. Q4g7 Kb8 14. Qg8xh7 Nc6 15.
+Qh7g8 Ka8 16. Nf3 Kb8 17. O-O 1/2-1/2
+
+
+[Event "TCEC Season 14 (05) Division P"]
+[Site "https://tcec-chess.com/#season=14&div=p&game=2"]
+[Date "2018.12.26"]
+[Round "1.2"]
+[White "Komodo 2227.00"]
+[Black "LCZero v20rc2-32194"]
+[Result "1/2-1/2"]
+[WhiteElo "3565"]
+[BlackElo "3297"]
+[ECO "E25"]
+[GameDuration "01:44:25"]
+[GameEndTime "2018-12-26T08:29:55.641 W. Europe Standard Time"]
+[GameStartTime "2018-12-26T06:45:30.346 W. Europe Standard Time"]
+[Opening "Nimzo-Indian"]
+[PlyCount "70"]
+[TerminationDetails "3-Fold repetition"]
+[TimeControl "5400+10"]
+[Variation "Saemisch variation"]
+[Annotator "Stockfish for Analysis 300122"]
+[Depth "40"]
+
+{(G7591) Didn't find anything too interesting in this game, except a Leela
+blunder in a variation with 22. Nd5 - 27... Qxa3} 
+1.d4 Ng8f6 2.Pc4 e6 3.Nc3 Bb4 4.f3 d5 5.a3 Bxc3+ 6.bxc3 c5 7.cxd5 exd5 8.e3 
+c4 
+    {Book exit}
+9.g4 Nc6 
+    {[%eval +0.53]}
+10.Ne2 
+    {[%eval +0.44]}
+10...Na5 
+    {[%eval +0.48]}
+11.Rb1 
+    {[%eval +0.18]}
+11...O-O 
+    {[%eval +0.51]}
+12.Bg2 
+    {[%eval +0.44]}
+12...Nb3 
+    {[%eval +0.45]}
+13.O-O 
+    {[%eval +0.36]}
+13...a5 
+    {[%eval +0.81]}
+    ( 13...Rb8 14.Ng3 )
+14.e4 
+    {[%eval +0.79]}
+14...dxe4 
+    {[%eval +0.98]}
+15.fxe4 
+    {[%eval +0.77]}
+15...Nxg4 
+    {[%eval +0.72]}
+16.h3 
+    {[%eval +0.64]}
+16...Nxc1 
+    {[%eval +0.61]}
+17.Qxc1 
+    {[%eval +0.32]}
+17...Nh6 
+    {[%eval +0.90]}
+18.Rb5 
+    {[%eval +0.39]}
+18...Bd7 
+    {[%eval +0.87]}
+19.Rxb7 
+    {[%eval +0.64]}
+19...Qc8 
+    {[%eval +0.87]}
+20.Rb2 
+    {[%eval +0.70]}
+20...Bxh3 
+    {[%eval +0.91]}
+21.Nf4 
+    {[%eval +0.63]}
+21...Bd7 
+    {[%eval +0.28]}
+22.e5 
+    {[%eval +0.20]}
+    ( {Leela considered Nd5 still to maintain the advantage} 22.Nd5 Qd8 
+    23.Nf6+ Kh8 24.e5 Ra6 25.Rb8 Qxb8 26.Nxd7 Qd8 27.Nxf8 Qxf8 28.Qf4 Rg6 
+    {SF move, claims +0.18 at depth 42
+    } 
+        ( {Leela's continuation, but this is significantly worse for 
+        black, possibly explaining why Leela considered 22. Nd5 better} 
+        28...Qxa3 29.d5 Rg6 {Compare to 30. Qxa3 below} 30.d6 Qb2 31.Qf3 
+        Qb6+ 32.Kh1 Ng8 33.Rd1 Rh6+ 34.Bh3 a4 35.d7 Qd8 36.Kg1 Rb6 37.Qxf7
+        {+1.41 / 65%} )
+    29.d5 Qc5+ 30.Qd4 Qxa3 {The difference here is that the white queen 
+    has been diverted from attacking f7, and black has essentially won a 
+    tempo} )
+22...Rb8 
+    {[%eval +0.18]}
+23.Nd5 
+    {[%eval +0.09]}
+23...Kh8 
+    {[%eval +0.12]}
+24.Nb6 
+    {[%eval +0.15]}
+24...Qe8 
+    {[%eval +0.17]}
+25.Nxc4 
+    {[%eval +0.00]}
+25...Rxb2 
+    {[%eval +0.00]}
+26.Qxb2 
+    {[%eval +0.00]}
+26...Ng4 
+    {[%eval +0.00]}
+27.Nd6 
+    {[%eval +0.00]}
+27...Qe7 
+    {[%eval +0.00]}
+28.Qd2 
+    {[%eval +0.00]}
+28...f5 
+    {[%eval +0.00]}
+29.Bf3 
+    {[%eval +0.00]}
+29...Qh4 
+    {[%eval +0.00]}
+30.Bxg4 
+    {[%eval +0.00]}
+30...Qxg4+ 
+    {[%eval +0.00]}
+31.Qg2 
+    {[%eval +0.00]}
+31...Qh5 
+    {[%eval +0.00]}
+32.Kf2 
+    {[%eval +0.00]}
+32...Qh4+ 
+    {[%eval +0.00]}
+33.Kg1 
+    {[%eval +0.00]}
+33...Qh5 
+    {[%eval +0.00]}
+34.Kf2 
+    {[%eval +0.00]}
+34...Qh4+ 
+    {[%eval +0.00]}
+35.Kg1 
+    {[%eval +0.00]}
+35...Qh5 
+    {[%eval +0.00]}
+1/2-1/2

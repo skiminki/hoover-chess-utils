@@ -1,0 +1,30 @@
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "White player"]
+[Black "Black player"]
+     [  Result     "1-0"   ] [
+     ECO
+     "B01"
+     ]
+[EscapeTest1 "White\\Player"]
+[EscapeTest2 "White\"Player"]
+[EscapeTest_3 "White\"Player\""]
+
+% input directive
+
+{ Test for move parsing and disambiguation } 1. e4 d5 2. exd5 { Pawn capture} 
+2... e6 3. Bb5+ c6 4. Qe2 Bb4 5. Nc3 Ne7 6. Nf3 exd5 { Disambiguation: cxd5 is
+illegal}  7. d3 O-O { Short castle}  8. Bd2 h5 9. O-O-O { Long castle}  9... h4 ; rest of the line comment
+10. g4 hxg3 { En passant}  11. Rhg1 gxh2 12. Rg5 h1=N { Promotion}  13. Rdg1 {
+Disambiguation by file}  13... Ng3 14. Ba4 Na6 15. Rg2 Ngf5 16. Rg1 Nc7 17.
+R1g2 { Disambiguation by rank}  17... d4 18. Ne4 Ne3 19. Kb1 Ne7d5 {
+Disambiguation by rank and file}  20. Ne5 $1 Nb5 $3 21. Rxg7+ $5 Kh8 $7 22. Nc3
+$2 dxc3 $4 23. R7g5 $6 cxd2 $10 24. Qe1 dxe1=B { Promotion with capture}  25.
+c3 Bbxc3 ( { Variations } 25... Ba5 26. b4 ( 26. b3 Bc7 )( 26. d4)26... Bb6
+)26. Rh2+ $6 $12 Bh3 27. Rxh3#  1-0
+
+1. e2e4 d7d5 2. e4xd5 c6 3. dxc6 Nf6 4. cxb7 e6 5. b7xa8=B
+
+0-1
