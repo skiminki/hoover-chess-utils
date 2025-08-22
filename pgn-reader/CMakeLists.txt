@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-project(ChessUtils_PgnReader VERSION 0.3.0)
+project(HooverChessUtils_PgnReader VERSION ${HOOVER_CHESS_UTILS_VERSION})
 
 find_package(FLEX 2.6.0)
 FLEX_TARGET(PgnScanner src/pgnscanner.l ${CMAKE_CURRENT_BINARY_DIR}/pgnscanner.cc)
 
-configure_file(src/pgnreader-config.h.in pgnreader-config.h)
+configure_file(src/pgnreader-config.h.in pgnreader-config.h @ONLY)
 
 ##### Doxygen output
 find_package(Doxygen COMPONENTS doxygen dot)
@@ -79,7 +79,6 @@ add_library(
   src/pgnparser.cc
   src/pgnreader-string-utils.cc
   src/stringbuilder.cc
-  src/version.cc
   src/bitboard-attacks.cc
   src/slider-attacks-generic.cc
   $<IF:$<BOOL:${HAVE_PDEP_PEXT}>,src/slider-attacks-pext-pdep.cc,>
@@ -132,6 +131,7 @@ add_executable(hoover-pgn-reader-tests
   test/pgnreader-test.cc
   test/pgnreader-string-utils-test.cc
   test/stringbuilder-test.cc
+  test/version-test.cc
   gen-scannertest-1.cc
   gen-parsertest-1.cc
   )

@@ -17,7 +17,13 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(ChessUtils VERSION 0.3.0)
+project(HooverChessUtils VERSION 0.9.0)
+set(HOOVER_CHESS_UTILS_VERSION_SUFFIX "-dev")
+
+set(HOOVER_CHESS_UTILS_VERSION ${PROJECT_VERSION})
+set(HOOVER_CHESS_UTILS_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(HOOVER_CHESS_UTILS_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(HOOVER_CHESS_UTILS_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
 ##### Basic compiler options
 add_compile_options(-Wall -Wextra -pedantic -Werror)

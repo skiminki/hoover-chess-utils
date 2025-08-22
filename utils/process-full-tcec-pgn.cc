@@ -16,6 +16,7 @@
 
 #include "pgnreader.h"
 #include "pgnreader-string-utils.h"
+#include "version.h"
 
 #include "compressed-position.h"
 #include "memory-mapped-file.h"
@@ -197,7 +198,9 @@ const std::map<std::string_view, std::uint16_t> frcConfigurationMap { buildFrcCo
 
 void printHelp()
 {
-    std::puts("Usage: process-full-tcec-pgn <season_number> <event_number> <eco.pgn> (<PGN-file> <url_prefix>)+");
+    std::cout << "TCEC games PGN processing tool: master archive PGN file(s) to full PGN file (" << hoover_chess_utils::pgn_reader::getVersionString() << ')' << std::endl;
+    std::cout << std::endl;
+    std::puts("Usage: hoover-process-full-tcec-pgn <season_number> <event_number> <eco.pgn> (<PGN-file> <url_prefix>)+");
 }
 
 std::string classifyDfrc(std::string_view fen)

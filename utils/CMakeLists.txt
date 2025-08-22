@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-project(Utilities VERSION 0.3.0)
+project(HooverChessUtils_CliUtilities VERSION ${HOOVER_CHESS_UTILS_VERSION})
 
 add_executable(hoover-tdb-query
   compressed-position.cc
