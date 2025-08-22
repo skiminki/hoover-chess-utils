@@ -38,7 +38,6 @@ llvm-cov show -format=html -output-dir="${BUILD_DIR}"/coverage_html \
          --ignore-filename-regex='.*/test/.*' \
          --ignore-filename-regex="${BUILD_DIR}"'/pgn-reader/pgnscanner\.cc' \
          --Xdemangler c++filt -Xdemangler -n \
-         --binary-counters \
          --show-branches=count \
          --show-expansions \
          "${BUILD_DIR}"/pgn-reader/hoover-pgn-reader-tests
