@@ -9,14 +9,19 @@ database query functionality to TCEC_hoover_bot in [TCEC Twitch chat](https://ww
 ### Prerequisites
 
 **General**
-- Development tool chain for GCC or CLANG with C++23 support. CLANG is required for test coverage builds.
+- Development tool chain for GCC or CLANG with C++23 support. CLANG-19 or newer is required for test coverage builds.
 - CMake 3.28 or newer
+- GNU Flex
 - `xxd` utility (from vim)
-- `doxygen` for building the docs
+- `doxygen` and `graphviz` for building the docs
 - Python for various scripts
 
-**Ubuntu 24.04 LTS**
-- `apt-get ...`
+**Ubuntu 24.10**
+```
+apt-get install \
+    clang cmake doxygen flex g++ gcc graphviz libclang-rt-dev \
+    libfl-dev lld llvm make python3 xxd
+```
 
 ### Build scripts
 
