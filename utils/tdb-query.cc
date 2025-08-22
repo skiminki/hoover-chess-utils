@@ -20,6 +20,7 @@
 #include "pgnreader.h"
 #include "pgnreader-string-utils.h"
 #include "chessboard.h"
+#include "version.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -81,7 +82,13 @@ struct PositionStats
 
 void printHelp()
 {
-    std::cout << "Usage: tdb-query <PGN-database> <PGN-query> [threads]" << std::endl;
+    std::cout << "TCEC games database query tool for TCEC_hoover_bot (" << hoover_chess_utils::pgn_reader::getVersionString() << ')' << std::endl;
+    std::cout << std::endl;
+    std::cout << "Usage: hoover-tdb-query <PGN-database> <PGN-query> [threads]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "PGN-database  Compacted TCEC games PGN database file" << std::endl;
+    std::cout << "PGN-query     PGN containing a single game. The positions in the PGN are queried" << std::endl;
+    std::cout << "              in reverse order." << std::endl;
 }
 
 class CollectQueryFilePositionsActions : public pgn_reader::PgnReaderActions

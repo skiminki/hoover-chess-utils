@@ -1,5 +1,5 @@
 // Hoover Chess Utilities / PGN reader
-// Copyright (C) 2024-2025  Sami Kiminki
+// Copyright (C) 2025  Sami Kiminki
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,3 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#ifndef HOOVER_CHESS_UTILS__PGN_READER__VERSION_H_INCLUDED
+#define HOOVER_CHESS_UTILS__PGN_READER__VERSION_H_INCLUDED
+
+#include <string_view>
+
+
+#define HOOVER_CHESS_UTILS_VERSION_MAJOR 0
+#define HOOVER_CHESS_UTILS_VERSION_MINOR 9
+#define HOOVER_CHESS_UTILS_VERSION_PATCH 0
+#define HOOVER_CHESS_UTILS_VERSION_SUFFIX "-dev"
+
+namespace hoover_chess_utils::pgn_reader
+{
+
+constexpr std::string_view getVersionString() noexcept
+{
+    return std::string_view { "0.9.0-dev" };
+}
+
+}
+
+#endif

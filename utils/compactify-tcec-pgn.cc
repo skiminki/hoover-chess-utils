@@ -16,6 +16,7 @@
 
 #include "pgnreader.h"
 #include "pgnreader-string-utils.h"
+#include "version.h"
 
 #include "memory-mapped-file.h"
 #include "output-buffer.h"
@@ -24,6 +25,7 @@
 #include <cstddef>
 #include <cstring>
 #include <format>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -37,7 +39,9 @@ static constexpr bool debugMode { false };
 
 void printHelp()
 {
-    std::puts("Usage: compactify-tcec-pgn <PGN-file>");
+    std::cout << "TCEC games PGN processing tool: full PGN file to compact PGN file (" << hoover_chess_utils::pgn_reader::getVersionString() << ')' << std::endl;
+    std::cout << std::endl;
+    std::puts("Usage: hoover-compactify-tcec-pgn <PGN-file>");
 }
 
 enum class BookDetectionMode : std::uint8_t
