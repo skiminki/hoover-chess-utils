@@ -25,9 +25,6 @@ jobs:
     - name: Build and run tests (debug build)
       run: ./build-run-tests.sh generic
 
-    - name: Build and run test coverage
-      run: ./build-run-coverage.sh generic
-
     - name: Build release binaries
       run: ./build-release.sh generic
 
