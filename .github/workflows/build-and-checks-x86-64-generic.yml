@@ -2,9 +2,9 @@ name: Build, docs, checks, tests (generic x86-64 platform)
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
 
     - name: Source preamble checks
       run: ./scripts/check-source-preambles.py
