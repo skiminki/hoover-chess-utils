@@ -1,0 +1,30 @@
+name: Build, docs, checks, tests (generic x86-64 platform)
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Source preamble checks
+      run: ./scripts/check-source-preambles.py
+
+    - name: Build and run tests (debug build)
+      run: ./build-run-tests.sh generic
+
+    - name: Build and run test coverage
+      run: ./build-run-coverage.sh generic
+
+    - name: Build release binaries
+      run: ./build-release.sh generic
+
+    - name: Build documentation
+      run: ./build-docs.sh
