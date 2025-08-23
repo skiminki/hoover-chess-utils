@@ -48,7 +48,18 @@ llvm-cov report \
          --ignore-filename-regex='.*/test/.*' \
          --ignore-filename-regex="${BUILD_DIR}"'/pgn-reader/pgnscanner\.cc' \
          --Xdemangler c++filt -Xdemangler -n \
-         "${BUILD_DIR}"/pgn-reader/hoover-pgn-reader-tests
+         "${BUILD_DIR}"/pgn-reader/hoover-pgn-reader-tests | tee ${BUILD_DIR}/coverage.txt
 
 echo
 echo "See file://${PWD}/${BUILD_DIR}/coverage_html/index.html for the full report."
+
+EXITCODE=0
+grep -E -q '^TOTAL(.*100\.00%){4}' ${BUILD_DIR}/coverage.txt || EXITCODE=$?
+echo
+if [ "$EXITCODE" = 0 ]
+then
+    echo "Success"
+else
+    echo "Error: Coverage target not met"
+fi
+exit $EXITCODE
