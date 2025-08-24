@@ -29,7 +29,9 @@ namespace hoover_chess_utils::pgn_reader
 
 enum PgnScannerToken : std::uint8_t
 {
-    END_OF_FILE = 0,
+    NONE = 0U,
+
+    END_OF_FILE,
     TAG_START,
     TAG_KEY,
     TAG_VALUE,
@@ -55,6 +57,8 @@ enum PgnScannerToken : std::uint8_t
     COMMENT_END,
 
     RESULT,
+
+    ERROR,
 };
 
 struct PgnScannerTokenInfo_PAWN_MOVE
@@ -89,6 +93,11 @@ struct PgnScannerTokenInfo_RESULT
     PgnResult result;
 };
 
+struct PgnScannerTokenInfo_ERROR
+{
+    const char *errorMessage;
+};
+
 union PgnScannerTokenInfo
 {
     PgnScannerTokenInfo_PAWN_MOVE pawnMove;
@@ -96,6 +105,7 @@ union PgnScannerTokenInfo
     PgnScannerTokenInfo_MOVENUM moveNum;
     PgnScannerTokenInfo_NAG nag;
     PgnScannerTokenInfo_RESULT result;
+    PgnScannerTokenInfo_ERROR error;
 };
 
 }

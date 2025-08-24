@@ -37,6 +37,7 @@ class PgnScanner : public ::yyFlexLexer
 private:
     const char *m_inputData;
     std::size_t m_inputLeft;
+    PgnScannerToken m_curToken { };
     PgnScannerTokenInfo m_tokenInfo;
 
 public:
@@ -48,9 +49,32 @@ public:
     {
     }
 
+    inline PgnScannerToken nextTokenNoThrowOnErrorToken()
+    {
+        m_curToken = yylexex();
+        return m_curToken;
+    }
+
     inline PgnScannerToken nextToken()
     {
-        return yylexex();
+        m_curToken = yylexex();
+
+        if (m_curToken == PgnScannerToken::ERROR) [[unlikely]]
+        {
+            throw PgnError(
+                PgnErrorCode::BAD_CHARACTER,
+                std::format(
+                    "{}: '{}'",
+                    getTokenInfo().error.errorMessage,
+                    std::string_view { YYText(), static_cast<std::size_t>(YYLeng()) }));
+        }
+
+        return m_curToken;
+    }
+
+    inline PgnScannerToken getCurrentToken() const noexcept
+    {
+        return m_curToken;
     }
 
     inline const PgnScannerTokenInfo &getTokenInfo() const noexcept
@@ -63,6 +87,7 @@ public:
     {
         switch (token)
         {
+            C(NONE);
             C(END_OF_FILE);
             C(TAG_START);
             C(TAG_KEY);
@@ -84,6 +109,7 @@ public:
             C(COMMENT_NEWLINE);
             C(COMMENT_END);
             C(RESULT);
+            C(ERROR);
             default:
                 assert(false);
                 return "???";
@@ -204,6 +230,7 @@ private:
     inline void setTokenInfo_PIECE_MOVE(SquareSet srcMask, Piece piece, bool capture, Square dstSq);
     inline void setTokenInfo_NAG(std::uint8_t nag);
     inline void setTokenInfo_RESULT(PgnResult result);
+    inline void setTokenInfo_ERROR(const char *errorMessage);
 
     inline PgnScannerToken tokenizePieceMove(std::string_view str);
     inline PgnScannerToken tokenizeUnusualPawnMove(std::string_view str);

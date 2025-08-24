@@ -25,7 +25,12 @@ namespace hoover_chess_utils::pgn_reader
 {
     class PgnScanner;
 
-/// @brief Error code for @coderef{PgnError}
+/// @addtogroup PgnReaderAPI
+/// @{
+
+/// @brief Error code
+///
+/// @sa @coderef{PgnError}
 enum class PgnErrorCode : unsigned
 {
     /// @brief Code for success. Never set in @coderef{PgnError} by this code
@@ -106,6 +111,8 @@ public:
     static std::string_view getStringForCode(PgnErrorCode code) noexcept;
 
 };
+
+/// @}
 
 }
 
