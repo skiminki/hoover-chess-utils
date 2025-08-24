@@ -455,6 +455,14 @@ public:
 
 };
 
+void skipToNextGame(PgnScanner &pgnScanner)
+{
+    // skip tokens until we hit EOF or RESULT
+    while ((pgnScanner.getCurrentToken() != PgnScannerToken::END_OF_FILE) &&
+           (pgnScanner.getCurrentToken() != PgnScannerToken::RESULT))
+        static_cast<void>(pgnScanner.nextTokenNoThrowOnErrorToken());
+}
+
 template <typename MinFilter, typename MaxFilter>
 bool tryProcessPgn(std::string_view pgn, PgnReaderActions &actions, PgnReaderActionFilter filter)
 {
@@ -469,13 +477,47 @@ bool tryProcessPgn(std::string_view pgn, PgnReaderActions &actions, PgnReaderAct
 
     PgnScanner pgnScanner { pgn.data(), pgn.size() };
 
-    using ParserActions = PgnReaderParserActions<MinFilter, MaxFilter>;
-    ParserActions readerActions { actions, filter, pgnScanner };
+    while (true)
+    {
+        try
+        {
+            using ParserActions = PgnReaderParserActions<MinFilter, MaxFilter>;
+            ParserActions readerActions { actions, filter, pgnScanner };
 
-    PgnParser<ParserActions> parser { pgnScanner, readerActions };
-    parser.parse();
+            PgnParser<ParserActions> parser { pgnScanner, readerActions };
+            parser.parse();
 
-    return true;
+            // end of input
+            return true;
+        }
+        catch (const PgnError &ex)
+        {
+            PgnErrorInfo errorInfo { };
+            errorInfo.lineNumber = pgnScanner.lineno();
+
+            const PgnReaderOnErrorAction onErrorAction { actions.onError(ex, errorInfo) };
+
+            switch (onErrorAction)
+            {
+                case PgnReaderOnErrorAction::Abort:
+                    throw;
+
+                case PgnReaderOnErrorAction::ContinueFromNextGame:
+                    skipToNextGame(pgnScanner);
+                    if (pgnScanner.getCurrentToken() == PgnScannerToken::END_OF_FILE)
+                        // end of input
+                        return true;
+
+                    break;
+
+                default:
+                    throw PgnError(
+                        PgnErrorCode::INTERNAL_ERROR,
+                        std::format("PgnReader::readFromMemory: Unsupported PgnReaderOnErrorAction {}",
+                                    static_cast<unsigned>(onErrorAction)));
+            }
+        }
+    }
 }
 
 }

@@ -149,9 +149,9 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 
 [!?]{3}        {
     // malformed move suffix
-    throw hoover_chess_utils::pgn_reader::PgnError(
-        PgnErrorCode::BAD_CHARACTER,
-        std::format("Bad move suffix: '{}'", YYText()));
+    BEGIN(INITIAL);
+    setTokenInfo_ERROR("Bad move suffix");
+    return PgnScannerToken::ERROR;
 }
 
 "!"            { setTokenInfo_NAG(1); return PgnScannerToken::NAG; }
@@ -192,21 +192,21 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 "1/2-1/2"      { setTokenInfo_RESULT(PgnResult::DRAW); return PgnScannerToken::RESULT; }
 "*"            { setTokenInfo_RESULT(PgnResult::UNKNOWN); return PgnScannerToken::RESULT; }
 
-{newline}      // nothing
-<*>{blank}     // nothing
+{newline}+     // nothing
+<*>{blank}+    // nothing
 
 <<EOF>>        return hoover_chess_utils::pgn_reader::PgnScannerToken::END_OF_FILE;
 
 {symtoken}       {
-    throw hoover_chess_utils::pgn_reader::PgnError(
-        PgnErrorCode::BAD_CHARACTER,
-        std::format("Bad symbol token: '{}'", YYText()));
+    BEGIN(INITIAL);
+    setTokenInfo_ERROR("Bad symbol token");
+    return PgnScannerToken::ERROR;
 }
 
-<*>.|[\n\r]    {
-    throw hoover_chess_utils::pgn_reader::PgnError(
-        PgnErrorCode::BAD_CHARACTER,
-        std::format("Unexpected character: '{}'", YYText()));
+<*>.|[\n\r]        {
+    BEGIN(INITIAL);
+    setTokenInfo_ERROR("Unexpected character");
+    return PgnScannerToken::ERROR;
 }
 
 %%
@@ -237,6 +237,11 @@ void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_NAG(std::uint8_t n
 void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_RESULT(PgnResult result)
 {
     m_tokenInfo.result = PgnScannerTokenInfo_RESULT { result };
+}
+
+void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_ERROR(const char *errorMessage)
+{
+    m_tokenInfo.error = PgnScannerTokenInfo_ERROR { errorMessage };
 }
 
 hoover_chess_utils::pgn_reader::PgnScannerToken

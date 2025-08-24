@@ -34,6 +34,28 @@ class ChessBoard;
 /// @addtogroup PgnReaderAPI
 /// @{
 
+/// @brief Action for recoverable PGN reader error
+///
+/// @sa @coderef{PgnReaderActions::onError()}
+enum class PgnReaderOnErrorAction
+{
+    /// @brief Abort processing
+    Abort,
+
+    /// @brief Continue from next game
+    ContinueFromNextGame,
+
+};
+
+/// @brief Additional error info
+///
+/// @sa @coderef{PgnReaderActions::onError()}
+struct PgnErrorInfo
+{
+    /// @brief Line number of the error. Numbering starts from 1.
+    std::uint64_t lineNumber;
+};
+
 /// @brief Semantic actions for reading a PGN. The caller is expected to inherit
 /// this class and override all callbacks of interest.
 class PgnReaderActions
@@ -144,6 +166,46 @@ public:
     /// Callback is filtered by @coderef{PgnReaderActionClass::Variation}.
     virtual void variationEnd()
     {
+    }
+
+    /// @brief Error handler for recoverable errors
+    ///
+    /// @param[in]  error             Error object
+    /// @param[in]  additionalInfo    Additional information on error
+    /// @return                       Recovery actions. Default: @coderef{PgnReaderOnErrorAction::Abort}
+    ///
+    /// Caller-provided error handler is invoked on recoverable PGN
+    /// errors. Those are tokenizer (scanner) errors, parser errors, board setup
+    /// errors (FEN errors), move replay errors, and other errors related to the
+    /// correctness of the PGN input. When such an error occurs, this callback
+    /// function is invoked, which then returns the policy action.
+    ///
+    /// The actions are:
+    /// - @coderef{PgnReaderOnErrorAction::Abort} (default) --- Abort processing and
+    ///   re-throw the PGN error exception as is. This is the default policy in
+    ///   case error handler is not overridden.
+    /// - @coderef{PgnReaderOnErrorAction::ContinueFromNextGame} --- Abort
+    ///   processing the current game. Skip to the next game and continue from
+    ///   there. Note the following:
+    ///   - No further action handlers are invoked for the current game. In
+    ///     particular, there will be no calls to close already started
+    ///     variations, nor there will be a call to @coderef{gameTerminated()}
+    ///     to indicate that the game ended.
+    ///   - The exception will not be re-thrown by
+    ///     @coderef{PgnReader::readFromMemory()}.
+    ///
+    /// Internally, the procedure to skip to the next game when
+    /// @coderef{PgnReaderOnErrorAction::ContinueFromNextGame} is returned is
+    /// straightforward. The tokenizer is invoked until it returns either RESULT
+    /// (i.e., @c "1-0", @c "1/2-1/2", @c "0-1", @c "*") or END_OF_FILE
+    /// tokens. It is possible that more than more error is returned for a
+    /// single erroneous game.
+    virtual PgnReaderOnErrorAction onError(const PgnError &error, const PgnErrorInfo &additionalInfo)
+    {
+        static_cast<void>(error);
+        static_cast<void>(additionalInfo);
+
+        return PgnReaderOnErrorAction::Abort;
     }
 };
 
@@ -263,6 +325,11 @@ public:
     /// @coderef{PgnReaderActionClass::Move} is enabled.
     ///
     /// Disabling unused callbacks may improve performance.
+    ///
+    /// In case an error occurs when reading the PGN,
+    /// @coderef{PgnReaderActions::onError()} is invoked. The return value of
+    /// the caller-provided error handler specifies whether an attempt is made
+    /// to continue. See the @c onError() documentation for details.
     static void readFromMemory(std::string_view pgn, PgnReaderActions &actions, PgnReaderActionFilter filter);
 };
 

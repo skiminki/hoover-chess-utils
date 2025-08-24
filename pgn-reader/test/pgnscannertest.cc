@@ -212,6 +212,8 @@ TEST(PgnScannerTest, BasicTokenize)
 // scnnerTokenToString asserts for bad token
 TEST(PgnScannerTest, scannerTokenToString_badToken)
 {
+    EXPECT_EQ(std::string_view { "NONE" }, PgnScanner::scannerTokenToString(PgnScannerToken { }));
+    EXPECT_EQ(std::string_view { "ERROR" }, PgnScanner::scannerTokenToString(PgnScannerToken::ERROR));
     EXPECT_EQ(std::string_view { "???" }, PgnScanner::scannerTokenToString(PgnScannerToken { 255U }));
 }
 #endif
