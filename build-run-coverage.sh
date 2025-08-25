@@ -24,15 +24,17 @@ source scripts/build-functions.bash
 
 # profiling runs require clang
 CXX="${CXX:-clang++}"
+LLVM_PROFDATA="${LLVM_PROFDATA:-llvm-profdata}"
+LLVM_COV="${LLVM_COV:-llvm-cov}"
 
 setup_build coverage "$@"
 do_build Debug "-DNDEBUG -fprofile-instr-generate -fcoverage-mapping -Og"
 
 rm -f cov_tmp/hoover-pgn-reader-tests.profraw
 LLVM_PROFILE_FILE="${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profraw "${BUILD_DIR}"/pgn-reader/hoover-pgn-reader-tests "$@"
-llvm-profdata merge -o "${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profdata --sparse "${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profraw
+"${LLVM_PROFDATA}" merge -o "${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profdata --sparse "${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profraw
 
-llvm-cov show -format=html -output-dir="${BUILD_DIR}"/coverage_html \
+"${LLVM_COV}" show -format=html -output-dir="${BUILD_DIR}"/coverage_html \
          --instr-profile "${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profdata \
          --ignore-filename-regex='.*/extern/.*' \
          --ignore-filename-regex='.*/test/.*' \
@@ -42,7 +44,7 @@ llvm-cov show -format=html -output-dir="${BUILD_DIR}"/coverage_html \
          --show-expansions \
          "${BUILD_DIR}"/pgn-reader/hoover-pgn-reader-tests
 
-llvm-cov report \
+"${LLVM_COV}" report \
          --instr-profile "${BUILD_DIR}"/cov_tmp/hoover-pgn-reader-tests.profdata \
          --ignore-filename-regex='.*/extern/.*' \
          --ignore-filename-regex='.*/test/.*' \
