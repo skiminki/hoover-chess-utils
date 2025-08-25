@@ -1,0 +1,29 @@
+name: Code coverage
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Install prerequisites
+      run: sudo apt install -y libfl-dev xxd clang-19 libclang-rt-19-dev lld-19 llvm-19
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Build and run coverage
+      run:  LLVM_PROFDATA=llvm-profdata-19 LLVM_COV=llvm-cov-19 CXX=clang++-19 ./build-run-coverage.sh generic
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-coverage-report
+        path: build/coverage-generic/coverage_html
