@@ -218,4 +218,80 @@ TEST(PgnScannerTest, scannerTokenToString_badToken)
 }
 #endif
 
+TEST(PgnScannerTest, malformedTokens)
+{
+    constexpr std::string_view brokenTokens[] {
+        "garbage",
+        "!!!",
+        "[PgnKey\"PgnTag\n\"]",
+        "]]",
+        "}}",
+    };
+
+    for (const std::string_view &input : brokenTokens)
+    {
+        PgnScanner pgnScanner { input.data(), input.size() };
+
+        // wait until there's an erroneous token
+        while (true)
+        {
+            const PgnScannerToken token { pgnScanner.nextTokenNoThrowOnErrorToken() };
+
+            EXPECT_NE(token, PgnScannerToken::END_OF_FILE);
+            if (token == PgnScannerToken::END_OF_FILE)
+                return;
+
+            if (token == PgnScannerToken::ERROR)
+                break;
+        }
+
+
+        const PgnScannerToken token { pgnScanner.getCurrentToken() };
+
+        std::cout
+            << "Input: '"
+            << input
+            << "', error tokenized as "
+            << static_cast<unsigned>(token)
+            << " (" << PgnScanner::scannerTokenToString(token) << ") '"
+            << std::string_view(pgnScanner.YYText(), pgnScanner.YYLeng())
+            << "'"
+            << std::endl;
+
+        EXPECT_EQ(token, PgnScannerToken::ERROR);
+
+        if (token == PgnScannerToken::ERROR)
+        {
+            std::cout << "- error: " << pgnScanner.getTokenInfo().error.errorMessage << std::endl;
+        }
+    }
+}
+
+// just make sure the scanner deals with all 2-char inputs in all modes
+TEST(PgnScannerTest, exhaustive2CharTokens)
+{
+    for (char mode : { ' ', '{', '[' })
+        for (unsigned a { 1U }; a <= 255U; ++a)
+            for (unsigned b { 1U }; b <= 255U; ++b)
+            {
+                std::array<char, 3> input { mode, static_cast<char>(a), static_cast<char>(b) };
+
+                PgnScanner pgnScanner { input.data(), input.size() };
+
+
+                std::size_t tokens { };
+                while (tokens <= 4)
+                {
+                    const PgnScannerToken token { pgnScanner.nextTokenNoThrowOnErrorToken() };
+
+                    if (token == PgnScannerToken::END_OF_FILE)
+                        break;
+
+                    ++tokens;
+                }
+
+                EXPECT_LE(tokens, 3U);
+            }
+}
+
 }
