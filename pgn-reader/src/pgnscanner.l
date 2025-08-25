@@ -53,6 +53,7 @@ non_blank_char [^ \t\v\r\n]
 blank          [ \t\v]+
 tagkey         [[:alnum:]_]+
 string         \"(\\\\|\\\"|[^"\\\r\n])*\"
+string_nonterm \"(\\\\|\\\"|[^"\\\r\n])*
 newline        \n\r|\r\n|\n|\r
 bcomment_char  [^}\r\n]
 bcomment_last  [^}\r\n\t ]
@@ -66,6 +67,12 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 "["               { BEGIN(PGNTAG); return PgnScannerToken::TAG_START; }
 <PGNTAG>{tagkey}  { return PgnScannerToken::TAG_KEY; }
 <PGNTAG>{string}  { return PgnScannerToken::TAG_VALUE; }
+<PGNTAG>{string_nonterm}  {
+    // non-terminated string
+    BEGIN(INITIAL);
+    setTokenInfo_ERROR("Non-terminated string");
+    return PgnScannerToken::ERROR;
+}
 <PGNTAG>{newline} // ignore
 <PGNTAG>"]"       { BEGIN(INITIAL); return PgnScannerToken::TAG_END; }
 
