@@ -35,6 +35,7 @@ if(Doxygen_FOUND)
       )
   set(DOXYGEN_AUTOLINK_SUPPORT NO)
   set(DOXYGEN_ENABLED_SECTIONS full)
+  set(DOXYGEN_EXTRACT_ALL YES)
   set(DOXYGEN_EXTRACT_PRIVATE YES)
   set(DOXYGEN_FILE_PATTERNS *.h *.dox)
   set(DOXYGEN_FULL_PATH_NAMES YES)
@@ -56,6 +57,7 @@ if(Doxygen_FOUND)
       "fullonly{1}="
       )
   set(DOXYGEN_ENABLED_SECTIONS)
+  set(DOXYGEN_EXTRACT_ALL NO)
   set(DOXYGEN_EXTRACT_PRIVATE NO)
   set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
   doxygen_add_docs(
@@ -84,7 +86,6 @@ add_library(
   src/slider-attacks-generic.cc
   $<IF:$<BOOL:${HAVE_PDEP_PEXT}>,src/slider-attacks-pext-pdep.cc,>
   src/bitboard-intercepts.cc
-  src/bitrays.cc
   )
 
 target_include_directories(hoover-pgn-reader PUBLIC

@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "slider-attacks-pext-pdep.h"
-#include "bitrays.h"
 #include "bittricks.h"
 #include "chessboard-types-squareset.h"
 #include "pgnreader-config.h"
@@ -217,7 +216,7 @@ static_assert(ctPextBishopAttackData.size() == 5248U);
 }
 
 // get mask of rook attacks/moves on populated board
-SquareSet SliderAttacksImpl<SliderAttacksImplType::PextPdep>::getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
+SquareSet SliderAttacksPextPdep::getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
 {
     const SquareSet pextMask { ctPextBishopMasks[static_cast<std::uint8_t>(sq)] };
     const std::uint64_t offset { ctPextBishopOffsets[static_cast<std::uint8_t>(sq)] };
@@ -229,7 +228,7 @@ SquareSet SliderAttacksImpl<SliderAttacksImplType::PextPdep>::getBishopAttackMas
 }
 
 // get mask of rook attacks/moves on populated board
-SquareSet SliderAttacksImpl<SliderAttacksImplType::PextPdep>::getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+SquareSet SliderAttacksPextPdep::getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
 {
     const SquareSet pextMask { ctPextRookMasks[static_cast<std::uint8_t>(sq)] };
     const std::uint64_t offset { ctPextRookOffsets[static_cast<std::uint8_t>(sq)] };

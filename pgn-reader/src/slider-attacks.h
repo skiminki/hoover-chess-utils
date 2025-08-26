@@ -24,35 +24,216 @@
 namespace hoover_chess_utils::pgn_reader
 {
 
-/// @brief Slider attacks implementation type
-enum class SliderAttacksImplType
+/// @ingroup PgnReaderImpl
+/// @brief Generic portable slider attacks implementation
+class SliderAttacksGeneric
 {
-    /// @brief Portable implementation
-    Generic,
+private:
 
-    /// @brief Implementation using PEXT/PDEP instructions
-    PextPdep,
-};
+    /// @brief Calculate vertical, diagonal, or antidiagonal attack mask using
+    /// the Hyperbola quintessence algorithm
+    ///
+    /// @param[in]  pieceBit       Square set containing only the attacking piece
+    /// @param[in]  occupancyMask  Occupied squares
+    /// @param[in]  rayMaskEx      Forward/backward attack ray excluding the attacking piece.
+    ///                            For example, the file of the rook not including the rook.
+    /// @return                    Attacked squares
+    ///
+    /// **Illustration**
+    /// <table>
+    /// <tr>
+    ///   <th>Input</th>
+    ///   <th>Return</th>
+    /// </tr>
+    /// <tr>
+    ///   <td>
+    /// <table class="bitboard">
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td> </td><td>o</td><td> </td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask"> </td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td             >R</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask"> </td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td>o</td><td> </td><td>o</td><td> </td><td>o</td></tr>
+    /// </table>
+    //    </td>
+    ///   <td>
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td             > </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    ///   </td>
+    /// </tr>
+    /// <tr>
+    ///   <td>@c o = occupied square<br>
+    ///       shaded squares = @c rayMaskEx<br>
+    ///       @c R = attacker</td>
+    ///   <td>Squares marked with @c x = return</td>
+    /// </tr>
+    /// </table>
+    ///
+    /// Design
+    /// ------
+    /// The implementation uses a variation of the "o^(o-2r)" trick. First, the occupancy mask is AND'd
+    /// with the ray mask.
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td             > </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// Then, two copies are taken: one as is (left side) and one mirrored vertically (right side):
+    /// <table>
+    /// <tr>
+    /// <td>
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td             > </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// </td>
+    /// <td>
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td             > </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// </td>
+    /// </tr>
+    /// </table>
+    /// The attacking piece is subtracted from the boards. Note that the attacking piece bit is also flipped vertically in the right-side board.
+    /// <table>
+    /// <tr>
+    /// <td>
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td             >o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// </td>
+    /// <td>
+    /// <table class="bitboard">
+    /// <tr><td>o</td><td>o</td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td             >o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// </td>
+    /// </tr>
+    /// </table>
+    /// The right-side board is flipped vertically again.
+    /// <table>
+    /// <tr>
+    /// <td>
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td             >o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// </td>
+    /// <td>
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask">o</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td             >o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">o</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// </td>
+    /// </tr>
+    /// </table>
+    /// The left-side and right-side boards are then XOR'd together.
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">x</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td> </td><td> </td><td             > </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">x</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">x</td><td>o</td><td>o</td><td>o</td><td>o</td><td>o</td></tr>
+    /// <tr><td>o</td><td>o</td><td class="mask">x</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    ///
+    /// and the
+    /// result is AND'd with the ray mask. This gives the final result.
+    ///
+    /// The XOR operation isolates the bits that change in the subtraction
+    /// operation. This is the reason why this algorithm works.
+    ///
+    /// @sa https://www.chessprogramming.org/Hyperbola_Quintessence
+    static inline SquareSet getSliderAttackMaskHyperbola(
+        SquareSet pieceBit, SquareSet occupancyMask, SquareSet rayMaskEx) noexcept;
 
-/// @brief Compile-time implementation dispatch for slider attacks
-///
-/// @tparam impl    Implementation type
-template <SliderAttacksImplType impl>
-class SliderAttacksImpl;
-
-template <>
-class SliderAttacksImpl<SliderAttacksImplType::Generic>
-{
 public:
-    /// @brief See @coderef{Attacks::getBishopAttackMask()} for documentation
+    /// @brief See @coderef{Attacks::getBishopAttackMask()} for usage documentation
+    ///
+    /// @param[in]  sq             Bishop square
+    /// @param[in]  occupancyMask  Set of occupied squares
+    /// @return                    Set of attacked squares
+    ///
+    /// @coderef{getSliderAttackMaskHyperbola()} is used to implement this function.
     static SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 
-    /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
+    /// @brief See @coderef{Attacks::getRookAttackMask()} for usage documentation
+    ///
+    /// @param[in]  sq             Rook square
+    /// @param[in]  occupancyMask  Set of occupied squares
+    /// @return                    Set of attacked squares
+    ///
+    /// @coderef{getSliderAttackMaskHyperbola()} is used to implement the
+    /// vertical attack mask resolution.
+    ///
+    /// The horizontal attack mask is resolved as follows:
+    /// -# Determine row and column of the attacking piece @c sq
+    /// -# Determine shift for translating the row to the first rank (@c row * 8U)
+    /// -# Shift the piece rank to first rank
+    /// -# Use a precomputed table mapping the first rank occupancy and piece column
+    ///    to attack squares
+    /// -# Shift the attack squares back to piece row
     static SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 };
 
-template <>
-class SliderAttacksImpl<SliderAttacksImplType::PextPdep>
+/// @ingroup PgnReaderImpl
+/// @brief Slider attacks implementation using PEXT/PDEP
+class SliderAttacksPextPdep
 {
 public:
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for documentation
@@ -64,11 +245,15 @@ public:
 
 #if HAVE_PDEP_PEXT
 
-using SliderAttacks = SliderAttacksImpl<SliderAttacksImplType::PextPdep>;
+/// @ingroup PgnReaderImpl
+/// @brief Type alias (PEXT/PDEP implementation)
+using SliderAttacks = SliderAttacksPextPdep;
 
 #else
 
-using SliderAttacks = SliderAttacksImpl<SliderAttacksImplType::Generic>;
+/// @ingroup PgnReaderImpl
+/// @brief Type alias (generic implementation)
+using SliderAttacks = SliderAttacksGeneric;
 
 #endif
 

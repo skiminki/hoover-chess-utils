@@ -331,7 +331,7 @@ TEST(Attacks, getBishopAttackMask_GenericImpl)
                     expect |= shootRay(bishop, occupancyMask, +1, -1);
                     expect |= shootRay(bishop, occupancyMask, +1, +1);
 
-                    EXPECT_EQ(expect, SliderAttacksImpl<SliderAttacksImplType::Generic>::getBishopAttackMask(bishop, occupancyMask))
+                    EXPECT_EQ(expect, SliderAttacksGeneric::getBishopAttackMask(bishop, occupancyMask))
                         << std::format("Bishop={} Capturable={}",
                                        StringUtils::squareToString(bishop, "??"),
                                        StringUtils::squareToString(capturable, "??"));
@@ -385,7 +385,7 @@ TEST(Attacks, getRookAttackMask_GenericImpl)
                     expect |= shootRay(rook, occupancyMask,  0, -1);
                     expect |= shootRay(rook, occupancyMask,  0, +1);
 
-                    EXPECT_EQ(expect, SliderAttacksImpl<SliderAttacksImplType::Generic>::getRookAttackMask(rook, occupancyMask))
+                    EXPECT_EQ(expect, SliderAttacksGeneric::getRookAttackMask(rook, occupancyMask))
                         << std::format("Rook={} Capturable={}",
                                        StringUtils::squareToString(rook, "??"),
                                        StringUtils::squareToString(capturable, "??"));

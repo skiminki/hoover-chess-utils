@@ -217,7 +217,7 @@ public:
     ///
     /// Occupancy of @c sq is ignored.
     ///
-    /// The following implementations are provided:
+    /// The implementation used is as follows:
     /// <table>
     /// <tr>
     ///   <th>Build condition</th>
@@ -225,11 +225,11 @@ public:
     /// </tr>
     /// <tr>
     ///   <td>@ref HAVE_PDEP_PEXT</td>
-    ///   <td>Implementation using @c #BitTricks::parallelExtract()</td>
+    ///   <td>Implementation using @coderef{SliderAttacksPextPdep::getBishopAttackMask()}</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
-    ///   <td>Generic implementation using ray casting.</td>
+    ///   <td>Implementation using @coderef{SliderAttacksGeneric::getBishopAttackMask()}</td>
     /// </tr>
     /// </table>
     ///
@@ -266,7 +266,7 @@ public:
     ///
     /// Occupancy of @c sq is ignored.
     ///
-    /// The following implementations are provided:
+    /// The implementation used is as follows:
     /// <table>
     /// <tr>
     ///   <th>Build condition</th>
@@ -274,11 +274,11 @@ public:
     /// </tr>
     /// <tr>
     ///   <td>@ref HAVE_PDEP_PEXT</td>
-    ///   <td>Implementation using @c #BitTricks::parallelExtract()</td>
+    ///   <td>Implementation using @coderef{SliderAttacksPextPdep::getRookAttackMask()}</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
-    ///   <td>Generic implementation using ray casting.</td>
+    ///   <td>Implementation using @coderef{SliderAttacksGeneric::getRookAttackMask()}</td>
     /// </tr>
     /// </table>
     ///
