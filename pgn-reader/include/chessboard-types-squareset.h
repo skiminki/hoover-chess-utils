@@ -20,6 +20,7 @@
 #include "chessboard-types.h"
 
 #include <atomic>
+#include <bit>
 #include <cassert>
 
 
@@ -297,6 +298,23 @@ public:
     {
         m_bitmask >>= shift;
         return (*this);
+    }
+
+    /// @brief Arithmetic subtraction
+    ///
+    /// @param[in]  other   Subtraction amount
+    /// @return             Result of @c *this @c - @c other
+    constexpr inline SquareSet operator - (SquareSet other) const noexcept
+    {
+        return SquareSet { m_bitmask - other.m_bitmask };
+    }
+
+    /// @brief Flips the squares vertically (upside down)
+    ///
+    /// @return             Result
+    constexpr inline SquareSet flipVert() const noexcept
+    {
+        return SquareSet { std::byteswap(m_bitmask) };
     }
 
     /// @brief Comparison operator (equality). Returns @true if @c *this equals
