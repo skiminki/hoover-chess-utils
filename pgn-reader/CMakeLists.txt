@@ -123,6 +123,7 @@ add_executable(hoover-pgn-reader-tests
   test/chessboard-boardsetup-test.cc
   test/chessboard-loadfen-test.cc
   test/chessboard-movegen-test.cc
+  test/chessboard-pinned-pieces-test.cc
 
   test/chessboard-test.cc
   test/chessboard-types-test.cc

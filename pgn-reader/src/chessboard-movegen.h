@@ -384,12 +384,15 @@ auto ChessBoard::generateMovesForKnight(
     SQUARESET_ENUMERATE(
         dst,
         Attacks::getKnightAttackMask(sq) & emptyOrCapture & legalDestinations(),
-        i = addMoveIfLegalRegular(i, sq, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE));
+        {
+            *i = Move { sq, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE };
+            ++i;
+        });
 
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType>
+template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, bool pinned>
 auto ChessBoard::generateMovesForBishop(
     IteratorType i,
     Square sq,
@@ -400,13 +403,19 @@ auto ChessBoard::generateMovesForBishop(
 
     SQUARESET_ENUMERATE(
         dst,
-        Attacks::getBishopAttackMask(sq, m_occupancyMask) & emptyOrCapture & legalDestinations(),
-        i = addMoveIfLegalRegular(i, sq, dst, typeAndPromo));
+        Attacks::getBishopAttackMask(sq, m_occupancyMask) &
+            emptyOrCapture &
+            Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
+            legalDestinations(),
+        {
+            *i = Move { sq, dst, typeAndPromo };
+            ++i;
+        });
 
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType>
+template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, bool pinned>
 auto ChessBoard::generateMovesForRook(
     IteratorType i,
     Square sq,
@@ -417,8 +426,14 @@ auto ChessBoard::generateMovesForRook(
 
     SQUARESET_ENUMERATE(
         dst,
-        Attacks::getRookAttackMask(sq, m_occupancyMask) & emptyOrCapture & legalDestinations(),
-        i = addMoveIfLegalRegular(i, sq, dst, typeAndPromo));
+        Attacks::getRookAttackMask(sq, m_occupancyMask) &
+            emptyOrCapture &
+            Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
+            legalDestinations(),
+        {
+            *i = Move { sq, dst, typeAndPromo };
+            ++i;
+        });
 
     return i;
 }
@@ -541,7 +556,7 @@ IteratorType ChessBoard::generateMovesTempl(
 
         SQUARESET_ENUMERATE(
             sq,
-            (m_knights & m_turnColorMask),
+            m_knights & m_turnColorMask & ~m_pinnedPieces,
             i = generateMovesForKnight<IteratorType, type, ParamType>(i, sq, legalDestinations));
 
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
@@ -550,14 +565,26 @@ IteratorType ChessBoard::generateMovesTempl(
 
         SQUARESET_ENUMERATE(
             sq,
-            m_bishops & m_turnColorMask,
+            m_bishops & m_turnColorMask & ~m_pinnedPieces,
             {
                 const MoveTypeAndPromotion typeAndPromo {
                     (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
                     MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                     MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
                 };
-                i = generateMovesForBishop<IteratorType, type, ParamType>(i, sq, legalDestinations, typeAndPromo);
+                i = generateMovesForBishop<IteratorType, type, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+            });
+
+        SQUARESET_ENUMERATE(
+            sq,
+            m_bishops & m_turnColorMask & m_pinnedPieces,
+            {
+                const MoveTypeAndPromotion typeAndPromo {
+                    (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                    MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                    MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
+                };
+                i = generateMovesForBishop<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
             });
 
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
@@ -566,14 +593,26 @@ IteratorType ChessBoard::generateMovesTempl(
 
         SQUARESET_ENUMERATE(
             sq,
-            m_rooks & m_turnColorMask,
+            m_rooks & m_turnColorMask & ~m_pinnedPieces,
             {
                 const MoveTypeAndPromotion typeAndPromo {
                     (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
                     MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                     MoveTypeAndPromotion::REGULAR_ROOK_MOVE
                 };
-                i = generateMovesForRook<IteratorType, type, ParamType>(i, sq, legalDestinations, typeAndPromo);
+                i = generateMovesForRook<IteratorType, type, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+            });
+
+        SQUARESET_ENUMERATE(
+            sq,
+            m_rooks & m_turnColorMask & m_pinnedPieces,
+            {
+                const MoveTypeAndPromotion typeAndPromo {
+                    (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                    MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                    MoveTypeAndPromotion::REGULAR_ROOK_MOVE
+                };
+                i = generateMovesForRook<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
             });
 
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)

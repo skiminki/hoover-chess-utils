@@ -82,6 +82,44 @@ static_assert(computeIntercept(Square::A1, Square::A8) == SquareSet { 0x01'01'01
 static_assert(computeIntercept(Square::A1, Square::H8) == SquareSet { 0x80'40'20'10'08'04'02'00U } );
 static_assert(computeIntercept(Square::A1, Square::B3) == SquareSet::square(Square::B3));
 
+
+consteval auto computeRay(Square kingSq, Square pinnedSq) noexcept
+{
+    if (kingSq == pinnedSq)
+        return SquareSet::none();
+
+    const std::int8_t dx = columnOf(pinnedSq) - columnOf(kingSq);
+    const std::int8_t dy = rowOf(pinnedSq) - rowOf(kingSq);
+
+    if (isRay(dx, dy))
+    {
+        const std::int8_t stepx = clampDifference(dx);
+        const std::int8_t stepy = clampDifference(dy);
+
+        SquareSet ray { };
+
+        std::int8_t x = columnOf(kingSq);
+        std::int8_t y = rowOf(kingSq);
+
+        while (true)
+        {
+            x += stepx;
+            y += stepy;
+
+            if (x < 0 || x >= 8 || y < 0 || y >= 8)
+                return ray;
+
+            ray |= SquareSet::square(x, y);
+        }
+    }
+    else
+    {
+        // not on the same horiz/vert/diag axis. Return empty set (will be
+        // asserted if used).
+        return SquareSet { };
+    }
+}
+
 consteval auto computeInterceptsTable() noexcept
 {
     std::array<std::array<SquareSet, 64U>, 64U> ret { };
@@ -93,8 +131,20 @@ consteval auto computeInterceptsTable() noexcept
     return ret;
 }
 
+consteval auto computeRaysFromKingTable() noexcept
+{
+    std::array<std::array<SquareSet, 64U>, 64U> ret { };
+
+    for (std::size_t kingSq { }; kingSq < 64U; ++kingSq)
+        for (std::size_t pinnedSq { }; pinnedSq < 64U; ++pinnedSq)
+            ret[kingSq][pinnedSq] = computeRay(getSquareForIndex(kingSq), getSquareForIndex(pinnedSq));
+
+    return ret;
 }
 
-const std::array<std::array<SquareSet, 64U>, 64U> Intercepts::ctInterceptsTable { computeInterceptsTable() };
+}
+
+const std::array<std::array<SquareSet, 64U>, 64U> Intercepts::s_interceptsTable { computeInterceptsTable() };
+const std::array<std::array<SquareSet, 64U>, 64U> Intercepts::s_raysFromKingTable { computeRaysFromKingTable() };
 
 }

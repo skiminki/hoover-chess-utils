@@ -29,7 +29,9 @@ namespace hoover_chess_utils::pgn_reader
 class Intercepts
 {
 private:
-    static const std::array<std::array<SquareSet, 64U>, 64U> ctInterceptsTable;
+    static const std::array<std::array<SquareSet, 64U>, 64U> s_interceptsTable;
+
+    static const std::array<std::array<SquareSet, 64U>, 64U> s_raysFromKingTable;
 
 public:
     // Returns the set of squares that intercepts a check. That is:
@@ -44,9 +46,35 @@ public:
     // 0 0 0 0 0 C 0 0
     // 0 0 0 0 0 0 0 0
     // 0 0 0 0 0 0 0 0
-    static SquareSet getInterceptSquares(Square kingSq, Square checkerSq) noexcept
+    static inline SquareSet getInterceptSquares(Square kingSq, Square checkerSq) noexcept
     {
-        return ctInterceptsTable[getIndexOfSquare(kingSq)][getIndexOfSquare(checkerSq)];
+        return s_interceptsTable[getIndexOfSquare(kingSq)][getIndexOfSquare(checkerSq)];
+    }
+
+    /// @brief Returns a ray from king square to the direction of pinned piece square.
+    ///
+    /// @param[in]  kingSq       King square
+    /// @param[in]  pinnedSq     Square of the pinned piece
+    ///
+    /// @pre (Asserted) @c kingSq &rarr; @c pinnedSq must be on the same rank, file,
+    /// diagonal, or anti-diagonal.
+    ///
+    /// The ray represents the squares that are valid for a pinned piece, as
+    /// pinned piece can only be moved along the pin axis.
+    static inline SquareSet getRay(Square kingSq, Square pinnedSq) noexcept
+    {
+        const SquareSet ray { s_raysFromKingTable[getIndexOfSquare(kingSq)][getIndexOfSquare(pinnedSq)] };
+        assert(ray != SquareSet { });
+        return ray;
+    }
+
+    template <bool pinned>
+    static inline SquareSet getPinRestiction(Square kingSq, Square pinnedSq) noexcept
+    {
+        if constexpr (pinned)
+            return getRay(kingSq, pinnedSq);
+        else
+            return SquareSet::all();
     }
 };
 
