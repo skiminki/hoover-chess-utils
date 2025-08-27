@@ -320,17 +320,7 @@ void ChessBoard::validateBoard()
     const Color turn { getTurn() };
     const Color oppositeTurn { oppositeColor(turn) };
 
-    m_checkers =
-        determineAttackers(
-            m_occupancyMask,
-            m_turnColorMask,
-            m_pawns,
-            m_knights,
-            m_bishops,
-            m_rooks,
-            m_kings,
-            m_kingSq,
-            turn);
+    determineCheckers();
 
     if (determineAttackers(
             m_occupancyMask,

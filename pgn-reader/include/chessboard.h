@@ -765,6 +765,14 @@ public:
         return m_checkers;
     }
 
+    /// @brief Returns squares occupied by absolutely pinned pieces
+    ///
+    /// @return Pinned pieces
+    inline SquareSet getPinnedPieces() const noexcept
+    {
+        return m_pinnedPieces;
+    }
+
     /// @brief Shorthand for
     /// <tt>@coderef{getCastlingRook}(@coderef{Color::WHITE}, @false)</tt>.
     ///
@@ -1143,8 +1151,13 @@ private:
 
     /// @brief Squares where there is a checker
     ///
-    /// @remark Initially set by @coderef{validateBoard()}
+    /// @remark Set by @coderef{determineCheckers()}
     SquareSet m_checkers { };
+
+    /// @brief Squares with pinned pieces
+    ///
+    /// @remark Set by @coderef{determineCheckers()}
+    SquareSet m_pinnedPieces { };
 
     /// @brief Current ply number
     ///
@@ -1183,6 +1196,11 @@ private:
     ///
     /// @sa @coderef{getCastlingRookIndex()}
     std::array<Square, 4U> m_castlingRooks { Square::A1, Square::H1, Square::A8, Square::H8 };
+
+    /// @brief Determines checkers and pinned pieces.
+    ///
+    /// This function sets @coderef{m_checkers} and @coderef{m_pinnedPieces}.
+    void determineCheckers() noexcept;
 
     /// @brief Validates the board for items that are common for both
     /// @coderef{setBoard()} and @coderef{loadFEN()} and sets @coderef{m_checkers}.
@@ -1434,6 +1452,7 @@ private:
     /// @tparam     IteratorType       Move list iterator type
     /// @tparam     type               Move generator type
     /// @tparam     legalDestinations  Parameter type for legal destinations
+    /// @tparam     pinned             Whether the piece is pinned
     /// @param[in]  i                  Move list iterator (begin of list)
     /// @param[in]  sq                 Source square
     /// @param[in]  legalDestinations  Legal destinations
@@ -1441,7 +1460,7 @@ private:
     ///                                @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE} depending
     ///                                on the piece.
     /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType>
+    template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
     IteratorType generateMovesForBishop(
         IteratorType i,
         Square sq,
@@ -1453,6 +1472,7 @@ private:
     /// @tparam     IteratorType       Move list iterator type
     /// @tparam     type               Move generator type
     /// @tparam     legalDestinations  Parameter type for legal destinations
+    /// @tparam     pinned             Whether the piece is pinned
     /// @param[in]  i                  Move list iterator (begin of list)
     /// @param[in]  sq                 Source square
     /// @param[in]  legalDestinations  Legal destinations
@@ -1460,7 +1480,7 @@ private:
     ///                                @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE} depending
     ///                                on the piece.
     /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType>
+    template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
     IteratorType generateMovesForRook(
         IteratorType i,
         Square sq,

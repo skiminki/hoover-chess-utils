@@ -74,6 +74,52 @@ bool ChessBoard::canEpCapture() const noexcept
     return false;
 }
 
+void ChessBoard::determineCheckers() noexcept
+{
+    Color turn { getTurn() };
+    const SquareSet opponentPieces { m_occupancyMask ^ m_turnColorMask };
+
+    // pawn checkers
+    m_checkers =
+        Attacks::getPawnAttackMask(m_kingSq, turn) &
+        opponentPieces & m_pawns;
+
+    // knights
+    m_checkers |= Attacks::getKnightAttackMask(m_kingSq) & opponentPieces & m_knights;
+
+    // rooks and queens
+    const SquareSet horizVertHits { Attacks::getRookAttackMask(m_kingSq, m_occupancyMask) };
+    m_checkers |= horizVertHits & opponentPieces & m_rooks;
+
+    // bishops and queens
+    const SquareSet diagHits { Attacks::getBishopAttackMask(m_kingSq, m_occupancyMask) };
+    m_checkers |= diagHits & opponentPieces & m_bishops;
+
+    // potential pinners
+    SquareSet pinners { };
+    m_pinnedPieces = SquareSet { };
+
+    // this determines pinners and checkers...
+    pinners |=
+        Attacks::getRookAttackMask(m_kingSq, m_occupancyMask &~ (horizVertHits & m_turnColorMask)) &
+        opponentPieces & m_rooks;
+
+    pinners |=
+        Attacks::getBishopAttackMask(m_kingSq, m_occupancyMask &~ (diagHits & m_turnColorMask)) &
+        opponentPieces & m_bishops;
+
+    // ... so, remove checkers here
+    pinners &= ~m_checkers;
+
+    SQUARESET_ENUMERATE(
+        pinner,
+        pinners,
+        {
+            SquareSet inBetween { Intercepts::getInterceptSquares(m_kingSq, pinner) };
+            m_pinnedPieces |= inBetween & m_turnColorMask;
+        });
+}
+
 void ChessBoard::doMove(const Move m) noexcept
 {
     Color turn { getTurn() };
@@ -280,23 +326,7 @@ void ChessBoard::doMove(const Move m) noexcept
     }
     else
     {
-        const SquareSet opponentPieces { m_occupancyMask ^ m_turnColorMask };
-
-        // pawn checkers
-        m_checkers =
-            Attacks::getPawnAttackMask(m_kingSq, oppositeColor(turn)) &
-            opponentPieces & m_pawns;
-
-        // knights
-        m_checkers |= Attacks::getKnightAttackMask(m_kingSq) & opponentPieces & m_knights;
-
-        // rooks and queens
-        const SquareSet horizVertHits { Attacks::getRookAttackMask(m_kingSq, m_occupancyMask) };
-        m_checkers |= horizVertHits & opponentPieces & m_rooks;
-
-        // bishops and queens
-        const SquareSet diagHits { Attacks::getBishopAttackMask(m_kingSq, m_occupancyMask) };
-        m_checkers |= diagHits & opponentPieces & m_bishops;
+        determineCheckers();
     }
 }
 
