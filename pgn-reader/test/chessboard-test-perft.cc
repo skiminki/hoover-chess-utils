@@ -120,6 +120,12 @@ FenPerft fenPerfts[] = {
     { "Qr2kqbr/2bpp1pp/pn3p2/2p5/6P1/P1PP4/1P2PP1P/NRNBK1BR b HBhb - 0 11", 1, 34, false },
     { "nrkb2nr/ppppp1p1/6bp/5p2/BPP1P1P1/P7/3P1P1P/qRK1BQNR w KQkq - 0 11", 1, 28, false },
     { "4k2r/6K1/8/8/8/8/8/8 w k - 0 1", 2, 32, false },
+    { "r5k1/8/8/8/8/8/P6p/K7 w - - 0 1", 1, 4, false }, // left-capturing pinned pawn, but left-capture is OOB
+    { "b1r5/1P6/5k2/8/8/8/8/7K w - - 0 1", 1, 7, false }, // pinned pawn with left promo capture
+    { "5r1b/6P1/k7/8/8/8/8/K7 w - - 0 1", 1, 7, false },  // pinned pawn with right promo capture
+    { "r3k2r/p2p1pb1/bn1qpnp1/2pPN3/1p2P3/2N2Q1p/PPP1BPPP/R1BK3R w kq c6 0 3", 1, 41, false }, // en passant vert pin
+    { "q1k5/8/8/2pP4/8/8/8/7K w - c6 0 1", 1, 4, false }, // pinned en passant pawn capturing along the pin axis
+    { "nrk1brnb/pp1ppp1p/2p5/3q1Pp1/8/PP6/1KPPP1PP/NR1QBRNB w - g6 0 10", 1, 5, true }, // en passant not possible in check
 
     // movegen coverage
     { "r2k4/1P6/8/8/8/3K4/8/8 w - - 0 1", 1, 16, false },
@@ -174,12 +180,13 @@ std::uint64_t perft(ChessBoard &board, std::uint8_t depth, bool print)
         std::size_t leafMoves { };
         if (depth > 1U)
         {
-            numLeafMoves += perft(board, depth - 1U, false);
+            leafMoves = perft(board, depth - 1U, false);
         }
         else
         {
-            ++numLeafMoves;
+            leafMoves = 1U;
         }
+
         if (print)
         {
             printf(": %zu\n", leafMoves);
@@ -187,6 +194,7 @@ std::uint64_t perft(ChessBoard &board, std::uint8_t depth, bool print)
                 board.printBoard();
         }
 
+        numLeafMoves += leafMoves;
         board = refBoard;
 
         // additional per-position checks

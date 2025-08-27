@@ -481,6 +481,16 @@ public:
         return SquareSet { std::uint64_t { 1U } << static_cast<std::uint8_t>(sq) };
     }
 
+    /// @brief Returns a set of 0 or 1 squares
+    ///
+    /// @param[in] sq      Valid square or Square::NONE
+    /// @return            The set containing @c sq, including empty set for Square::NONE
+    static constexpr inline SquareSet squareOrNone(Square sq) noexcept
+    {
+        const std::uint64_t bitToShift { sq < Square::NONE };
+        return SquareSet { std::rotl(bitToShift, static_cast<unsigned>(sq)) };
+    }
+
     /// @brief Returns a set of single square specified by column and row numbers
     ///
     /// @param[in] col    Column number of the square

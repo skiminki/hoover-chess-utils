@@ -44,6 +44,12 @@ public:
         return *this;
     }
 
+    inline LegalMoveDetectorIterator &operator += (std::uint8_t amount) noexcept
+    {
+        m_legalMoves = m_legalMoves || (amount != 0U);
+        return *this;
+    }
+
     DummyMoveIteratorDereference operator * () noexcept
     {
         return DummyMoveIteratorDereference { };
@@ -64,6 +70,12 @@ public:
     inline LegalMoveCounterIterator &operator ++() noexcept
     {
         ++m_numLegalMoves;
+        return *this;
+    }
+
+    inline LegalMoveCounterIterator &operator += (std::uint8_t amount) noexcept
+    {
+        m_numLegalMoves += amount;
         return *this;
     }
 
