@@ -142,7 +142,17 @@ SquareSet SliderAttacksGeneric::getRookAttackMask(Square sq, SquareSet occupancy
     const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
     const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
 
-    return vertAttacks | SquareSet { rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift;
+    return vertAttacks | (SquareSet { rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift);
+}
+
+SquareSet SliderAttacksGeneric::getHorizRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    // horizontal attacks
+    const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
+    const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
+    const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+
+    return SquareSet { rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift;
 }
 
 }

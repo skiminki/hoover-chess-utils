@@ -55,6 +55,16 @@ struct SideSpecificsTempl<Color::WHITE>
         return pawns << 8U;
     }
 
+    static constexpr SquareSet captureLeft(SquareSet pawns) noexcept
+    {
+        return (pawns & ~SquareSet::column(0U)) << 7U;
+    }
+
+    static constexpr SquareSet captureRight(SquareSet pawns) noexcept
+    {
+        return (pawns & ~SquareSet::column(7U)) << 9U;
+    }
+
     static constexpr Square captureLeftSq(Square sq) noexcept
     {
         assert(columnOf(sq) >= 1U);
@@ -97,6 +107,16 @@ struct SideSpecificsTempl<Color::BLACK>
     static constexpr SquareSet pawnAdvance(SquareSet pawns) noexcept
     {
         return pawns >> 8U;
+    }
+
+    static constexpr SquareSet captureLeft(SquareSet pawns) noexcept
+    {
+        return (pawns & ~SquareSet::column(0U)) >> 9U;
+    }
+
+    static constexpr SquareSet captureRight(SquareSet pawns) noexcept
+    {
+        return (pawns & ~SquareSet::column(7U)) >> 7U;
     }
 
     static constexpr Square captureLeftSq(Square sq) noexcept
@@ -217,38 +237,40 @@ auto ChessBoard::generateMovesForPawnsTempl(
 
     const SquareSet pawns { m_pawns & m_turnColorMask };
 
+    const SquareSet unpinnedPawns { m_pawns & m_turnColorMask & ~m_pinnedPieces };
+    const SquareSet pinnedPawns { m_pawns & m_turnColorMask & m_pinnedPieces };
+
     // destination squares for advancing pawns
-    const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawns) & ~m_occupancyMask };
+    const SquareSet advanceMaskUnpinned { SideSpecifics::pawnAdvance(unpinnedPawns) & ~m_occupancyMask };
 
     // destination squares for double-advancing pawns
-    const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~m_occupancyMask };
+    const SquareSet doubleAdvanceMaskUnpinned { SideSpecifics::pawnAdvance(advanceMaskUnpinned & SideSpecifics::rank3) & ~m_occupancyMask };
 
-    SQUARESET_ENUMERATE(
-        dst,
-        advanceMask & ~SideSpecifics::promoRank & legalDestinations(),
-        i = addMoveIfLegalRegular(
-            i,
-            SideSpecifics::pawnRetreatSq(dst),
+    // pawn advances for unpinned pawns
+    if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
+    {
+        SQUARESET_ENUMERATE(
             dst,
-            MoveTypeAndPromotion::REGULAR_PAWN_MOVE));
-
-    SQUARESET_ENUMERATE(
-        dst,
-        doubleAdvanceMask & legalDestinations(),
-        i = addMoveIfLegalRegular(
-            i,
-            SideSpecifics::pawnDoubleRetreatSq(dst),
-            dst,
-            MoveTypeAndPromotion::REGULAR_PAWN_MOVE));
-
-    SQUARESET_ENUMERATE(
-        dst,
-        advanceMask & SideSpecifics::promoRank & legalDestinations(),
-        {
-            const Square src { SideSpecifics::pawnRetreatSq(dst) };
-
-            if (isLegalRegularMove(src, dst))
+            advanceMaskUnpinned & ~SideSpecifics::promoRank & legalDestinations(),
             {
+                *i = Move { SideSpecifics::pawnRetreatSq(dst), dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                ++i;
+            });
+
+        SQUARESET_ENUMERATE(
+            dst,
+            doubleAdvanceMaskUnpinned & legalDestinations(),
+            {
+                *i = Move { SideSpecifics::pawnDoubleRetreatSq(dst), dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                ++i;
+            });
+
+        SQUARESET_ENUMERATE(
+            dst,
+            advanceMaskUnpinned & SideSpecifics::promoRank & legalDestinations(),
+            {
+                const Square src { SideSpecifics::pawnRetreatSq(dst) };
+
                 *i = Move { src, dst, pieceToTypeAndPromotion(Piece::QUEEN) };
                 ++i;
 
@@ -260,8 +282,15 @@ auto ChessBoard::generateMovesForPawnsTempl(
 
                 *i = Move { src, dst, pieceToTypeAndPromotion(Piece::KNIGHT) };
                 ++i;
-            }
-        });
+            });
+    }
+    else
+    {
+        i += ((advanceMaskUnpinned | doubleAdvanceMaskUnpinned) &~ SideSpecifics::promoRank & legalDestinations()).
+            popcount();
+
+        i += (advanceMaskUnpinned & SideSpecifics::promoRank & legalDestinations()).popcount() * 4U;
+    }
 
     const SquareSet oppPieces { (m_occupancyMask ^ m_turnColorMask) };
     const SquareSet leftCapturingPawns {
@@ -269,40 +298,33 @@ auto ChessBoard::generateMovesForPawnsTempl(
     const SquareSet rightCapturingPawns {
         Attacks::getPawnAttackersMask<turn, true>(oppPieces & legalDestinations()) & pawns };
 
-    // capture left
-
-    SQUARESET_ENUMERATE(
-        src,
-        leftCapturingPawns & ~SideSpecifics::rank7,
-        {
-            i = addMoveIfLegalRegular(
-                i,
-                src,
-                SideSpecifics::captureLeftSq(src),
-                MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE);
-        });
-
-    // capture right
-    SQUARESET_ENUMERATE(
-        src,
-        rightCapturingPawns & ~SideSpecifics::rank7,
-        {
-            i = addMoveIfLegalRegular(
-                i,
-                src,
-                SideSpecifics::captureRightSq(src),
-                MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE);
-        });
-
-    // capture left + promo
-    SQUARESET_ENUMERATE(
-        src,
-        leftCapturingPawns & SideSpecifics::rank7,
-        {
-            const Square dst { SideSpecifics::captureLeftSq(src) };
-
-            if (isLegalRegularMove(src, dst))
+    if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
+    {
+        // capture left
+        SQUARESET_ENUMERATE(
+            src,
+            leftCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces,
             {
+                *i = Move { src, SideSpecifics::captureLeftSq(src), MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                ++i;
+            });
+
+        // capture right
+        SQUARESET_ENUMERATE(
+            src,
+            rightCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces,
+            {
+                *i = Move { src, SideSpecifics::captureRightSq(src), MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                ++i;
+            });
+
+        // capture left + promo
+        SQUARESET_ENUMERATE(
+            src,
+            leftCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces,
+            {
+                const Square dst { SideSpecifics::captureLeftSq(src) };
+
                 *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
                 ++i;
 
@@ -314,18 +336,15 @@ auto ChessBoard::generateMovesForPawnsTempl(
 
                 *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
                 ++i;
-            }
-        });
+            });
 
-    // capture right + promo
-    SQUARESET_ENUMERATE(
-        src,
-        rightCapturingPawns & SideSpecifics::rank7,
-        {
-            const Square dst { SideSpecifics::captureRightSq(src) };
-
-            if (isLegalRegularMove(src, dst))
+        // capture right + promo
+        SQUARESET_ENUMERATE(
+            src,
+            rightCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces,
             {
+                const Square dst { SideSpecifics::captureRightSq(src) };
+
                 *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
                 ++i;
 
@@ -337,15 +356,101 @@ auto ChessBoard::generateMovesForPawnsTempl(
 
                 *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
                 ++i;
+            });
+    }
+    else
+    {
+        i += (leftCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces).popcount();
+        i += (rightCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces).popcount();
+        i += (leftCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces).popcount() * 4U;
+        i += (rightCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces).popcount() * 4U;
+    }
 
-            }
+    // pinned pawns
+    SQUARESET_ENUMERATE(
+        src,
+        pinnedPawns,
+        {
+            SquareSet pawnBit { SquareSet::square(src) };
+            const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawnBit) & ~m_occupancyMask };
+            const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~m_occupancyMask };
+
+            // advances, non-promo
+            SQUARESET_ENUMERATE(
+                dst,
+                (advanceMask | doubleAdvanceMask) & (~SideSpecifics::promoRank) &
+                Intercepts::getPinRestiction<true>(m_kingSq, src) &
+                legalDestinations(),
+                {
+                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                    ++i;
+                });
+
+            // note: pinned pawn can never promote without capture
+
+            // left-capture, non-promo
+            SQUARESET_ENUMERATE(
+                dst,
+                oppPieces & SideSpecifics::captureLeft(pawnBit) & (~SideSpecifics::promoRank) &
+                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                {
+                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                    ++i;
+                });
+
+            // left-capture, promo
+            SQUARESET_ENUMERATE(
+                dst,
+                oppPieces & SideSpecifics::captureLeft(pawnBit) & SideSpecifics::promoRank &
+                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                {
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
+                    ++i;
+
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_ROOK };
+                    ++i;
+
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_BISHOP };
+                    ++i;
+
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
+                    ++i;
+                });
+
+            // right-capture, non-promo
+            SQUARESET_ENUMERATE(
+                dst,
+                oppPieces & SideSpecifics::captureRight(pawnBit) & (~SideSpecifics::promoRank) &
+                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                {
+                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                    ++i;
+                });
+
+            // right-capture, promo
+            SQUARESET_ENUMERATE(
+                dst,
+                oppPieces & SideSpecifics::captureRight(pawnBit) & SideSpecifics::promoRank &
+                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                {
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
+                    ++i;
+
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_ROOK };
+                    ++i;
+
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_BISHOP };
+                    ++i;
+
+                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
+                    ++i;
+                });
         });
 
     // EP captures
     if (m_epSquare <= Square::H8)
     {
         const Square epPawn { SideSpecifics::pawnRetreatSq(m_epSquare) };
-
         SQUARESET_ENUMERATE(
             src,
             Attacks::getPawnAttackerMask(m_epSquare, turn) & pawns,
@@ -380,14 +485,22 @@ auto ChessBoard::generateMovesForKnight(
     //     1          0        1
     //     1          1        0
     const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
+    const SquareSet dstSquares { Attacks::getKnightAttackMask(sq) & emptyOrCapture & legalDestinations() };
 
-    SQUARESET_ENUMERATE(
-        dst,
-        Attacks::getKnightAttackMask(sq) & emptyOrCapture & legalDestinations(),
-        {
-            *i = Move { sq, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE };
-            ++i;
-        });
+    if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
+    {
+        SQUARESET_ENUMERATE(
+            dst,
+            dstSquares,
+            {
+                *i = Move { sq, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE };
+                ++i;
+            });
+    }
+    else
+    {
+        i += dstSquares.popcount();
+    }
 
     return i;
 }
@@ -401,16 +514,26 @@ auto ChessBoard::generateMovesForBishop(
 {
     const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
 
-    SQUARESET_ENUMERATE(
-        dst,
+    const SquareSet dstSquares {
         Attacks::getBishopAttackMask(sq, m_occupancyMask) &
-            emptyOrCapture &
-            Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
-            legalDestinations(),
-        {
-            *i = Move { sq, dst, typeAndPromo };
-            ++i;
-        });
+        emptyOrCapture &
+        Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
+        legalDestinations() };
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
+    {
+        SQUARESET_ENUMERATE(
+            dst,
+            dstSquares,
+            {
+                *i = Move { sq, dst, typeAndPromo };
+                ++i;
+            });
+    }
+    else
+    {
+        i += dstSquares.popcount();
+    }
 
     return i;
 }
@@ -423,17 +546,26 @@ auto ChessBoard::generateMovesForRook(
     MoveTypeAndPromotion typeAndPromo) const noexcept -> IteratorType
 {
     const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
-
-    SQUARESET_ENUMERATE(
-        dst,
+    const SquareSet dstSquares {
         Attacks::getRookAttackMask(sq, m_occupancyMask) &
-            emptyOrCapture &
-            Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
-            legalDestinations(),
-        {
-            *i = Move { sq, dst, typeAndPromo };
-            ++i;
-        });
+        emptyOrCapture &
+        Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
+        legalDestinations() };
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
+    {
+        SQUARESET_ENUMERATE(
+            dst,
+            dstSquares,
+            {
+                *i = Move { sq, dst, typeAndPromo };
+                ++i;
+            });
+    }
+    else
+    {
+        i += dstSquares.popcount();
+    }
 
     return i;
 }

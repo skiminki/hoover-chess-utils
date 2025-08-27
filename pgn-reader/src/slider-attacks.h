@@ -229,6 +229,13 @@ public:
     ///    to attack squares
     /// -# Shift the attack squares back to piece row
     static SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
+
+    /// @brief Returns horizontal rook attack mask
+    ///
+    /// @param[in]  sq             Rook square
+    /// @param[in]  occupancyMask  Set of occupied squares
+    /// @return                    Set of horizontally attacked squares
+    static SquareSet getHorizRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 };
 
 /// @ingroup PgnReaderImpl

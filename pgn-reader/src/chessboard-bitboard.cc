@@ -99,13 +99,23 @@ void ChessBoard::determineCheckers() noexcept
     SquareSet pinners { };
     m_pinnedPieces = SquareSet { };
 
+    // Pawn that can be EP-captured may be considered pinned
+    SquareSet epSquare { SquareSet::squareOrNone(m_epSquare) };
+    SquareSet epCapturable { epSquare };
+
+    static_assert(static_cast<int>(Color::WHITE) == 0);
+    static_assert(static_cast<int>(Color::BLACK) == 8);
+    epCapturable = epCapturable.rotl(static_cast<int>(turn) * 2 - 8);
+
     // this determines pinners and checkers...
     pinners |=
-        Attacks::getRookAttackMask(m_kingSq, m_occupancyMask &~ (horizVertHits & m_turnColorMask)) &
+        Attacks::getRookAttackMask(
+            m_kingSq,
+            m_occupancyMask &~ (horizVertHits & m_turnColorMask)) &
         opponentPieces & m_rooks;
 
     pinners |=
-        Attacks::getBishopAttackMask(m_kingSq, m_occupancyMask &~ (diagHits & m_turnColorMask)) &
+        Attacks::getBishopAttackMask(m_kingSq, m_occupancyMask &~ (diagHits & (m_turnColorMask | epCapturable))) &
         opponentPieces & m_bishops;
 
     // ... so, remove checkers here
@@ -116,8 +126,12 @@ void ChessBoard::determineCheckers() noexcept
         pinners,
         {
             SquareSet inBetween { Intercepts::getInterceptSquares(m_kingSq, pinner) };
-            m_pinnedPieces |= inBetween & m_turnColorMask;
+            m_pinnedPieces |= inBetween & (m_turnColorMask | epCapturable);
         });
+
+    // If EP pawn is pinned (diagonally), it can never be captured. So, we'll reset it
+    if ((m_pinnedPieces & epCapturable) != SquareSet::none())
+        m_epSquare = Square::NONE;
 }
 
 void ChessBoard::doMove(const Move m) noexcept
