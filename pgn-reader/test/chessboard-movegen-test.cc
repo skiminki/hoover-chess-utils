@@ -120,6 +120,52 @@ TEST(MoveGen, canEpCapture)
 
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::square(Square::F5), Square::E6);
     EXPECT_FALSE(board.canEpCapture());
+
+    // special cases
+    // in check but not by EP
+    board.loadFEN("1r2k3/8/8/5Pp1/8/8/1K6/8 w - g6 0 1");
+    EXPECT_FALSE(board.canEpCapture());
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // in check by EP
+    board.loadFEN("4k3/8/8/5Pp1/7K/8/8/8 w - g6 0 1");
+    EXPECT_TRUE(board.canEpCapture());
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP pawn is pinned (EP not possible)
+    board.loadFEN("3bk3/8/8/5Pp1/7K/8/8/8 w - g6 0 1");
+    EXPECT_FALSE(board.canEpCapture());
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP capture exposes king horizontally to rook
+    board.loadFEN("3bk3/8/8/1r3PpK/8/8/8/8 w - g6 0 1");
+    EXPECT_FALSE(board.canEpCapture());
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP capture, king on same rank, but not exposing to rook
+    board.loadFEN("4k3/8/8/1n1Pp2K/8/8/8/8 w - e6 0 1");
+    EXPECT_TRUE(board.canEpCapture());
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::E6);
+
+    // EP capture, two rooks (no exposure)
+    board.loadFEN("4k3/8/8/1r3Ppr/8/8/5K2/8 w - g6 0 1");
+    EXPECT_TRUE(board.canEpCapture());
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP capture, capturing pawn pinned but ok
+    board.loadFEN("4k3/7b/8/5Pp1/8/3K4/8/8 w - g6 0 1");
+    EXPECT_TRUE(board.canEpCapture());
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP capture, capturing pawn pinned but not ok
+    board.loadFEN("4k3/3b4/8/5Pp1/8/7K/8/8 w - - 0 1");
+    EXPECT_FALSE(board.canEpCapture());
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP capture, two pawns: one pinned, one not
+    board.loadFEN("4k3/3b4/8/5PpP/8/7K/8/8 w - g6 0 1");
+    EXPECT_TRUE(board.canEpCapture());
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 }
 
 TEST(MoveGen, halfMoveClock)
@@ -350,6 +396,35 @@ TEST(MoveGen, illegalMoves)
     // Knight move in check, not blocking
     board.loadFEN("1k6/6b1/8/8/8/3N4/1K6/8 w - - 0 1");
     PLAY_MOVE_EXPECT_NO_MOVES(board, KnightAndDest, SquareSet::all(), Square::F4);
+
+    // Double-check and one check is blocked
+    board.loadFEN("k7/8/6b1/1r6/8/8/8/1KN5 w - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, KnightAndDest, SquareSet::all(), Square::B3);
+    PLAY_MOVE_EXPECT_NO_MOVES(board, KnightAndDest, SquareSet::all(), Square::D3);
+
+    // Pinned knight
+    board.loadFEN("7k/8/6b1/8/4N3/3K4/8/8 b - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, BishopAndDest, SquareSet::all(), Square::G3);
+
+    // Pinned bishop
+    board.loadFEN("7k/8/6b1/8/4B3/3K4/8/8 b - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, BishopAndDest, SquareSet::all(), Square::F3);
+
+    // Pinned rook
+    board.loadFEN("7k/8/6b1/8/4R3/3K4/8/8 b - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, RookAndDest, SquareSet::all(), Square::E3);
+
+    // Pinned queen
+    board.loadFEN("7k/8/6b1/8/4Q3/3K4/8/8 b - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, QueenAndDest, SquareSet::all(), Square::E3);
+
+    // Short castling over checked squares
+    board.loadFEN("2k5/8/8/8/2b5/8/8/4K2R w K - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, ShortCastling);
+
+    // Long castling over checked squares
+    board.loadFEN("2k5/8/8/8/6b1/8/8/R3K3 w Q - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, LongCastling);
 }
 
 // cases not covered by other tests
@@ -447,6 +522,88 @@ TEST(MoveGen, specialCases)
     // only queen can move (rook-like) (no check)
     board.loadFEN("8/8/8/1p5k/1P6/1P6/QP6/KN5r w - - 0 1");
     EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // only a pinned pawn can advance
+    board.loadFEN("k5rr/8/8/8/8/8/7P/7K w - - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // only a pinned EP capture is possible
+    board.loadFEN("k5r1/1b6/8/2pP4/8/8/5r2/7K w - c6 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // pinned EP capture, not possible
+    board.loadFEN("k5r1/1b6/8/3Pp3/8/8/5r2/7K w - - 0 1");
+    EXPECT_EQ(PositionStatus::STALEMATE, board.determineStatus());
+
+    // white has castling rights (short) but is stalemated
+    board.loadFEN("k7/8/8/8/5p1p/4pP1P/3nPn1P/4K1NR w K - 0 1");
+    EXPECT_EQ(PositionStatus::STALEMATE, board.determineStatus());
+
+    // white short castling is the only move
+    board.loadFEN("2k5/8/8/1b6/8/5p1p/5P1P/6KR w K - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // white has castling rights (long) but is stalemated
+    board.loadFEN("k7/8/8/8/p1p1p2p/P1PpP1pP/Pn1P1nb1/RN2K3 w Q - 0 1");
+    EXPECT_EQ(PositionStatus::STALEMATE, board.determineStatus());
+
+    // white has castling rights (long) but is stalemated 2
+    board.loadFEN("2k5/8/8/6b1/8/p1p5/P1P5/RK6 w Q - 0 1");
+    EXPECT_EQ(PositionStatus::STALEMATE, board.determineStatus());
+
+    // white long castling is the only move
+    board.loadFEN("2k5/4r3/8/8/8/p1p5/P1P5/1BRK4 w Q - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // Pinned bishop only moves
+    board.loadFEN("2k5/8/8/3bbb2/8/8/1B6/K7 w - - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // Pinned queen only moves
+    board.loadFEN("2k5/8/8/3bbb2/8/8/1Q6/K7 w - - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // Pinned rook only moves
+    board.loadFEN("rrk5/8/8/8/8/8/R7/K7 w - - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+
+    // Pinned queen only moves
+    board.loadFEN("rrk5/8/8/8/8/8/Q7/K7 w - - 0 1");
+    EXPECT_EQ(PositionStatus::NORMAL, board.determineStatus());
+}
+
+// successful moves by pinned pieces
+TEST(MoveGen, pinnedPieceMoves)
+{
+    ChessBoard board { };
+
+    // bishop pinned, moving along pin
+    board.loadFEN("7k/8/6b1/8/4B3/3K4/8/8 w - - 0 1");
+    PLAY_MOVE(board, BishopAndDest, SquareSet::all(), Square::F5);
+
+    // rook pinned, moving along pin
+    board.loadFEN("4k3/4r3/8/8/4R3/4K3/8/8 w - - 0 1");
+    PLAY_MOVE(board, RookAndDest, SquareSet::all(), Square::E7);
+
+    // queen pinned, moving along pin
+    board.loadFEN("7k/8/6b1/8/4Q3/3K4/8/8 w - - 0 1");
+    PLAY_MOVE(board, QueenAndDest, SquareSet::all(), Square::F5);
+
+    // two bishops, one pinned, only one can move to specified square
+    board.loadFEN("4k3/b7/8/8/3B1B2/4K3/8/8 w - - 0 1");
+    PLAY_MOVE(board, BishopAndDest, SquareSet::all(), Square::E5);
+
+    // two rooks, one pinned, only one can move to specified square
+    board.loadFEN("4k3/b7/8/8/3R1R2/4K3/8/8 w - - 0 1");
+    PLAY_MOVE(board, RookAndDest, SquareSet::all(), Square::E4);
+
+    // two queens, one pinned, only one can move to specified square
+    board.loadFEN("4k3/b7/8/8/3Q1Q2/4K3/8/8 w - - 0 1");
+    PLAY_MOVE(board, QueenAndDest, SquareSet::all(), Square::E5);
+
+    // two pawns, one pinned, only one can move to specified square
+    board.loadFEN("4k3/b7/8/4r3/3P1P2/4K3/8/8 w - - 0 1");
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::E5);
 }
 
 // cases not covered by other tests
