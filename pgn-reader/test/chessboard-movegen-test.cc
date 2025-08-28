@@ -346,6 +346,10 @@ TEST(MoveGen, illegalMoves)
     // King capturing own piece
     board.loadFEN("1k6/8/8/8/8/4P3/4K3/8 w - - 0 1");
     PLAY_MOVE_EXPECT_NO_MOVES(board, KingAndDest, SquareSet::all(), Square::E3);
+
+    // Knight move in check, not blocking
+    board.loadFEN("1k6/6b1/8/8/8/3N4/1K6/8 w - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, KnightAndDest, SquareSet::all(), Square::F4);
 }
 
 // cases not covered by other tests

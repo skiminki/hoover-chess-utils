@@ -628,24 +628,25 @@ auto ChessBoard::generateMovesForCastling(
         (kingPathHalfOpen | rookPathHalfOpen | SquareSet::square(sqKingTarget) | SquareSet::square(sqRookTarget)) &
         ~(SquareSet::square(sqKing) | SquareSet::square(sqRook)) };
 
-    if ((requiredEmptySquares & m_occupancyMask) != SquareSet::none())
+    // All squares between king and rook are empty? Also, check that the
+    // castling rook is not pinned.
+    if (((requiredEmptySquares & m_occupancyMask) |
+         (SquareSet::square(sqRook) & m_pinnedPieces)) != SquareSet::none())
         return i;
 
-    // The king's initial square does not need to be checked, since the king
-    // cannot be checked when we enter this function. However, the final square
-    // must be checked even when the king doesn't move (FRC), since it's
-    // possible that the rook was pinned.
-    SquareSet sqMask { (kingPathHalfOpen & ~SquareSet::square(sqKing)) | SquareSet::square(sqKingTarget) };
+    // Note: The king's initial square does not need to be checked, since the king
+    // cannot be in check when we enter this function.
+    SquareSet sqMask { (kingPathHalfOpen | SquareSet::square(sqKingTarget)) &~ SquareSet::square(sqKing) };
 
     SQUARESET_ENUMERATE(
         sq, sqMask,
         if (determineAttackers(
-                m_occupancyMask & (~SquareSet::square(sqRook)),
+                m_occupancyMask,
                 m_turnColorMask,
                 m_pawns,
                 m_knights,
                 m_bishops,
-                m_rooks & (~SquareSet::square(sqRook)),
+                m_rooks,
                 m_kings,
                 sq,
                 turn) != SquareSet::none())
