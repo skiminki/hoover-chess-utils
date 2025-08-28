@@ -114,6 +114,35 @@ FenPerft fenPerfts[] = {
     { "rr2k1rr/2pppp2/1p4p1/p6p/P6P/1P4P1/2PPPP2/RR1K2RR w GBgb - 1 1", 1, 23, false},
     { "rr2k1rr/2pppp2/1p4p1/p6p/P6P/1P4P1/2PPPP2/RR1K2RR b GBgb - 1 1", 1, 23, false},
 
+    // movegen coverage
+    { "r2k4/1P6/8/8/8/3K4/8/8 w - - 0 1", 1, 16, false },
+    { "8/3k4/8/8/8/8/1p6/R2K4 b - - 0 1", 1, 16, false },
+    { "8/3k4/8/8/3p4/2R1R3/8/3K4 b - - 0 1", 1, 5, false },
+    { "k7/8/8/8/8/8/r2PKP2/8 w - - 0 1", 1, 8, false },
+    { "4n3/r2PKP1r/8/8/4k3/8/8/8 w - - 0 1", 1, 4, false },
+    { "2k5/2b5/8/8/8/7P/r1P3PK/6NR w - - 0 1", 1, 1, false }, // pawn move blocks a check
+    { "2k5/2b5/8/8/8/7P/r1P2BBK/6NR w - - 0 1", 1, 1, false }, // bishop move blocks a check
+    { "2k5/2b5/8/8/8/7P/r1P2RBK/6NR w - - 0 1", 1, 1, false }, // rook move blocks a check
+    { "8/8/8/8/1p2k1p1/pPb1PpPp/P1P2P1P/RB3KBN w - - 0 1", 1, 0, false }, // stalemate, no moves
+    { "8/8/8/8/4k1p1/4PpPp/4nP1P/3Q1NKN w - - 0 1", 1, 1, false }, // in check, queen must move
+    { "3bk3/8/8/1r3PpK/8/8/8/8 w - g6 0 1", 1, 4, false }, // EP capture exposes king horizontally to rook
+    { "4k3/8/8/1n1Pp2K/8/8/8/8 w - e6 0 1", 1, 7, false }, // EP capture, king on same rank, but not exposing to rook
+    { "b1b1b1b1/1P3P2/8/3K4/8/8/7k/8 w - - 0 1", 1, 14, false }, // pinned promoting pawns (white to move)
+    { "8/8/8/8/8/1b1b1b2/2PPP2k/3K4 w - - 0 1", 1, 4, false }, // pinned capturing pawns (white to move)
+    { "3r4/8/8/8/8/3P4/n1PKP1rk/8 w - - 0 1", 1, 6, false }, // pinned advancing pawns (white to move)
+    { "8/7K/8/8/3k4/8/1p3p2/Q1Q1Q1Q1 b - - 0 1", 1, 10, false }, // pinned promoting pawns (black to move)
+    { "8/7K/8/3k4/8/1p3p2/Q1Q1Q1Q1/8 b - - 0 1", 1, 4, false }, // pinned capturing pawns (black to move)
+    { "8/Q1pkp2K/3p4/8/8/8/8/3Q4 b - - 0 1", 1, 8, false }, // pinned advancing pawns (black to move)
+    { "5r2/8/4n3/5P2/5K2/8/8/7k w - - 0 1", 1, 6, false }, // pinned pawn cannot capture checker (knight)
+    { "5r2/8/8/4pP2/5K2/8/8/7k w - - 0 1", 1, 7, false }, // pinned pawn cannot EP-capture
+    { "5r2/8/8/3PpP2/5K2/8/8/7k w - e6 0 1", 1, 8, false }, // EP-checked, two EP capturers, one pinned (white to move)
+    { "8/K7/8/5k2/3pPp2/8/8/5R2 b - e3 0 1", 1, 8, false }, // EP-checked, two EP capturers, one pinned (black to move)
+    { "b3k3/8/8/3PpP2/4K3/8/8/8 w - e6 0 1", 1, 6, false }, // two EP captures, but one is pinned (white to move)
+    { "2k5/8/8/6b1/8/8/3B4/2K5 w - - 0 1", 1, 7, false }, // pinned bishop
+    { "2k5/8/8/6b1/8/8/3Q4/2K5 w - - 0 1", 1, 7, false }, // pinned queen
+    { "2k5/2r5/8/8/8/8/2R5/2K5 w - - 0 1", 1, 9, false }, // pinned rook
+    { "2k5/2r5/8/8/8/8/2Q5/2K5 w - - 0 1", 1, 9, false }, // pinned queen
+
     // regressions
     { "rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1", 1, 20, false },
     { "1R6/P1R2nq1/8/4p1k1/4P3/1P6/1KP1r1p1/6n1 w - - 0 109", 1, 31, false },
@@ -128,19 +157,10 @@ FenPerft fenPerfts[] = {
     { "5r1b/6P1/k7/8/8/8/8/K7 w - - 0 1", 1, 7, false },  // pinned pawn with right promo capture
     { "r3k2r/p2p1pb1/bn1qpnp1/2pPN3/1p2P3/2N2Q1p/PPP1BPPP/R1BK3R w kq c6 0 3", 1, 41, false }, // en passant vert pin
     { "q1k5/8/8/2pP4/8/8/8/7K w - c6 0 1", 1, 4, false }, // pinned en passant pawn capturing along the pin axis
-    { "nrk1brnb/pp1ppp1p/2p5/3q1Pp1/8/PP6/1KPPP1PP/NR1QBRNB w - g6 0 10", 1, 5, true }, // en passant not possible in check
+    { "nrk1brnb/pp1ppp1p/2p5/3q1Pp1/8/PP6/1KPPP1PP/NR1QBRNB w - g6 0 10", 1, 5, false }, // en passant not possible in check
+    { "rkb1rbnq/1pppp1pp/5p2/p7/7P/BPNn2P1/P1PPPP2/RK2RBNQ w KQkq - 2 10", 1, 34, false }, // FRC long castling into check
+    { "nrbkqbrn/1pppp2p/8/5p2/PR2PpQ1/8/2PP2PP/N1BK1BRN b Kkq e3 0 11", 1, 26, true },
 
-    // movegen coverage
-    { "r2k4/1P6/8/8/8/3K4/8/8 w - - 0 1", 1, 16, false },
-    { "8/3k4/8/8/8/8/1p6/R2K4 b - - 0 1", 1, 16, false },
-    { "8/3k4/8/8/3p4/2R1R3/8/3K4 b - - 0 1", 1, 5, false },
-    { "k7/8/8/8/8/8/r2PKP2/8 w - - 0 1", 1, 8, false },
-    { "4n3/r2PKP1r/8/8/4k3/8/8/8 w - - 0 1", 1, 4, false },
-    { "2k5/2b5/8/8/8/7P/r1P3PK/6NR w - - 0 1", 1, 1, false }, // pawn move blocks a check
-    { "2k5/2b5/8/8/8/7P/r1P2BBK/6NR w - - 0 1", 1, 1, false }, // bishop move blocks a check
-    { "2k5/2b5/8/8/8/7P/r1P2RBK/6NR w - - 0 1", 1, 1, false }, // rook move blocks a check
-    { "8/8/8/8/1p2k1p1/pPb1PpPp/P1P2P1P/RB3KBN w - - 0 1", 1, 0, false }, // stalemate, no moves
-    { "8/8/8/8/4k1p1/4PpPp/4nP1P/3Q1NKN w - - 0 1", 1, 1, false }, // in check, queen must move
 };
 
 void printMove(ChessBoard::Move move)

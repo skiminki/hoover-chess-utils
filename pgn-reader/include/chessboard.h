@@ -1319,12 +1319,8 @@ private:
         Square dst,
         Piece promo) const noexcept;
 
-    template <typename IteratorType>
-    IteratorType addMoveIfLegalEp(
-        IteratorType i,
-        Square src,
-        Square dst,
-        Square ep) const noexcept;
+    inline SquareSet blocksAllChecksMask(Square dst) const noexcept;
+    inline bool pinCheck(Square src, Square dst) const noexcept;
 
     /// @brief Move generator type
     enum class MoveGenType : std::uint8_t
@@ -1576,8 +1572,6 @@ private:
     IteratorType generateMovesForQueenAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
 
     bool isLegalKingMove(Square src, Square dst, Color turn) const noexcept;
-    bool isLegalRegularMove(Square src, Square dst) const noexcept;
-    bool isLegalEpMove(Square src, Square dst, Square ep) const noexcept;
 
     void calculateMasks(const ArrayBoard &board) noexcept;
 };

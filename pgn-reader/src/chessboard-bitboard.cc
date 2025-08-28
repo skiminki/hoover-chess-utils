@@ -60,15 +60,31 @@ bool ChessBoard::canEpCapture() const noexcept
         static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
         const Color turn { getTurn() };
-
         const int retractOneAdd { -8 + (2 * static_cast<int>(turn)) }; // pawn step backwards
-        const Square retractOne { static_cast<std::uint8_t>(static_cast<unsigned>(m_epSquare) + retractOneAdd) };
+        const Square epPawn { addToSquareNoOverflowCheck(m_epSquare, retractOneAdd) };
+
+        SquareSet checkResolvedOk { (m_checkers &~ SquareSet::square(epPawn)).allIfNone() };
 
         SQUARESET_ENUMERATE(
-            sq,
+            src,
+            checkResolvedOk &
             m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(m_epSquare, turn),
-            if (isLegalEpMove(sq, m_epSquare, retractOne))
-                return true);
+            {
+                const SquareSet exposedHorizLine {
+                    SliderAttacksGeneric::getHorizRookAttackMask(
+                        epPawn,
+                        m_occupancyMask &~ SquareSet::square(src)) };
+
+                const SquareSet kingBit { m_kings & m_turnColorMask };
+                const SquareSet oppRooks { m_rooks & ~m_turnColorMask };
+
+                if (pinCheck(src, m_epSquare) &&
+                    ((kingBit & exposedHorizLine) == SquareSet::none() ||
+                     (oppRooks & exposedHorizLine) == SquareSet::none()))
+                {
+                    return true;
+                }
+            });
     }
 
     return false;

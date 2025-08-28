@@ -163,6 +163,33 @@ struct CastlingSideSpecificsTempl<true>
     static constexpr std::uint8_t rookTargetColumn { 5U };
 };
 
+SquareSet ChessBoard::blocksAllChecksMask(Square dst) const noexcept
+{
+    const auto numCheckers { m_checkers.popcount() };
+
+    if (numCheckers == 0U) [[likely]]
+    {
+        return SquareSet::all();
+    }
+    else if (numCheckers == 1U)
+    {
+        // do we intercept/capture the check?
+        return
+            (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
+    }
+
+    // a single move can never block a double-check
+    return SquareSet::none();
+}
+
+bool ChessBoard::pinCheck(Square src, Square dst) const noexcept
+{
+    const SquareSet srcBit { SquareSet::square(src) };
+    const SquareSet dstBit { SquareSet::square(dst) };
+
+    return ((m_pinnedPieces & srcBit) == SquareSet::none() ||
+            (Intercepts::getPinRestiction<true>(m_kingSq, src) & dstBit) != SquareSet::none());
+}
 
 
 template <typename IteratorType>
@@ -174,54 +201,6 @@ IteratorType ChessBoard::addMoveIfLegalKing(
     if (isLegalKingMove(src, dst, getTurn()))
     {
         *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
-        ++i;
-    }
-
-    return i;
-}
-
-template <typename IteratorType>
-IteratorType ChessBoard::addMoveIfLegalRegular(
-    IteratorType i,
-    Square src,
-    Square dst,
-    MoveTypeAndPromotion typeAndPromo) const noexcept
-{
-    if (isLegalRegularMove(src, dst))
-    {
-        *i = Move { src, dst, typeAndPromo };
-        ++i;
-    }
-
-    return i;
-}
-
-template <typename IteratorType>
-IteratorType ChessBoard::addMoveIfLegalPromo(
-    IteratorType i,
-    Square src,
-    Square dst,
-    Piece promo) const noexcept
-{
-    if (isLegalRegularMove(src, dst))
-    {
-        *i = Move { src, dst, pieceToTypeAndPromotion(promo) };
-        ++i;
-    }
-
-    return i;
-}
-
-template <typename IteratorType>
-IteratorType ChessBoard::addMoveIfLegalEp(
-    IteratorType i,
-    Square src,
-    Square dst,
-    Square ep) const noexcept
-{
-    if (isLegalEpMove(src, dst, ep))
-    {
-        *i = Move { src, dst, MoveTypeAndPromotion::EN_PASSANT };
         ++i;
     }
 
@@ -367,95 +346,127 @@ auto ChessBoard::generateMovesForPawnsTempl(
     }
 
     // pinned pawns
-    SQUARESET_ENUMERATE(
-        src,
-        pinnedPawns,
-        {
-            SquareSet pawnBit { SquareSet::square(src) };
-            const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawnBit) & ~m_occupancyMask };
-            const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~m_occupancyMask };
+    // note: pinned pawns can never resolve a check
+    if constexpr (type == MoveGenType::NO_CHECK)
+    {
+        SQUARESET_ENUMERATE(
+            src,
+            pinnedPawns,
+            {
+                SquareSet pawnBit { SquareSet::square(src) };
+                const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawnBit) & ~m_occupancyMask };
+                const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~m_occupancyMask };
 
-            // advances, non-promo
-            SQUARESET_ENUMERATE(
-                dst,
-                (advanceMask | doubleAdvanceMask) & (~SideSpecifics::promoRank) &
-                Intercepts::getPinRestiction<true>(m_kingSq, src) &
-                legalDestinations(),
-                {
-                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-                    ++i;
-                });
+                // advances, non-promo
+                SQUARESET_ENUMERATE(
+                    dst,
+                    (advanceMask | doubleAdvanceMask) & (~SideSpecifics::promoRank) &
+                    Intercepts::getPinRestiction<true>(m_kingSq, src) &
+                    legalDestinations(),
+                    {
+                        *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                        ++i;
+                    });
 
-            // note: pinned pawn can never promote without capture
+                // note: pinned pawn can never promote without capture
 
-            // left-capture, non-promo
-            SQUARESET_ENUMERATE(
-                dst,
-                oppPieces & SideSpecifics::captureLeft(pawnBit) & (~SideSpecifics::promoRank) &
-                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
-                {
-                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-                    ++i;
-                });
+                // left-capture, non-promo
+                SQUARESET_ENUMERATE(
+                    dst,
+                    oppPieces & SideSpecifics::captureLeft(pawnBit) & (~SideSpecifics::promoRank) &
+                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    {
+                        *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                        ++i;
+                    });
 
-            // left-capture, promo
-            SQUARESET_ENUMERATE(
-                dst,
-                oppPieces & SideSpecifics::captureLeft(pawnBit) & SideSpecifics::promoRank &
-                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
-                {
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
-                    ++i;
+                // left-capture, promo
+                SQUARESET_ENUMERATE(
+                    dst,
+                    oppPieces & SideSpecifics::captureLeft(pawnBit) & SideSpecifics::promoRank &
+                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    {
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
+                        ++i;
 
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_ROOK };
-                    ++i;
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_ROOK };
+                        ++i;
 
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_BISHOP };
-                    ++i;
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_BISHOP };
+                        ++i;
 
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
-                    ++i;
-                });
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
+                        ++i;
+                    });
 
-            // right-capture, non-promo
-            SQUARESET_ENUMERATE(
-                dst,
-                oppPieces & SideSpecifics::captureRight(pawnBit) & (~SideSpecifics::promoRank) &
-                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
-                {
-                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-                    ++i;
-                });
+                // right-capture, non-promo
+                SQUARESET_ENUMERATE(
+                    dst,
+                    oppPieces & SideSpecifics::captureRight(pawnBit) & (~SideSpecifics::promoRank) &
+                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    {
+                        *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+                        ++i;
+                    });
 
-            // right-capture, promo
-            SQUARESET_ENUMERATE(
-                dst,
-                oppPieces & SideSpecifics::captureRight(pawnBit) & SideSpecifics::promoRank &
-                Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
-                {
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
-                    ++i;
+                // right-capture, promo
+                SQUARESET_ENUMERATE(
+                    dst,
+                    oppPieces & SideSpecifics::captureRight(pawnBit) & SideSpecifics::promoRank &
+                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    {
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
+                        ++i;
 
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_ROOK };
-                    ++i;
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_ROOK };
+                        ++i;
 
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_BISHOP };
-                    ++i;
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_BISHOP };
+                        ++i;
 
-                    *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
-                    ++i;
-                });
-        });
+                        *i = Move { src, dst, MoveTypeAndPromotion::PROMO_KNIGHT };
+                        ++i;
+                    });
+            });
+    }
 
-    // EP captures
+    // EP captures, incl. pinned
     if (m_epSquare <= Square::H8)
     {
         const Square epPawn { SideSpecifics::pawnRetreatSq(m_epSquare) };
+        SquareSet checkResolvedOk;
+
+        if constexpr (type == MoveGenType::CHECK)
+        {
+            // single check is resolved if we're capturing the checker
+            checkResolvedOk = (SquareSet::square(epPawn) & m_checkers).allIfAny();
+        }
+        else
+        {
+            static_assert(type == MoveGenType::NO_CHECK);
+            checkResolvedOk = SquareSet::all();
+        }
+
         SQUARESET_ENUMERATE(
             src,
+            checkResolvedOk &
             Attacks::getPawnAttackerMask(m_epSquare, turn) & pawns,
             {
-                i = addMoveIfLegalEp(i, Square { src }, m_epSquare, epPawn);
+                const SquareSet exposedHorizLine {
+                    SliderAttacksGeneric::getHorizRookAttackMask(
+                        epPawn,
+                        m_occupancyMask &~ SquareSet::square(src)) };
+
+                const SquareSet kingBit { m_kings & m_turnColorMask };
+                const SquareSet oppRooks { m_rooks & ~m_turnColorMask };
+
+                if (pinCheck(src, m_epSquare) &&
+                    ((kingBit & exposedHorizLine).allIfNone() |
+                     (oppRooks & exposedHorizLine).allIfNone()) == SquareSet::all())
+                {
+                    *i = Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT };
+                    ++i;
+                }
             });
     }
 
@@ -708,17 +719,21 @@ IteratorType ChessBoard::generateMovesTempl(
                 i = generateMovesForBishop<IteratorType, type, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
             });
 
-        SQUARESET_ENUMERATE(
-            sq,
-            m_bishops & m_turnColorMask & m_pinnedPieces,
-            {
-                const MoveTypeAndPromotion typeAndPromo {
-                    (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
-                    MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
-                    MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
-                };
-                i = generateMovesForBishop<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
-            });
+        // pinned pieces cannot resolve checks
+        if constexpr (type == MoveGenType::NO_CHECK)
+        {
+            SQUARESET_ENUMERATE(
+                sq,
+                m_bishops & m_turnColorMask & m_pinnedPieces,
+                {
+                    const MoveTypeAndPromotion typeAndPromo {
+                        (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                        MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                        MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
+                    };
+                    i = generateMovesForBishop<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
+                });
+        }
 
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
             if (i.hasLegalMoves())
@@ -736,17 +751,21 @@ IteratorType ChessBoard::generateMovesTempl(
                 i = generateMovesForRook<IteratorType, type, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
             });
 
-        SQUARESET_ENUMERATE(
-            sq,
-            m_rooks & m_turnColorMask & m_pinnedPieces,
-            {
-                const MoveTypeAndPromotion typeAndPromo {
-                    (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
-                    MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
-                    MoveTypeAndPromotion::REGULAR_ROOK_MOVE
-                };
-                i = generateMovesForRook<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
-            });
+        // pinned pieces cannot resolve checks
+        if constexpr (type == MoveGenType::NO_CHECK)
+        {
+            SQUARESET_ENUMERATE(
+                sq,
+                m_rooks & m_turnColorMask & m_pinnedPieces,
+                {
+                    const MoveTypeAndPromotion typeAndPromo {
+                        (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                        MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                        MoveTypeAndPromotion::REGULAR_ROOK_MOVE
+                    };
+                    i = generateMovesForRook<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
+                });
+        }
 
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
             if (i.hasLegalMoves())

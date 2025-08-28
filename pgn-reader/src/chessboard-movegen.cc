@@ -85,55 +85,6 @@ bool ChessBoard::isLegalKingMove(const Square src, const Square dst, const Color
         turn) == SquareSet::none();
 }
 
-bool ChessBoard::isLegalRegularMove(const Square src, const Square dst) const noexcept
-{
-    const SquareSet dstBit { SquareSet::square(dst) };
-
-    // check if there are any checkers that weren't captured and can't be blocked (knights, pawns)
-    SquareSet checkers { m_checkers & ~(dstBit | m_rooks | m_bishops) };
-    if (checkers != SquareSet::none())
-        return false;
-
-    // update occupancy and turn color mask as per the move
-    const SquareSet occupancyMask { (m_occupancyMask | dstBit) & (~SquareSet::square(src)) };
-    const SquareSet turnColorMask { m_turnColorMask | dstBit };
-    const SquareSet opponentPieces { occupancyMask & ~turnColorMask };
-
-    // now check if any slider checkers remain (all blocked, none revealed)
-    if ((((Attacks::getRookAttackMask(m_kingSq, occupancyMask) & m_rooks) |
-          (Attacks::getBishopAttackMask(m_kingSq, occupancyMask) & m_bishops)) & opponentPieces)
-        != SquareSet::none())
-        return false;
-
-    // ok, the move is legal
-    return true;
-}
-
-bool ChessBoard::isLegalEpMove(const Square src, const Square dst, const Square ep) const noexcept
-{
-    const SquareSet dstBit { SquareSet::square(dst) };
-
-    // NOTE: the only non-slider checker we can have is the EP pawn itself. The
-    // last move was necessarily a pawn move, so only that pawn and exposed
-    // sliders can check (but no other pawns or knights)
-    if ((m_checkers & ~SquareSet::square(ep)) != SquareSet::none())
-        return false;
-
-    // update occupancy and turn color mask as per the move
-    const SquareSet occupancyMask { (m_occupancyMask | dstBit) & (~(SquareSet::square(src) | SquareSet::square(ep))) };
-    const SquareSet turnColorMask { m_turnColorMask | dstBit };
-    const SquareSet opponentPieces { occupancyMask & ~turnColorMask };
-
-    // now check if any slider checkers remain (all blocked, none revealed)
-    if ((((Attacks::getRookAttackMask(m_kingSq, occupancyMask) & m_rooks) |
-          (Attacks::getBishopAttackMask(m_kingSq, occupancyMask) & m_bishops)) & opponentPieces)
-        != SquareSet::none())
-        return false;
-
-    // ok, the move is legal
-    return true;
-}
-
 std::size_t ChessBoard::generateMoves(MoveList &moves) const noexcept
 {
     const MoveList::iterator i { generateMovesIteratorTempl(moves.begin()) };
@@ -147,49 +98,30 @@ ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestNoCapture(SquareSet
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
     const Color turn { getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
 
     const SquareSet allowedDstSqMask {
         (SquareSet::row(2U) | SquareSet::row(3U) | SquareSet::row(4U) | SquareSet::row(5U) | SquareSet::row(6U))
         >> static_cast<std::uint8_t>(turn) };
 
-    // is destination allowed and empty square
-    if ((dstSqBit & allowedDstSqMask & ~m_occupancyMask) != SquareSet::none())
+    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
+
+    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
+
+    const SquareSet doubleAdvancingPawnSquare {
+        (singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
+
+    const SquareSet advancingPawn {
+        (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
+        m_pawns & m_turnColorMask & srcSqMask };
+
+    if (advancingPawn != SquareSet::none()) [[likely]]
     {
-        const int retractOneAdd { turn == Color::WHITE ? -8 : 8 }; // pawn step backwards
-        const Square retractOne { addToSquareNoOverflowCheck(dst, retractOneAdd) };
-
-        // is source allowed and our pawn?
-        if ((srcSqMask & m_pawns & SquareSet::square(retractOne) & m_turnColorMask) != SquareSet::none())
+        Square src { advancingPawn.firstSquare() };
+        if (pinCheck(src, dst)) [[likely]]
         {
-            if (isLegalRegularMove(retractOne, dst))
-            {
-                return Move { retractOne, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-            }
-
-            return Move::illegalNoMove();
+            return Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
         }
-
-        // ok, maybe it's a double pawn move
-        const Square retractTwo { addToSquareNoOverflowCheck(retractOne, retractOneAdd) };
-        const SquareSet powRow1 { turn == Color::WHITE ? SquareSet::row(1U) : SquareSet::row(6U) };
-
-        if (
-            // is source allowed, on 2nd rank (point of view), our pawn?
-            ((srcSqMask & m_pawns & SquareSet::square(retractTwo) & powRow1 & m_turnColorMask) != SquareSet::none()) &&
-
-            // is the square on 3rd rank empty?
-            ((SquareSet::square(retractOne) & m_occupancyMask) == SquareSet::none())
-            )
-        {
-            if (isLegalRegularMove(retractTwo, dst))
-            {
-                return Move { retractTwo, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-            }
-
-            return Move::illegalNoMove();
-        }
-
     }
 
     return Move::illegalNoMove();
@@ -202,51 +134,31 @@ std::size_t ChessBoard::generateMovesForPawnAndDestNoCapture(ShortMoveList &move
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
     const Color turn { getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
 
     const SquareSet allowedDstSqMask {
         (SquareSet::row(2U) | SquareSet::row(3U) | SquareSet::row(4U) | SquareSet::row(5U) | SquareSet::row(6U))
         >> static_cast<std::uint8_t>(turn) };
 
-    // is destination allowed and empty square
-    if ((dstSqBit & allowedDstSqMask & ~m_occupancyMask) != SquareSet::none())
+    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
+
+    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
+
+    const SquareSet doubleAdvancingPawnSquare {
+        (singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
+
+    const SquareSet advancingPawn {
+        (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
+        m_pawns & m_turnColorMask & srcSqMask };
+
+    if (advancingPawn != SquareSet::none()) [[likely]]
     {
-        const int retractOneAdd { turn == Color::WHITE ? -8 : 8 }; // pawn step backwards
-        const Square retractOne { addToSquareNoOverflowCheck(dst, retractOneAdd) };
-
-        // is source allowed and our pawn?
-        if ((srcSqMask & m_pawns & SquareSet::square(retractOne) & m_turnColorMask) != SquareSet::none())
+        Square src { advancingPawn.firstSquare() };
+        if (pinCheck(src, dst)) [[likely]]
         {
-            if (isLegalRegularMove(retractOne, dst))
-            {
-                moves[0] = Move { retractOne, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-                return 1U;
-            }
-
-            return 0U;
+            moves[0U] = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+            return 1U;
         }
-
-        // ok, maybe it's a double pawn move
-        const Square retractTwo { addToSquareNoOverflowCheck(retractOne, retractOneAdd) };
-        const SquareSet powRow1 { turn == Color::WHITE ? SquareSet::row(1U) : SquareSet::row(6U) };
-
-        if (
-            // is source allowed, on 2nd rank (point of view), our pawn?
-            ((srcSqMask & m_pawns & SquareSet::square(retractTwo) & powRow1 & m_turnColorMask) != SquareSet::none()) &&
-
-            // is the square on 3rd rank empty?
-            ((SquareSet::square(retractOne) & m_occupancyMask) == SquareSet::none())
-            )
-        {
-            if (isLegalRegularMove(retractTwo, dst))
-            {
-                moves[0] = Move { retractTwo, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-                return 1U;
-            }
-
-            return 0U;
-        }
-
     }
 
     return 0U;
@@ -261,28 +173,54 @@ IteratorType ChessBoard::generateMovesForPawnAndDestCaptureTempl(IteratorType i,
 
     const Color turn { getTurn() };
 
-    if (dst != m_epSquare)
+    if (dst != m_epSquare) [[likely]]
     {
         const SquareSet dstSqBit { SquareSet::square(dst) };
         constexpr SquareSet dstSqMask { 0x00'FF'FF'FF'FF'FF'FF'00 };
 
-        if ((m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask) != SquareSet::none())
-        {
-            SQUARESET_ENUMERATE(
-                src,
-                srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
-                i = addMoveIfLegalRegular(i, src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE));
-        }
+        SquareSet dstOkMask {
+            (blocksAllChecksMask(dst) & m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
+
+        SQUARESET_ENUMERATE(
+            src,
+            dstOkMask &
+            srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
+            {
+                if (pinCheck(src, dst))
+                {
+                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE };
+                    ++i;
+                }
+            });
     }
     else
     {
         const int retractOneAdd { -8 + (2 * static_cast<int>(turn)) }; // pawn step backwards
-        const Square retractOne { addToSquareNoOverflowCheck(dst, retractOneAdd) };
+        const Square epPawn { addToSquareNoOverflowCheck(dst, retractOneAdd) };
+
+        SquareSet checkResolvedOk { (m_checkers &~ SquareSet::square(epPawn)).allIfNone() };
 
         SQUARESET_ENUMERATE(
             src,
+            checkResolvedOk &
             srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
-            i = addMoveIfLegalEp(i, src, dst, retractOne));
+            {
+                const SquareSet exposedHorizLine {
+                    SliderAttacksGeneric::getHorizRookAttackMask(
+                        epPawn,
+                        m_occupancyMask &~ SquareSet::square(src)) };
+
+                const SquareSet kingBit { m_kings & m_turnColorMask };
+                const SquareSet oppRooks { m_rooks & ~m_turnColorMask };
+
+                if (pinCheck(src, m_epSquare) &&
+                    ((kingBit & exposedHorizLine) == SquareSet::none() ||
+                     (oppRooks & exposedHorizLine) == SquareSet::none()))
+                {
+                    *i = Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT };
+                    ++i;
+                }
+            });
     }
 
     return i;
@@ -302,30 +240,29 @@ std::size_t ChessBoard::generateMovesForPawnAndDestCapture(ShortMoveList &moves,
 
 ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
 {
-    const Color turn { getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) };
-
-    // allowedDstSqMask, retractOneAdd optimization
+    // allowedDstSqMask optimization
     static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
+    const Color turn { getTurn() };
+    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
+
     // 7th or 0th rank
     const SquareSet allowedDstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
+    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
 
-    const int retractOneAdd { -8 + (2 * static_cast<int>(turn)) }; // pawn step backwards
-    const Square retractOne { addToSquareNoOverflowCheck(dst, retractOneAdd) };
+    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
 
-    if (
-        // destination allowed and empty square?
-        ((dstSqBit & allowedDstSqMask & ~m_occupancyMask) != SquareSet::none()) &&
+    const SquareSet advancingPawn {
+        singleAdvancingPawnSquare &
+        m_pawns & m_turnColorMask & srcSqMask };
 
-        // source allowed and has our pawn?
-        ((SquareSet::square(retractOne) & srcSqMask & m_pawns & m_turnColorMask) != SquareSet::none())
-        )
+    if (advancingPawn != SquareSet::none()) [[likely]]
     {
-        if (isLegalRegularMove(Square { retractOne }, dst))
+        Square src { advancingPawn.firstSquare() };
+        if (pinCheck(src, dst)) [[likely]]
         {
-            return Move { retractOne, dst, pieceToTypeAndPromotion(promo) };
+            return Move { src, dst, pieceToTypeAndPromotion(promo) };
         }
     }
 
@@ -334,30 +271,29 @@ ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(Squa
 
 std::size_t ChessBoard::generateMovesForPawnAndDestPromoNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept
 {
-    const Color turn { getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) };
-
-    // allowedDstSqMask, retractOneAdd optimization
+    // allowedDstSqMask optimization
     static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
+    const Color turn { getTurn() };
+    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
+
     // 7th or 0th rank
     const SquareSet allowedDstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
+    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
 
-    const int retractOneAdd { -8 + (2 * static_cast<int>(turn)) }; // pawn step backwards
-    const Square retractOne { addToSquareNoOverflowCheck(dst, retractOneAdd) };
+    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
 
-    if (
-        // destination allowed and empty square?
-        ((dstSqBit & allowedDstSqMask & ~m_occupancyMask) != SquareSet::none()) &&
+    const SquareSet advancingPawn {
+        singleAdvancingPawnSquare &
+        m_pawns & m_turnColorMask & srcSqMask };
 
-        // source allowed and has our pawn?
-        ((SquareSet::square(retractOne) & srcSqMask & m_pawns & m_turnColorMask) != SquareSet::none())
-        )
+    if (advancingPawn != SquareSet::none()) [[likely]]
     {
-        if (isLegalRegularMove(Square { retractOne }, dst))
+        Square src { advancingPawn.firstSquare() };
+        if (pinCheck(src, dst)) [[likely]]
         {
-            moves[0] = Move { retractOne, dst, pieceToTypeAndPromotion(promo) };
+            moves[0U] = Move { src, dst, pieceToTypeAndPromotion(promo) };
             return 1U;
         }
     }
@@ -368,20 +304,29 @@ std::size_t ChessBoard::generateMovesForPawnAndDestPromoNoCapture(ShortMoveList 
 template <typename IteratorType>
 IteratorType ChessBoard::generateMovesForPawnAndDestPromoCaptureTempl(IteratorType i, SquareSet srcSqMask, Square dst, Piece promo) const noexcept
 {
+    // ctPawnAttackerMasks, retractOneAdd optimization
+    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
+    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
+
     const Color turn { getTurn() };
+
     const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet dstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
 
-    // 7th or 0th rank
-    const SquareSet allowedDstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
+    SquareSet dstOkMask {
+        (blocksAllChecksMask(dst) & m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
 
-    // destination allowed and capture?
-    if ((dstSqBit & allowedDstSqMask & m_occupancyMask & ~m_turnColorMask) != SquareSet::none())
-    {
-        SQUARESET_ENUMERATE(
-            src,
-            srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
-            i = addMoveIfLegalPromo(i, src, dst, promo));
-    }
+    SQUARESET_ENUMERATE(
+        src,
+        dstOkMask &
+        srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
+        {
+            if (pinCheck(src, dst))
+            {
+                *i = Move { src, dst, pieceToTypeAndPromotion(promo) };
+                ++i;
+            }
+        });
 
     return i;
 }
@@ -400,15 +345,15 @@ std::size_t ChessBoard::generateMovesForPawnAndDestPromoCapture(ShortMoveList &m
 template <typename IteratorType>
 IteratorType ChessBoard::generateMovesForKnightAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
-
-    if ((m_turnColorMask & dstSqBit) == SquareSet::none())
-    {
-        SQUARESET_ENUMERATE(
-            src,
-            m_turnColorMask & m_knights & srcSqMask & Attacks::getKnightAttackMask(dst),
-            i = addMoveIfLegalRegular(i, src, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE));
-    }
+    SQUARESET_ENUMERATE(
+        src,
+        blocksAllChecksMask(dst) &
+        ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
+         & m_turnColorMask & m_knights & srcSqMask & Attacks::getKnightAttackMask(dst) &~ m_pinnedPieces),
+        {
+            *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE };
+            ++i;
+        });
 
     return i;
 }
@@ -427,20 +372,23 @@ std::size_t ChessBoard::generateMovesForKnightAndDest(ShortMoveList &moves, Squa
 template <typename IteratorType>
 IteratorType ChessBoard::generateMovesForBishopAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet pieces {
+        Attacks::getBishopAttackMask(dst, m_occupancyMask)
+        & srcSqMask & m_turnColorMask & m_bishops & (~m_rooks)
+    };
 
-    if ((m_turnColorMask & dstSqBit) == SquareSet::none())
-    {
-        const SquareSet pieces {
-            Attacks::getBishopAttackMask(dst, m_occupancyMask)
-            & srcSqMask & m_turnColorMask & m_bishops & (~m_rooks)
-        };
-
-        SQUARESET_ENUMERATE(
-            src,
-            pieces,
-            i = addMoveIfLegalRegular(i, src, dst, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE));
-    }
+    SQUARESET_ENUMERATE(
+        src,
+        blocksAllChecksMask(dst) &
+        ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
+         & pieces),
+        {
+            if (pinCheck(src, dst))
+            {
+                *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE };
+                ++i;
+            }
+        });
 
     return i;
 }
@@ -459,20 +407,23 @@ std::size_t ChessBoard::generateMovesForBishopAndDest(ShortMoveList &moves, Squa
 template <typename IteratorType>
 IteratorType ChessBoard::generateMovesForRookAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet pieces {
+        Attacks::getRookAttackMask(dst, m_occupancyMask)
+        & srcSqMask & m_turnColorMask & (~m_bishops) & m_rooks
+    };
 
-    if ((m_turnColorMask & dstSqBit) == SquareSet::none())
-    {
-        const SquareSet pieces {
-            Attacks::getRookAttackMask(dst, m_occupancyMask)
-            & srcSqMask & m_turnColorMask & (~m_bishops) & m_rooks
-        };
-
-        SQUARESET_ENUMERATE(
-            src,
-            pieces,
-            i = addMoveIfLegalRegular(i, src, dst, MoveTypeAndPromotion::REGULAR_ROOK_MOVE));
-    }
+    SQUARESET_ENUMERATE(
+        src,
+        blocksAllChecksMask(dst) &
+        ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
+         & pieces),
+        {
+            if (pinCheck(src, dst))
+            {
+                *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_ROOK_MOVE };
+                ++i;
+            }
+        });
 
     return i;
 }
@@ -491,21 +442,24 @@ std::size_t ChessBoard::generateMovesForRookAndDest(ShortMoveList &moves, Square
 template <typename IteratorType>
 IteratorType ChessBoard::generateMovesForQueenAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet pieces {
+        (Attacks::getBishopAttackMask(dst, m_occupancyMask) |
+         Attacks::getRookAttackMask(dst, m_occupancyMask))
+        & srcSqMask & m_turnColorMask & m_bishops & m_rooks
+    };
 
-    if ((m_turnColorMask & dstSqBit) == SquareSet::none())
-    {
-        const SquareSet pieces {
-            (Attacks::getBishopAttackMask(dst, m_occupancyMask) |
-             Attacks::getRookAttackMask(dst, m_occupancyMask))
-            & srcSqMask & m_turnColorMask & m_bishops & m_rooks
-        };
-
-        SQUARESET_ENUMERATE(
-            src,
-            pieces,
-            i = addMoveIfLegalRegular(i, src, dst, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE));
-    }
+    SQUARESET_ENUMERATE(
+        src,
+        blocksAllChecksMask(dst) &
+        ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
+         & pieces),
+        {
+            if (pinCheck(src, dst))
+            {
+                *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE };
+                ++i;
+            }
+        });
 
     return i;
 }
@@ -539,8 +493,8 @@ std::size_t ChessBoard::generateMovesForKingAndDest(ShortMoveList &moves, Square
 {
     const SquareSet dstSqBit { SquareSet::square(dst) };
 
-    if (((m_turnColorMask & dstSqBit) == SquareSet::none()) &&
-        (srcSqMask & SquareSet::square(m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none() &&
+    if (((m_turnColorMask & dstSqBit).allIfNone() &
+         srcSqMask & SquareSet::square(m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none() &&
         isLegalKingMove(m_kingSq, dst, getTurn()))
     {
         moves[0] = Move { m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };

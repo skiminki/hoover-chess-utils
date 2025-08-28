@@ -517,15 +517,15 @@ public:
     }
 
     /// @brief Conditional
-    static constexpr inline SquareSet allIfNone(SquareSet s) noexcept
+    constexpr inline SquareSet allIfNone() noexcept
     {
-        return SquareSet { s == SquareSet::none() ? SquareSet::all() : SquareSet::none() };
+        return SquareSet { m_bitmask ? SquareSet::none() : SquareSet::all() };
     }
 
     /// @brief Conditional
-    static constexpr inline SquareSet allIfAny(SquareSet s) noexcept
+    constexpr inline SquareSet allIfAny() noexcept
     {
-        return SquareSet { s != SquareSet::none() ? SquareSet::all() : SquareSet::none() };
+        return SquareSet { m_bitmask ? SquareSet::all() : SquareSet::none() };
     }
 };
 
