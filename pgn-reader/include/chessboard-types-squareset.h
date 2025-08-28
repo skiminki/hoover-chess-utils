@@ -515,6 +515,18 @@ public:
 
         return (m_bitmask & (std::uint64_t { 1U } << static_cast<std::uint8_t>(sq))) != 0U;
     }
+
+    /// @brief Conditional
+    static constexpr inline SquareSet allIfNone(SquareSet s) noexcept
+    {
+        return SquareSet { s == SquareSet::none() ? SquareSet::all() : SquareSet::none() };
+    }
+
+    /// @brief Conditional
+    static constexpr inline SquareSet allIfAny(SquareSet s) noexcept
+    {
+        return SquareSet { s != SquareSet::none() ? SquareSet::all() : SquareSet::none() };
+    }
 };
 
 }

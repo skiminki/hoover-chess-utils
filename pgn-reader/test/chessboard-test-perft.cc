@@ -80,6 +80,9 @@ FenPerft fenPerfts[] = {
     { "r3kR2/8/8/8/8/8/8/1K6 b q - 0 1", 1, 3, false },
     { "r3k2r/8/8/8/8/8/8/R2K3R b kq - 1 1", 2, 492, false },
 
+    // castling into check
+    { "2r1k1r1/8/8/8/8/8/8/R3K2R w KQ - 0 1", 1, 24, false },
+
     // EP captures with check
     { "n7/4k3/8/2Pp4/8/8/6K1/8 w - d6 0 1", 2, 98, false },
     { "nn1r1krb/p1p1pppp/q1bp4/8/1pPP2P1/4P3/PP3P1P/NNQRBKRB b KQkq c3 0 10", 2, 1131, false },
