@@ -215,19 +215,29 @@ SquareSet ChessBoard::determineAttackers(
     return attackers;
 }
 
-template <typename IteratorType>
-IteratorType ChessBoard::addMoveIfLegalKing(
-    IteratorType i,
-    Square src,
-    Square dst) const noexcept
+SquareSet ChessBoard::determineAttackedSquares(
+    SquareSet occupancyMask,
+    SquareSet pawns,
+    SquareSet knights,
+    SquareSet bishops,
+    SquareSet rooks,
+    Square king,
+    Color turn) noexcept
 {
-    if (isLegalKingMove(src, dst, getTurn()))
-    {
-        *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
-        ++i;
-    }
+    SquareSet attacks { };
 
-    return i;
+    attacks |= Attacks::getPawnAttacksMask(pawns, oppositeColor(turn));
+
+    SQUARESET_ENUMERATE(
+        piece,
+        knights,
+        attacks |= Attacks::getKnightAttackMask(piece));
+
+    attacks |= SliderAttacksSimd::getAttackedSquaresBySliders(bishops, rooks, occupancyMask);
+
+    attacks |= Attacks::getKingAttackMask(king);
+
+    return attacks;
 }
 
 template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, Color turn>
@@ -607,24 +617,35 @@ auto ChessBoard::generateMovesForRook(
 template <typename IteratorType>
 auto ChessBoard::generateMovesForKing(
     IteratorType i,
-    Square sq) const noexcept -> IteratorType
+    SquareSet attackedSquares) const noexcept -> IteratorType
 {
-    // TODO: it may be faster to determine a "minefield" for the king before adding moves
-    // instead of trying moves and determining attackers like addMoveIfLegalKing() does
-
     const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
 
-    SQUARESET_ENUMERATE(
-        dst,
-        Attacks::getKingAttackMask(sq) & emptyOrCapture,
-        i = addMoveIfLegalKing(i, sq, dst));
+    const SquareSet dstSquares {
+        Attacks::getKingAttackMask(m_kingSq) & emptyOrCapture &~ attackedSquares };
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
+    {
+        SQUARESET_ENUMERATE(
+            dst,
+            dstSquares,
+            {
+                *i = Move { m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
+                ++i;
+            });
+    }
+    else
+    {
+        i += dstSquares.popcount();
+    }
 
     return i;
 }
 
 template <typename IteratorType, ChessBoard::MoveGenType type, bool shortCastling>
 auto ChessBoard::generateMovesForCastling(
-    IteratorType i) const noexcept -> IteratorType
+    IteratorType i,
+    SquareSet attackedSquares) const noexcept -> IteratorType
 {
     // When in check, castling is not legal. Since the caller is supposed to
     // classify the position before calling this function, we'll just ensure
@@ -636,10 +657,6 @@ auto ChessBoard::generateMovesForCastling(
 
     using CastlingSideSpecifics = CastlingSideSpecificsTempl<shortCastling>;
 
-    const Square sqKing { m_kingSq };
-    Square sqKingTarget;
-    Square sqRookTarget;
-
     const Color turn { getTurn() };
     const Square sqRook { getCastlingRook(turn, shortCastling) };
 
@@ -647,49 +664,26 @@ auto ChessBoard::generateMovesForCastling(
     if (sqRook == Square::NONE)
         return i;
 
-    sqKingTarget = makeSquare(CastlingSideSpecifics::kingTargetColumn, (static_cast<std::uint8_t>(turn) / 8U) * 7U);
-    sqRookTarget = makeSquare(CastlingSideSpecifics::rookTargetColumn, (static_cast<std::uint8_t>(turn) / 8U) * 7U);
+    const Square sqKingTarget { makeSquare(CastlingSideSpecifics::kingTargetColumn, (static_cast<std::uint8_t>(turn) / 8U) * 7U) };
+    const Square sqRookTarget { makeSquare(CastlingSideSpecifics::rookTargetColumn, (static_cast<std::uint8_t>(turn) / 8U) * 7U) };
 
-    const std::uint8_t sqNumKing { static_cast<std::uint8_t>(sqKing) };
-    const std::uint8_t sqNumRook { static_cast<std::uint8_t>(sqRook) };
-    const std::uint8_t sqNumKingTarget { static_cast<std::uint8_t>(sqKingTarget) };
-    const std::uint8_t sqNumRookTarget { static_cast<std::uint8_t>(sqRookTarget) };
-
-    const SquareSet kingPathHalfOpen { BitTricks::rangeHalfOpen(sqNumKing, sqNumKingTarget) };
-    const SquareSet rookPathHalfOpen { BitTricks::rangeHalfOpen(sqNumRook, sqNumRookTarget) };
+    // note: (startSq, endSq]
+    const SquareSet kingPathHalfOpen { Intercepts::getInterceptSquares(m_kingSq, sqKingTarget) };
+    const SquareSet rookPathHalfOpen { Intercepts::getInterceptSquares(sqRook, sqRookTarget) };
 
     const SquareSet requiredEmptySquares {
-        (kingPathHalfOpen | rookPathHalfOpen | SquareSet::square(sqKingTarget) | SquareSet::square(sqRookTarget)) &
-        ~(SquareSet::square(sqKing) | SquareSet::square(sqRook)) };
+        (kingPathHalfOpen | rookPathHalfOpen) &~ (SquareSet::square(m_kingSq) | SquareSet::square(sqRook)) };
 
-    // All squares between king and rook are empty? Also, check that the
-    // castling rook is not pinned.
-    if (((requiredEmptySquares & m_occupancyMask) |
-         (SquareSet::square(sqRook) & m_pinnedPieces)) != SquareSet::none())
+    if (((requiredEmptySquares & m_occupancyMask) |     // all squares between king and rook empty?
+         (SquareSet::square(sqRook) & m_pinnedPieces) | // castling rook not pinned?
+         (kingPathHalfOpen & attackedSquares)           // king path is not attacked?
+            ) != SquareSet::none())
         return i;
 
-    // Note: The king's initial square does not need to be checked, since the king
-    // cannot be in check when we enter this function.
-    SquareSet sqMask { (kingPathHalfOpen | SquareSet::square(sqKingTarget)) &~ SquareSet::square(sqKing) };
-
-    SQUARESET_ENUMERATE(
-        sq, sqMask,
-        if (determineAttackers(
-                m_occupancyMask,
-                m_turnColorMask,
-                m_pawns,
-                m_knights,
-                m_bishops,
-                m_rooks,
-                m_kings,
-                sq,
-                turn) != SquareSet::none())
-            return i);
-
     if constexpr (shortCastling)
-        *i = Move { sqKing, sqRook, MoveTypeAndPromotion::CASTLING_SHORT };
+        *i = Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_SHORT };
     else
-        *i = Move { sqKing, sqRook, MoveTypeAndPromotion::CASTLING_LONG };
+        *i = Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_LONG };
     ++i;
 
     return i;
@@ -703,7 +697,17 @@ IteratorType ChessBoard::generateMovesTempl(
     // if we're in check, we'll try the king moves first
     if constexpr (type != MoveGenType::NO_CHECK)
     {
-        i = generateMovesForKing<IteratorType>(i, m_kingSq);
+        const SquareSet attackedSquares {
+            determineAttackedSquares(
+                m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+                m_pawns &~ m_turnColorMask,
+                m_knights &~ m_turnColorMask,
+                m_bishops &~ m_turnColorMask,
+                m_rooks &~ m_turnColorMask,
+                m_oppKingSq,
+                getTurn()) };
+
+        i = generateMovesForKing<IteratorType>(i, attackedSquares);
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
             if (i.hasLegalMoves())
                 return i;
@@ -799,14 +803,24 @@ IteratorType ChessBoard::generateMovesTempl(
         // expensive than the other moves,
         if constexpr (type == MoveGenType::NO_CHECK)
         {
-            i = generateMovesForKing<IteratorType>(i, m_kingSq);
+            const SquareSet attackedSquares {
+                determineAttackedSquares(
+                    m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+                    m_pawns &~ m_turnColorMask,
+                    m_knights &~ m_turnColorMask,
+                    m_bishops &~ m_turnColorMask,
+                    m_rooks &~ m_turnColorMask,
+                    m_oppKingSq,
+                    getTurn()) };
+
+            i = generateMovesForKing<IteratorType>(i, attackedSquares);
 
             if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
                 if (i.hasLegalMoves())
                     return i;
 
-            i = generateMovesForCastling<IteratorType, type, false>(i);
-            return generateMovesForCastling<IteratorType, type, true>(i);
+            i = generateMovesForCastling<IteratorType, type, false>(i, attackedSquares);
+            return generateMovesForCastling<IteratorType, type, true>(i, attackedSquares);
         }
         else
             return i;

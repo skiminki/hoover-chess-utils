@@ -181,6 +181,25 @@ public:
         }
     }
 
+    static constexpr inline SquareSet getPawnAttacksMask(SquareSet pawns, Color pawnColor) noexcept
+    {
+        static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
+        static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
+
+        // for rotl
+        std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<std::int8_t>(pawnColor);
+
+        SquareSet attacks { };
+
+        // captures to left
+        attacks |= (pawns &~ SquareSet::column(0)).rotl(pawnAdvanceShift - 1);
+
+        // captures to right
+        attacks |= (pawns &~ SquareSet::column(7)).rotl(pawnAdvanceShift + 1);
+
+        return attacks;
+    }
+
     /// @brief Returns the set of squares a knight can attack
     ///
     /// @param[in]  sq     Knight square

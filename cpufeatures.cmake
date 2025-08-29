@@ -28,3 +28,21 @@ int main(int argc, char **argv)
 }
 " HAVE_BMI2)
 endmacro()
+
+
+macro(cpufeatures_detect_avx512f)
+    include(CheckSourceCompiles)
+
+    set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
+
+    check_source_compiles(CXX "
+#include <immintrin.h>
+int main(int argc, char **argv)
+{
+    __m512i tmp { };
+    tmp = _mm512_rolv_epi64(tmp, tmp);
+    static_cast<void>(tmp);
+    return 0;
+}
+" HAVE_AVX512F)
+endmacro()

@@ -264,6 +264,55 @@ using SliderAttacks = SliderAttacksGeneric;
 
 #endif
 
+/// @ingroup PgnReaderImpl
+/// @brief Vectorizable slider attacks - generic non-vectorized implementation
+class SliderAttacksSimdGeneric
+{
+public:
+    static inline SquareSet getAttackedSquaresBySliders(const SquareSet bishops, const SquareSet rooks, const SquareSet occupancyMask) noexcept
+    {
+        SquareSet attacks { };
+
+        SQUARESET_ENUMERATE(
+            piece,
+            bishops,
+            attacks |= SliderAttacks::getBishopAttackMask(piece, occupancyMask));
+
+        SQUARESET_ENUMERATE(
+            piece,
+            rooks,
+            attacks |= SliderAttacks::getRookAttackMask(piece, occupancyMask));
+
+        return attacks;
+    }
+};
+
+/// @ingroup PgnReaderImpl
+/// @brief Vectorizable slider attacks - generic non-vectorized implementation
+class SliderAttacksSimdAvx512f
+{
+public:
+    static inline SquareSet getAttackedSquaresBySliders(const SquareSet bishops, const SquareSet rooks, const SquareSet occupancyMask) noexcept;
+};
+
+#if HAVE_AVX512F
+
+/// @ingroup PgnReaderImpl
+/// @brief Type alias (AVX512F implementation)
+using SliderAttacksSimd = SliderAttacksSimdAvx512f;
+
+#else
+
+/// @ingroup PgnReaderImpl
+/// @brief Type alias (generic implementation)
+using SliderAttacksSimd = SliderAttacksSimdGeneric;
+
+#endif
+
 }
+
+#if HAVE_AVX512F
+#include "slider-attacks-avx512f.h"
+#endif
 
 #endif

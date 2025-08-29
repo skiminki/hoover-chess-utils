@@ -472,7 +472,19 @@ ChessBoard::Move ChessBoard::generateSingleMoveForLongCastling() const noexcept
 {
     // long castling requested
     if (m_checkers == SquareSet::none())
-        return generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, false>(SingleMoveIterator { }).getMove();
+    {
+        const SquareSet attackedSquares {
+            determineAttackedSquares(
+                m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+                m_pawns &~ m_turnColorMask,
+                m_knights &~ m_turnColorMask,
+                m_bishops &~ m_turnColorMask,
+                m_rooks &~ m_turnColorMask,
+                m_oppKingSq,
+                getTurn()) };
+
+        return generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, false>(SingleMoveIterator { }, attackedSquares).getMove();
+    }
 
     return ChessBoard::Move::illegalNoMove();
 }
@@ -483,7 +495,19 @@ std::size_t ChessBoard::generateMovesForLongCastling(ShortMoveList &moves) const
     ShortMoveList::iterator i { moves.begin() };
 
     if (m_checkers == SquareSet::none())
-        i = generateMovesForCastling<ShortMoveList::iterator, MoveGenType::NO_CHECK, false>(i);
+    {
+        const SquareSet attackedSquares {
+            determineAttackedSquares(
+                m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+                m_pawns &~ m_turnColorMask,
+                m_knights &~ m_turnColorMask,
+                m_bishops &~ m_turnColorMask,
+                m_rooks &~ m_turnColorMask,
+                m_oppKingSq,
+                getTurn()) };
+
+        i = generateMovesForCastling<ShortMoveList::iterator, MoveGenType::NO_CHECK, false>(i, attackedSquares);
+    }
 
     return i - moves.begin();
 }
@@ -492,7 +516,19 @@ ChessBoard::Move ChessBoard::generateSingleMoveForShortCastling() const noexcept
 {
     // long castling requested
     if (m_checkers == SquareSet::none())
-        return generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, true>(SingleMoveIterator { }).getMove();
+    {
+        const SquareSet attackedSquares {
+            determineAttackedSquares(
+                m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+                m_pawns &~ m_turnColorMask,
+                m_knights &~ m_turnColorMask,
+                m_bishops &~ m_turnColorMask,
+                m_rooks &~ m_turnColorMask,
+                m_oppKingSq,
+                getTurn()) };
+
+        return generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, true>(SingleMoveIterator { }, attackedSquares).getMove();
+    }
 
     return ChessBoard::Move::illegalNoMove();
 }
@@ -503,7 +539,19 @@ std::size_t ChessBoard::generateMovesForShortCastling(ShortMoveList &moves) cons
     ShortMoveList::iterator i { moves.begin() };
 
     if (m_checkers == SquareSet::none())
-        i = generateMovesForCastling<ShortMoveList::iterator, MoveGenType::NO_CHECK, true>(i);
+    {
+        const SquareSet attackedSquares {
+            determineAttackedSquares(
+                m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+                m_pawns &~ m_turnColorMask,
+                m_knights &~ m_turnColorMask,
+                m_bishops &~ m_turnColorMask,
+                m_rooks &~ m_turnColorMask,
+                m_oppKingSq,
+                getTurn()) };
+
+        i = generateMovesForCastling<ShortMoveList::iterator, MoveGenType::NO_CHECK, true>(i, attackedSquares);
+    }
 
     return i - moves.begin();
 }
