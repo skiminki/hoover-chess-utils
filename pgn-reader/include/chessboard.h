@@ -1279,7 +1279,7 @@ private:
         return 5U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 2U;
     }
 
-    static SquareSet determineAttackers(
+    static inline SquareSet determineAttackers(
         SquareSet occupancyMask,
         SquareSet turnColorMask,
         SquareSet pawns,
