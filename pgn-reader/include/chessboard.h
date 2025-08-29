@@ -1151,12 +1151,12 @@ private:
 
     /// @brief Squares where there is a checker
     ///
-    /// @remark Set by @coderef{determineCheckers()}
+    /// @remark Set by @coderef{determineCheckersAndPinners()}
     SquareSet m_checkers { };
 
     /// @brief Squares with pinned pieces
     ///
-    /// @remark Set by @coderef{determineCheckers()}
+    /// @remark Set by @coderef{determineCheckersAndPinners()}
     SquareSet m_pinnedPieces { };
 
     /// @brief Current ply number
@@ -1200,7 +1200,7 @@ private:
     /// @brief Determines checkers and pinned pieces.
     ///
     /// This function sets @coderef{m_checkers} and @coderef{m_pinnedPieces}.
-    void determineCheckers() noexcept;
+    void determineCheckersAndPinners() noexcept;
 
     /// @brief Validates the board for items that are common for both
     /// @coderef{setBoard()} and @coderef{loadFEN()} and sets @coderef{m_checkers}.
