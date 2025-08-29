@@ -191,6 +191,41 @@ bool ChessBoard::pinCheck(Square src, Square dst) const noexcept
             (Intercepts::getPinRestiction<true>(m_kingSq, src) & dstBit) != SquareSet::none());
 }
 
+SquareSet ChessBoard::determineAttackers(
+    const SquareSet occupancyMask,
+    const SquareSet turnColorMask,
+    const SquareSet pawns,
+    const SquareSet knights,
+    const SquareSet bishops,
+    const SquareSet rooks,
+    const SquareSet kings,
+    const Square sq,
+    const Color turn) noexcept
+{
+    const SquareSet opponentPieces { occupancyMask & ~turnColorMask };
+    SquareSet attackers { };
+
+    // pawn attackers
+    attackers |=
+        Attacks::getPawnAttackMask(sq, turn) &
+        opponentPieces & pawns;
+
+    // king
+    attackers |= Attacks::getKingAttackMask(sq) & opponentPieces & kings;
+
+    // knights
+    attackers |= Attacks::getKnightAttackMask(sq) & opponentPieces & knights;
+
+    // rooks and queens
+    const SquareSet horizVertHits { Attacks::getRookAttackMask(sq, occupancyMask) };
+    attackers |= horizVertHits & opponentPieces & rooks;
+
+    // bishops and queens
+    const SquareSet diagHits { Attacks::getBishopAttackMask(sq, occupancyMask) };
+    attackers |= diagHits & opponentPieces & bishops;
+
+    return attackers;
+}
 
 template <typename IteratorType>
 IteratorType ChessBoard::addMoveIfLegalKing(
