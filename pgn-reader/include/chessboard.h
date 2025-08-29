@@ -1320,6 +1320,19 @@ private:
         Piece promo) const noexcept;
 
     inline SquareSet blocksAllChecksMask(Square dst) const noexcept;
+
+    /// @brief Checks whether a move by a possibly pinned piece does not expose
+    /// a check.
+    ///
+    /// @param[in]   src      Source square
+    /// @param[in]   dst      Destination square
+    /// @return               Move legality (from the point of pin)
+    ///
+    /// In case the piece on @p src is not pinned, this function will always
+    /// return @true.
+    ///
+    /// In case the piece on @p src is pinned, this function checks whether the
+    /// piece moves directly towards or away from the king.
     inline bool pinCheck(Square src, Square dst) const noexcept;
 
     /// @brief Move generator type

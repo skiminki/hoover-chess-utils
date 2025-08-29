@@ -165,21 +165,9 @@ struct CastlingSideSpecificsTempl<true>
 
 SquareSet ChessBoard::blocksAllChecksMask(Square dst) const noexcept
 {
-    const auto numCheckers { m_checkers.popcount() };
-
-    if (numCheckers == 0U) [[likely]]
-    {
-        return SquareSet::all();
-    }
-    else if (numCheckers == 1U)
-    {
-        // do we intercept/capture the check?
-        return
-            (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
-    }
-
-    // a single move can never block a double-check
-    return SquareSet::none();
+    const SquareSet blockableChecksMask { m_checkers.popcount() <= 1U ? SquareSet::all() : SquareSet::none() };
+    return
+        (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny() & blockableChecksMask;
 }
 
 bool ChessBoard::pinCheck(Square src, Square dst) const noexcept

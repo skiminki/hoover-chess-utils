@@ -122,11 +122,16 @@ consteval auto computeRay(Square kingSq, Square pinnedSq) noexcept
 
 consteval auto computeInterceptsTable() noexcept
 {
-    std::array<std::array<SquareSet, 64U>, 64U> ret { };
+    std::array<std::array<SquareSet, 64U>, 65U> ret { };
 
     for (std::size_t kingSq { }; kingSq < 64U; ++kingSq)
+    {
         for (std::size_t checkerSq { }; checkerSq < 64U; ++checkerSq)
-            ret[kingSq][checkerSq] = computeIntercept(getSquareForIndex(kingSq), getSquareForIndex(checkerSq));
+            ret[checkerSq][kingSq] = computeIntercept(getSquareForIndex(kingSq), getSquareForIndex(checkerSq));
+
+        ret[64U][kingSq] = SquareSet::all();
+    }
+
 
     return ret;
 }
@@ -144,7 +149,7 @@ consteval auto computeRaysFromKingTable() noexcept
 
 }
 
-const std::array<std::array<SquareSet, 64U>, 64U> Intercepts::s_interceptsTable { computeInterceptsTable() };
+const std::array<std::array<SquareSet, 64U>, 65U> Intercepts::s_interceptsTable { computeInterceptsTable() };
 const std::array<std::array<SquareSet, 64U>, 64U> Intercepts::s_raysFromKingTable { computeRaysFromKingTable() };
 
 }

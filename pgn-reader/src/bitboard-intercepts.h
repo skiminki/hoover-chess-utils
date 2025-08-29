@@ -26,29 +26,50 @@
 namespace hoover_chess_utils::pgn_reader
 {
 
+/// @addtogroup PgnReaderImpl
+/// @{
+
+/// @brief Check interceptions and pin checks
 class Intercepts
 {
 private:
-    static const std::array<std::array<SquareSet, 64U>, 64U> s_interceptsTable;
+    static const std::array<std::array<SquareSet, 64U>, 65U> s_interceptsTable;
 
     static const std::array<std::array<SquareSet, 64U>, 64U> s_raysFromKingTable;
 
 public:
-    // Returns the set of squares that intercepts a check. That is:
-    // - checkerSq itself; AND
-    // - If checkerSq is horiz/vert/diagonal to kingSq, then squares in between
-    //
-    // 0 0 0 0 0 0 0 0
-    // 0 K 0 0 0 0 0 0
-    // 0 0 1 0 0 0 0 0
-    // 0 0 0 1 0 0 0 0
-    // 0 0 0 0 1 0 0 0
-    // 0 0 0 0 0 C 0 0
-    // 0 0 0 0 0 0 0 0
-    // 0 0 0 0 0 0 0 0
+    /// @brief Returns the set of squares that intercepts a check.
+    ///
+    /// @param[in] kingSq       King square
+    /// @param[in] checkerSq    Checker square. May be @coderef{Square::NONE}.
+    /// @return                 The set of intercept squares or @coderef{SquareSet::all()} when
+    ///                         the checker is @coderef{Square::NONE}.
+    ///
+    /// The set of squares that intercept a check are:
+    /// - @p checkerSq (assume captured)
+    /// - If @p checkerSq is along a ray direction from @p kingSq, then all squares in between
+    ///   (but not including @p kingSq)
+    ///
+    /// **Illustration**
+    ///
+    /// <table class="bitboard">
+    /// <tr><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td>K</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td> </td><td> </td><td class="mask"> </td><td> </td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td> </td><td> </td><td> </td><td class="mask">C</td><td> </td><td> </td></tr>
+    /// <tr><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+    /// </table>
+    /// Where:
+    /// - @c K = the checked king
+    /// - @c C = the checker
+    /// - shaded = the intercept squares
     static inline SquareSet getInterceptSquares(Square kingSq, Square checkerSq) noexcept
     {
-        return s_interceptsTable[getIndexOfSquare(kingSq)][getIndexOfSquare(checkerSq)];
+        assert(checkerSq <= Square::NONE);
+        return s_interceptsTable[static_cast<std::size_t>(checkerSq)][getIndexOfSquare(kingSq)];
     }
 
     /// @brief Returns a ray from king square to the direction of pinned piece square.
@@ -77,6 +98,8 @@ public:
             return SquareSet::all();
     }
 };
+
+/// @}
 
 }
 
