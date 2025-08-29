@@ -39,6 +39,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 ##### CPU features
 include(cpufeatures.cmake)
 cpufeatures_detect_bmi2()
+cpufeatures_detect_avx512f()
 
 set(HAVE_PDEP_PEXT ${HAVE_BMI2})
 

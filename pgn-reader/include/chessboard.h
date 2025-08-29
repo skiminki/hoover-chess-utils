@@ -1290,6 +1290,25 @@ private:
         Square sq,
         Color turn) noexcept;
 
+    /// @brief Determines all attacked squares
+    ///
+    /// @param[in] occupancyMask    All occupied squares. These block slider attacks
+    /// @param[in] pawns            Attacking pawns
+    /// @param[in] knights          Attacking knights
+    /// @param[in] bishops          Attacking bishops and queens
+    /// @param[in] rooks            Attacking rooks and queens
+    /// @param[in] king             Attacking king
+    /// @param[in] turn             Side to move (determines pawn attacking direction)
+    /// @return                     All attacked squares
+    static inline SquareSet determineAttackedSquares(
+        SquareSet occupancyMask,
+        SquareSet pawns,
+        SquareSet knights,
+        SquareSet bishops,
+        SquareSet rooks,
+        Square king,
+        Color turn) noexcept;
+
     // note: assumes that the move is legal
     static constexpr inline bool isPawnDoubleSquareMove(Square src, Square dst) noexcept
     {
@@ -1298,26 +1317,6 @@ private:
 
         return ((srcNum - dstNum) & 15U) == 0U;
     }
-
-    template <typename IteratorType>
-    IteratorType addMoveIfLegalKing(
-        IteratorType i,
-        Square src,
-        Square dst) const noexcept;
-
-    template <typename IteratorType>
-    IteratorType addMoveIfLegalRegular(
-        IteratorType i,
-        Square src,
-        Square dst,
-        MoveTypeAndPromotion typeAndPromo) const noexcept;
-
-    template <typename IteratorType>
-    IteratorType addMoveIfLegalPromo(
-        IteratorType i,
-        Square src,
-        Square dst,
-        Piece promo) const noexcept;
 
     inline SquareSet blocksAllChecksMask(Square dst) const noexcept;
 
@@ -1501,12 +1500,14 @@ private:
     /// @tparam     IteratorType       Move list iterator type
     /// @tparam     type               Move generator type
     /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  sq                 Source square
+    /// @param[in]  attackedSquares    Attacked squares
     /// @return                        Move list iterator (end of generated moves)
+    ///
+    /// @sa (@coderef{determineAttackedSquares()})
     template <typename IteratorType>
     IteratorType generateMovesForKing(
         IteratorType i,
-        Square sq) const noexcept;
+        SquareSet attackedSquares) const noexcept;
 
     /// @brief Generates the legal castling move, if any. The king must not be
     /// in check (caller-checked).
@@ -1516,10 +1517,13 @@ private:
     ///                                @coderef{MoveGenType::NO_CHECK}.
     /// @tparam     shortCastling      Whether the move is short castling
     /// @param[in]  i                  Move list iterator (begin of list)
+    /// @param[in]  attackedSquares    Attacked squares
     /// @return                        Move list iterator (end of generated moves)
+    ///
+    /// @sa (@coderef{determineAttackedSquares()})
     template <typename IteratorType, MoveGenType type, bool shortCastling>
     IteratorType generateMovesForCastling(
-        IteratorType i) const noexcept;
+        IteratorType i, SquareSet attackedSquares) const noexcept;
 
     /// @brief Generates all legal moves
     ///
@@ -1529,6 +1533,8 @@ private:
     /// @param[in]  i                  Move list iterator (begin of list)
     /// @param[in]  legalDestinations  Legal destinations
     /// @return                        Move list iterator (end of generated moves)
+    ///
+    /// @sa (@coderef{determineAttackedSquares()})
     template <typename IteratorType, MoveGenType type, typename ParamType>
     IteratorType generateMovesTempl(
         IteratorType i,
