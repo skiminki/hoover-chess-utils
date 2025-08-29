@@ -90,7 +90,7 @@ bool ChessBoard::canEpCapture() const noexcept
     return false;
 }
 
-void ChessBoard::determineCheckers() noexcept
+void ChessBoard::determineCheckersAndPinners() noexcept
 {
     Color turn { getTurn() };
     const SquareSet opponentPieces { m_occupancyMask ^ m_turnColorMask };
@@ -121,7 +121,7 @@ void ChessBoard::determineCheckers() noexcept
 
     static_assert(static_cast<int>(Color::WHITE) == 0);
     static_assert(static_cast<int>(Color::BLACK) == 8);
-    epCapturable = epCapturable.rotl(static_cast<int>(turn) * 2 - 8);
+    epCapturable = epCapturable.rotl(static_cast<std::int8_t>(turn) * 2 - 8);
 
     // this determines pinners and checkers...
     pinners |=
@@ -333,31 +333,8 @@ void ChessBoard::doMove(const Move m) noexcept
     std::swap(m_kingSq, m_oppKingSq);
     m_turnColorMask = (~m_turnColorMask) & m_occupancyMask;
 
-    // determine checkers for this turn
-    if constexpr (false)
-    {
-        // incremental check detection
-        const SquareSet dstBit { SquareSet::square(m.getDst()) };
-
-        m_checkers = m_pawns & dstBit & Attacks::getPawnAttackMask(m_kingSq, oppositeColor(turn));
-        m_checkers |= m_knights & dstBit & Attacks::getKnightAttackMask(m_kingSq);
-
-        // note: slider checks are always fully resolved, since there could be
-        // exposure checks
-        const SquareSet opponentPieces { m_occupancyMask ^ m_turnColorMask };
-
-        // rooks and queens
-        const SquareSet horizVertHits { Attacks::getRookAttackMask(m_kingSq, m_occupancyMask) };
-        m_checkers |= horizVertHits & opponentPieces & m_rooks;
-
-        // bishops and queens
-        const SquareSet diagHits { Attacks::getBishopAttackMask(m_kingSq, m_occupancyMask) };
-        m_checkers |= diagHits & opponentPieces & m_bishops;
-    }
-    else
-    {
-        determineCheckers();
-    }
+    // determine checkers and pinners for this turn
+    determineCheckersAndPinners();
 }
 
 void ChessBoard::calculateMasks(const ArrayBoard &board) noexcept

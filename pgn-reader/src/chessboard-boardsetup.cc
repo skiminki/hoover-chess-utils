@@ -320,7 +320,7 @@ void ChessBoard::validateBoard()
     const Color turn { getTurn() };
     const Color oppositeTurn { oppositeColor(turn) };
 
-    determineCheckers();
+    determineCheckersAndPinners();
 
     if (determineAttackers(
             m_occupancyMask,
