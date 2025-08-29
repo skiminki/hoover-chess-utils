@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['b1_0',['B1',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42ac9512565ef6194ca664dc41ec0de7a53',1,'hoover_chess_utils::pgn_reader']]],
+  ['b2_1',['B2',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42abbd97b00c539801e32317ab550867ec4',1,'hoover_chess_utils::pgn_reader']]],
+  ['b3_2',['B3',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a0c4ecd7b59ebc5b9f47974cb9845fd02',1,'hoover_chess_utils::pgn_reader']]],
+  ['b4_3',['B4',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42ad5d4cc7b09d1843517acc9361f8f665e',1,'hoover_chess_utils::pgn_reader']]],
+  ['b5_4',['B5',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a2a1ab298edf0162a3305e599b47cbeee',1,'hoover_chess_utils::pgn_reader']]],
+  ['b6_5',['B6',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a68b1f1cc15d8987eafe633c9488bdc05',1,'hoover_chess_utils::pgn_reader']]],
+  ['b7_6',['B7',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42ad8498108dd603522047564a8da7be94c',1,'hoover_chess_utils::pgn_reader']]],
+  ['b8_7',['B8',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42ac897976b22b91e2937555adb85d779fc',1,'hoover_chess_utils::pgn_reader']]],
+  ['bad_5fcharacter_8',['BAD_CHARACTER',['../group__PgnReaderAPI.html#gga5ac9cf51536731d41cc256b96fa105fba0c9cd9bc25d573d13a99b435290a8242',1,'hoover_chess_utils::pgn_reader']]],
+  ['bad_5ffen_9',['BAD_FEN',['../group__PgnReaderAPI.html#gga5ac9cf51536731d41cc256b96fa105fbac840734100c538baf15074bbd59611f1',1,'hoover_chess_utils::pgn_reader']]],
+  ['bad_5fpgn_5ftag_10',['BAD_PGN_TAG',['../group__PgnReaderAPI.html#gga5ac9cf51536731d41cc256b96fa105fba16605e1a4ee010de1725f282e7b6d0f2',1,'hoover_chess_utils::pgn_reader']]],
+  ['bishop_11',['BISHOP',['../group__PgnReaderAPI.html#gga22718032267f4f7e04f03275988d8743a1834d375f684613c725d039a10db1976',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_12',['BLACK',['../group__PgnReaderAPI.html#gga89cf14626814cc5580cb502225ea8e3ca08d0012388564e95c3b4a7407cf04965',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fbishop_13',['BLACK_BISHOP',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44a6a9adab6de1420aa3b20ff1efe25302f',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fking_14',['BLACK_KING',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44af33cb6ad0d6a2bf90504bff027448966',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fknight_15',['BLACK_KNIGHT',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44ad01d089cc6a60f983e458d232d908889',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fnone_16',['BLACK_NONE',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44a110245c1a45ff9d113c721579128b072',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fpawn_17',['BLACK_PAWN',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44a27f89a71ae40086ca9541cb36cee3317',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fqueen_18',['BLACK_QUEEN',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44ae722477209c5e506a015558b0b379b19',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5frook_19',['BLACK_ROOK',['../group__PgnReaderAPI.html#ggac888ce6f56e4e136bd9dec944a375b44a396fc696be29097d11ed8f1790d057f9',1,'hoover_chess_utils::pgn_reader']]],
+  ['black_5fwin_20',['BLACK_WIN',['../group__PgnReaderAPI.html#gga717710498aac9c60d5d6ea42ff76dd0ea359c8e7240a3a3ed7bd35e92776f1ede',1,'hoover_chess_utils::pgn_reader']]]
+];

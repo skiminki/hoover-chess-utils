@@ -1,0 +1,28 @@
+<map id="pgn&#45;reader/include/pgnreader&#45;types.h" name="pgn&#45;reader/include/pgnreader&#45;types.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="594,5,739,45"/>
+<area shape="rect" id="Node000002" href="$chessboard_8h.html" title=" " alt="" coords="481,93,625,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="632,56,580,95,577,91,629,52"/>
+<area shape="rect" id="Node000005" href="$pgnreader_8h.html" title=" " alt="" coords="27,181,171,221"/>
+<area shape="poly" id="edge11_Node000001_Node000005" title=" " alt="" coords="593,52,161,184,159,179,592,47"/>
+<area shape="rect" id="Node000009" href="$pgnparser_8h.html" title=" " alt="" coords="683,277,879,302"/>
+<area shape="poly" id="edge12_Node000001_Node000009" title=" " alt="" coords="683,57,779,275,774,277,678,59"/>
+<area shape="rect" id="Node000010" href="$pgnscannertokens_8h.html" title=" " alt="" coords="819,101,1069,126"/>
+<area shape="poly" id="edge13_Node000001_Node000010" title=" " alt="" coords="741,47,908,98,906,103,740,52"/>
+<area shape="rect" id="Node000003" href="$pgnreader-string-utils_8h.html" title=" " alt="" coords="464,181,643,221"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="556,147,556,181,551,181,551,147"/>
+<area shape="rect" id="Node000004" href="$chessboard-test-playmove-helper_8h.html" title=" " alt="" coords="456,269,656,309"/>
+<area shape="poly" id="edge10_Node000002_Node000004" title=" " alt="" coords="614,138,638,156,657,180,664,201,657,223,633,251,603,271,600,267,630,247,652,220,658,201,652,183,635,160,611,142"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="468,132,183,184,172,186,170,181,182,179,467,126"/>
+<area shape="rect" id="Node000007" href="$chessboard-movegen_8h.html" title=" " alt="" coords="228,269,423,309"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="512,143,454,183,348,271,345,267,450,179,509,139"/>
+<area shape="rect" id="Node000008" href="$chessboard-priv_8h.html" title=" " alt="" coords="195,181,389,221"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="484,140,350,184,348,179,482,135"/>
+<area shape="poly" id="edge9_Node000002_Node000009" title=" " alt="" coords="609,137,645,156,679,179,735,230,774,275,770,278,731,234,676,183,642,161,607,142"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="557,235,558,269,553,269,552,235"/>
+<area shape="rect" id="Node000006" href="$pgnreader-priv_8h.html" title=" " alt="" coords="5,269,192,309"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="101,235,101,269,96,269,96,235"/>
+<area shape="poly" id="edge8_Node000008_Node000007" title=" " alt="" coords="307,233,320,268,315,270,302,235"/>
+<area shape="rect" id="Node000011" href="$pgnscanner_8h.html" title=" " alt="" coords="830,189,1037,214"/>
+<area shape="poly" id="edge14_Node000010_Node000011" title=" " alt="" coords="943,140,937,188,932,188,938,140"/>
+<area shape="poly" id="edge15_Node000011_Node000009" title=" " alt="" coords="902,223,803,279,801,274,900,219"/>
+</map>

@@ -1,0 +1,19 @@
+<map id="pgn&#45;reader/include/chessboard&#45;types&#45;squareset.h" name="pgn&#45;reader/include/chessboard&#45;types&#45;squareset.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="135,5,357,45"/>
+<area shape="rect" id="Node000002" href="$chessboard-types_8h.html" title=" " alt="" coords="115,93,265,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="235,47,208,84,204,80,230,44"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,167,44,192"/>
+<area shape="poly" id="edge8_Node000001_Node000004" title=" " alt="" coords="195,48,150,68,105,95,71,126,44,157,40,154,67,122,102,91,147,64,193,43"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="378,167,447,192"/>
+<area shape="poly" id="edge9_Node000001_Node000005" title=" " alt="" coords="262,44,292,79,329,117,384,157,380,161,326,121,288,83,258,47"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="339,93,406,119"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="278,43,344,84,341,88,275,48"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="69,167,125,192"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="177,121,124,160,121,156,173,117"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="164,121,58,167,56,162,162,116"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="227,116,366,160,364,165,225,121"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="149,167,231,192"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="193,119,193,153,187,153,187,119"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="256,167,353,192"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="210,116,276,157,273,162,207,121"/>
+</map>

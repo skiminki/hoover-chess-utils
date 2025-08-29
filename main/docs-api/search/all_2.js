@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['c1_0',['C1',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a1a2ddc2db4693cfd16d534cde5572cc1',1,'hoover_chess_utils::pgn_reader']]],
+  ['c2_1',['C2',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42af1a543f5a2c5d49bc5dde298fcf716e4',1,'hoover_chess_utils::pgn_reader']]],
+  ['c3_2',['C3',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a3abe124ecc82bf2c2e22e6058f38c50c',1,'hoover_chess_utils::pgn_reader']]],
+  ['c4_3',['C4',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42ab713e6323a68d3ddabf4855826c50148',1,'hoover_chess_utils::pgn_reader']]],
+  ['c5_4',['C5',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42afea813d4ddba3c46cf8b8e664b92cdaa',1,'hoover_chess_utils::pgn_reader']]],
+  ['c6_5',['C6',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a7e8b9f5cab4a8fe24fad9fe4b7452702',1,'hoover_chess_utils::pgn_reader']]],
+  ['c7_6',['C7',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a517d42f048d2dd422533522c796aaf37',1,'hoover_chess_utils::pgn_reader']]],
+  ['c8_7',['C8',['../group__PgnReaderAPI.html#gga7602411acb100dd5c9e52cb100fb6f42a727999d580f3708378e3d903ddfa246d',1,'hoover_chess_utils::pgn_reader']]],
+  ['canepcapture_8',['canEpCapture',['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html#ad0c3026c526be2b1f7395c68f5047925',1,'hoover_chess_utils::pgn_reader::ChessBoard']]],
+  ['capacity_9',['capacity',['../classhoover__chess__utils_1_1pgn__reader_1_1MiniString.html#afc7834187d50b79c680b00fb27badaea',1,'hoover_chess_utils::pgn_reader::MiniString']]],
+  ['castling_5flong_10',['CASTLING_LONG',['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html#a857888d4f369880336a1990bcc291f0eaf6cde79b7421634e1350e08d029d107e',1,'hoover_chess_utils::pgn_reader::ChessBoard']]],
+  ['castling_5fshort_11',['CASTLING_SHORT',['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html#a857888d4f369880336a1990bcc291f0eaa549c26fc6d1b67b87f3a488ca3fdbbf',1,'hoover_chess_utils::pgn_reader::ChessBoard']]],
+  ['check_12',['CHECK',['../group__PgnReaderAPI.html#ggad25098a1135cc7f06e5f1fe333ea37c5a8c46d8d9d3402788403e2f6911153089',1,'hoover_chess_utils::pgn_reader']]],
+  ['chessboard_13',['chessboard',['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html#af7a361714d478c8ff6779220e0ef95dc',1,'hoover_chess_utils::pgn_reader::ChessBoard::ChessBoard(ChessBoard &amp;&amp;) noexcept=default'],['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html#ab93864f036854a20368a169ea6a472ff',1,'hoover_chess_utils::pgn_reader::ChessBoard::ChessBoard(const ChessBoard &amp;) noexcept=default'],['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html#a4c5afa6fb9086caa6a30229fc8f8b484',1,'hoover_chess_utils::pgn_reader::ChessBoard::ChessBoard() noexcept=default'],['../classhoover__chess__utils_1_1pgn__reader_1_1ChessBoard.html',1,'hoover_chess_utils::pgn_reader::ChessBoard']]],
+  ['colchar_14',['colChar',['../classhoover__chess__utils_1_1pgn__reader_1_1StringUtils.html#a3300f764fbb8c15c6fa34e9fa92c6fef',1,'hoover_chess_utils::pgn_reader::StringUtils']]],
+  ['color_15',['Color',['../group__PgnReaderAPI.html#ga89cf14626814cc5580cb502225ea8e3c',1,'hoover_chess_utils::pgn_reader']]],
+  ['colorof_16',['colorOf',['../group__PgnReaderAPI.html#ga84ab932033f5852c6e17278a57cdea9a',1,'hoover_chess_utils::pgn_reader']]],
+  ['colorofply_17',['colorOfPly',['../group__PgnReaderAPI.html#ga086a5925290db0e6e21e21155306ffae',1,'hoover_chess_utils::pgn_reader']]],
+  ['column_18',['column',['../classhoover__chess__utils_1_1pgn__reader_1_1SquareSet.html#a92a42c69b9e55922cd4968ee03d1c8ad',1,'hoover_chess_utils::pgn_reader::SquareSet']]],
+  ['columnof_19',['columnOf',['../group__PgnReaderAPI.html#ga413018ef7c979aa1d9ff2b8254948ed5',1,'hoover_chess_utils::pgn_reader']]],
+  ['comment_20',['comment',['../classhoover__chess__utils_1_1pgn__reader_1_1PgnReaderActions.html#a680520ff3b4bd42bada55fe8b87f7d71',1,'hoover_chess_utils::pgn_reader::PgnReaderActions::comment()'],['../group__PgnReaderAPI.html#gga9a3feafe5c00eeab54bd4aa6f0ff93f0a0be8406951cdfda82f00f79328cf4efc',1,'Commenthoover_chess_utils::pgn_reader']]],
+  ['configuration_20variables_21',['Build configuration variables',['../build_config.html',1,'']]],
+  ['continuefromnextgame_22',['ContinueFromNextGame',['../group__PgnReaderAPI.html#ggab454bc223e1e9ef95ee263e00607211aa1093f41470c1a064923d13ad0ccfb594',1,'hoover_chess_utils::pgn_reader']]]
+];

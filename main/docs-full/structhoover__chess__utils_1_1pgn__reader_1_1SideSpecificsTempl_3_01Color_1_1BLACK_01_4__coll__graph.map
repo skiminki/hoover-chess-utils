@@ -1,0 +1,5 @@
+<map id="hoover_chess_utils::pgn_reader::SideSpecificsTempl&lt; Color::BLACK &gt;" name="hoover_chess_utils::pgn_reader::SideSpecificsTempl&lt; Color::BLACK &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,211,201,265"/>
+<area shape="rect" id="Node000002" href="$classhoover__chess__utils_1_1pgn__reader_1_1SquareSet.html" title="Set of squares. Implemented using a bit&#45;mask." alt="" coords="15,5,192,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,59,106,210,101,210,101,59"/>
+</map>

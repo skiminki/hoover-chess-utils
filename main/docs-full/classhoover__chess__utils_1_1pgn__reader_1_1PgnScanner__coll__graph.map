@@ -1,0 +1,22 @@
+<map id="hoover_chess_utils::pgn_reader::PgnScanner" name="hoover_chess_utils::pgn_reader::PgnScanner">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1020,181,1207,221"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="711,160,813,185"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="827,175,1020,191,1019,196,826,180"/>
+<area shape="rect" id="Node000003" href="$unionhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo.html" title=" " alt="" coords="637,210,887,250"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="900,217,996,209,1019,207,1020,212,996,214,901,222"/>
+<area shape="rect" id="Node000004" href="$structhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo__PAWN__MOVE.html" title=" " alt="" coords="289,5,513,60"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="502,63,514,69,570,97,592,113,616,138,624,154,627,169,630,182,639,195,658,208,655,212,635,199,625,184,621,170,619,156,611,141,588,117,567,101,512,74,499,68"/>
+<area shape="rect" id="Node000005" href="$classhoover__chess__utils_1_1pgn__reader_1_1SquareSet.html" title="Set of squares. Implemented using a bit&#45;mask." alt="" coords="5,53,183,93"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="196,57,289,45,289,50,197,62"/>
+<area shape="rect" id="Node000006" href="$structhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo__PIECE__MOVE.html" title=" " alt="" coords="289,84,513,139"/>
+<area shape="poly" id="edge6_Node000006_Node000005" title=" " alt="" coords="197,83,289,95,289,100,196,88"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="495,141,514,147,614,184,638,194,680,207,678,212,636,199,612,188,512,153,493,146"/>
+<area shape="rect" id="Node000007" href="$structhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo__MOVENUM.html" title=" " alt="" coords="289,163,513,217"/>
+<area shape="poly" id="edge7_Node000003_Node000007" title=" " alt="" coords="527,201,638,214,637,219,527,207"/>
+<area shape="rect" id="Node000008" href="$structhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo__NAG.html" title=" " alt="" coords="289,241,513,296"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="527,253,637,241,638,246,527,258"/>
+<area shape="rect" id="Node000009" href="$structhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo__RESULT.html" title=" " alt="" coords="289,320,513,375"/>
+<area shape="poly" id="edge9_Node000003_Node000009" title=" " alt="" coords="498,313,699,248,700,253,500,318"/>
+<area shape="rect" id="Node000010" href="$structhoover__chess__utils_1_1pgn__reader_1_1PgnScannerTokenInfo__ERROR.html" title=" " alt="" coords="289,399,513,453"/>
+<area shape="poly" id="edge10_Node000003_Node000010" title=" " alt="" coords="499,391,512,385,576,351,637,313,732,248,735,252,640,318,579,355,515,390,501,396"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="hoover_chess_utils::pgn_reader::PgnScannerTokenInfo_PAWN_MOVE" name="hoover_chess_utils::pgn_reader::PgnScannerTokenInfo_PAWN_MOVE">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,229,163"/>
+<area shape="rect" id="Node000002" href="$classhoover__chess__utils_1_1pgn__reader_1_1SquareSet.html" title="Set of squares. Implemented using a bit&#45;mask." alt="" coords="29,5,206,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="120,59,120,108,115,108,115,59"/>
+</map>

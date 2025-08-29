@@ -1,0 +1,11 @@
+<map id="pgn&#45;reader/include/pgnreader&#45;error.h" name="pgn&#45;reader/include/pgnreader&#45;error.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="135,5,279,45"/>
+<area shape="rect" id="Node000002" href="$pgnreader_8h.html" title=" " alt="" coords="35,93,179,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="176,56,131,95,127,91,172,52"/>
+<area shape="rect" id="Node000004" href="$pgnscanner_8h.html" title=" " alt="" coords="207,101,414,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="242,52,298,98,295,102,239,56"/>
+<area shape="rect" id="Node000003" href="$pgnreader-priv_8h.html" title=" " alt="" coords="5,181,192,221"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="106,147,103,181,98,181,101,147"/>
+<area shape="rect" id="Node000005" href="$pgnparser_8h.html" title=" " alt="" coords="217,189,413,214"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="315,140,317,188,311,188,309,140"/>
+</map>
