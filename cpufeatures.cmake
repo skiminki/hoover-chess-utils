@@ -46,3 +46,21 @@ int main(int argc, char **argv)
 }
 " HAVE_AVX512F)
 endmacro()
+
+
+macro(cpufeatures_detect_avx512vl)
+    include(CheckSourceCompiles)
+
+    set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
+
+    check_source_compiles(CXX "
+#include <immintrin.h>
+int main(int argc, char **argv)
+{
+    __m128i tmp { };
+    tmp = _mm_rolv_epi64(tmp, tmp);
+    static_cast<void>(tmp);
+    return 0;
+}
+" HAVE_AVX512VL)
+endmacro()

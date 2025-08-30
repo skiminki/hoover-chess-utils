@@ -1,4 +1,5 @@
 #cmakedefine01 HAVE_AVX512F
+#cmakedefine01 HAVE_AVX512VL
 #cmakedefine01 HAVE_BMI2
 #cmakedefine01 HAVE_PDEP_PEXT
 #define PROJECT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@

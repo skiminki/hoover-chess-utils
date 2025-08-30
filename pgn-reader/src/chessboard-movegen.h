@@ -215,31 +215,6 @@ SquareSet ChessBoard::determineAttackers(
     return attackers;
 }
 
-SquareSet ChessBoard::determineAttackedSquares(
-    SquareSet occupancyMask,
-    SquareSet pawns,
-    SquareSet knights,
-    SquareSet bishops,
-    SquareSet rooks,
-    Square king,
-    Color turn) noexcept
-{
-    SquareSet attacks { };
-
-    attacks |= Attacks::getPawnAttacksMask(pawns, oppositeColor(turn));
-
-    SQUARESET_ENUMERATE(
-        piece,
-        knights,
-        attacks |= Attacks::getKnightAttackMask(piece));
-
-    attacks |= SliderAttacksSimd::getAttackedSquaresBySliders(bishops, rooks, occupancyMask);
-
-    attacks |= Attacks::getKingAttackMask(king);
-
-    return attacks;
-}
-
 template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, Color turn>
 auto ChessBoard::generateMovesForPawnsTempl(
     IteratorType i,
@@ -698,7 +673,7 @@ IteratorType ChessBoard::generateMovesTempl(
     if constexpr (type != MoveGenType::NO_CHECK)
     {
         const SquareSet attackedSquares {
-            determineAttackedSquares(
+            Attacks::determineAttackedSquares(
                 m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
                 m_pawns &~ m_turnColorMask,
                 m_knights &~ m_turnColorMask,
@@ -804,7 +779,7 @@ IteratorType ChessBoard::generateMovesTempl(
         if constexpr (type == MoveGenType::NO_CHECK)
         {
             const SquareSet attackedSquares {
-                determineAttackedSquares(
+                Attacks::determineAttackedSquares(
                     m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
                     m_pawns &~ m_turnColorMask,
                     m_knights &~ m_turnColorMask,
