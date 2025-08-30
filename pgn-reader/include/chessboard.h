@@ -1290,25 +1290,6 @@ private:
         Square sq,
         Color turn) noexcept;
 
-    /// @brief Determines all attacked squares
-    ///
-    /// @param[in] occupancyMask    All occupied squares. These block slider attacks
-    /// @param[in] pawns            Attacking pawns
-    /// @param[in] knights          Attacking knights
-    /// @param[in] bishops          Attacking bishops and queens
-    /// @param[in] rooks            Attacking rooks and queens
-    /// @param[in] king             Attacking king
-    /// @param[in] turn             Side to move (determines pawn attacking direction)
-    /// @return                     All attacked squares
-    static inline SquareSet determineAttackedSquares(
-        SquareSet occupancyMask,
-        SquareSet pawns,
-        SquareSet knights,
-        SquareSet bishops,
-        SquareSet rooks,
-        Square king,
-        Color turn) noexcept;
-
     // note: assumes that the move is legal
     static constexpr inline bool isPawnDoubleSquareMove(Square src, Square dst) noexcept
     {
@@ -1503,7 +1484,7 @@ private:
     /// @param[in]  attackedSquares    Attacked squares
     /// @return                        Move list iterator (end of generated moves)
     ///
-    /// @sa (@coderef{determineAttackedSquares()})
+    /// @sa (@coderef{Attacks::determineAttackedSquares()})
     template <typename IteratorType>
     IteratorType generateMovesForKing(
         IteratorType i,
@@ -1520,7 +1501,7 @@ private:
     /// @param[in]  attackedSquares    Attacked squares
     /// @return                        Move list iterator (end of generated moves)
     ///
-    /// @sa (@coderef{determineAttackedSquares()})
+    /// @sa (@coderef{Attacks::determineAttackedSquares()})
     template <typename IteratorType, MoveGenType type, bool shortCastling>
     IteratorType generateMovesForCastling(
         IteratorType i, SquareSet attackedSquares) const noexcept;
@@ -1534,7 +1515,7 @@ private:
     /// @param[in]  legalDestinations  Legal destinations
     /// @return                        Move list iterator (end of generated moves)
     ///
-    /// @sa (@coderef{determineAttackedSquares()})
+    /// @sa (@coderef{Attacks::determineAttackedSquares()})
     template <typename IteratorType, MoveGenType type, typename ParamType>
     IteratorType generateMovesTempl(
         IteratorType i,

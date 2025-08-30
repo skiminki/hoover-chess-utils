@@ -22,6 +22,10 @@
 
 #include "slider-attacks.h"
 
+#if HAVE_AVX512F
+#include "bitboard-attacks-avx512f.h"
+#endif
+
 #include <array>
 #include <cinttypes>
 
@@ -181,25 +185,6 @@ public:
         }
     }
 
-    static constexpr inline SquareSet getPawnAttacksMask(SquareSet pawns, Color pawnColor) noexcept
-    {
-        static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
-        static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
-
-        // for rotl
-        std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<std::int8_t>(pawnColor);
-
-        SquareSet attacks { };
-
-        // captures to left
-        attacks |= (pawns &~ SquareSet::column(0)).rotl(pawnAdvanceShift - 1);
-
-        // captures to right
-        attacks |= (pawns &~ SquareSet::column(7)).rotl(pawnAdvanceShift + 1);
-
-        return attacks;
-    }
-
     /// @brief Returns the set of squares a knight can attack
     ///
     /// @param[in]  sq     Knight square
@@ -337,7 +322,80 @@ public:
     {
         return SquareSet { ctKingAttackMaskTable[getIndexOfSquare(sq)] };
     }
+
+    /// @brief Determines all attacked squares
+    ///
+    /// @param[in] occupancyMask    All occupied squares. These block slider attacks
+    /// @param[in] pawns            Attacking pawns
+    /// @param[in] knights          Attacking knights
+    /// @param[in] bishops          Attacking bishops and queens
+    /// @param[in] rooks            Attacking rooks and queens
+    /// @param[in] king             Attacking king
+    /// @param[in] turn             Side to move (determines pawn attacking direction)
+    /// @return                     All attacked squares
+    static inline SquareSet determineAttackedSquares(
+        SquareSet occupancyMask,
+        SquareSet pawns,
+        SquareSet knights,
+        SquareSet bishops,
+        SquareSet rooks,
+        Square king,
+        Color turn) noexcept
+    {
+#if HAVE_AVX512F
+        return Attacks_AVX512F::determineAttackedSquares(
+            occupancyMask,
+            pawns,
+            knights,
+            bishops,
+            rooks,
+            king,
+            turn);
+#else
+    SquareSet attacks { };
+
+    // pawn attacks
+    static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
+    static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
+
+    // for rotl -- pawn color is opposite to turn
+    std::int8_t pawnAdvanceShiftLeft = -9 + 2 * static_cast<std::int8_t>(turn);
+
+    // captures to left
+    attacks |= (pawns &~ SquareSet::column(0)).rotl(pawnAdvanceShiftLeft);
+
+    // captures to right
+    attacks |= (pawns &~ SquareSet::column(7)).rotl(pawnAdvanceShiftLeft + 2);
+
+
+    SQUARESET_ENUMERATE(
+        piece,
+        knights,
+        attacks |= Attacks::getKnightAttackMask(piece));
+
+    SQUARESET_ENUMERATE(
+        piece,
+        bishops,
+        attacks |= SliderAttacks::getBishopAttackMask(piece, occupancyMask));
+
+    SQUARESET_ENUMERATE(
+        piece,
+        rooks,
+        attacks |= SliderAttacks::getRookAttackMask(piece, occupancyMask));
+
+    attacks |= Attacks::getKingAttackMask(king);
+
+    return attacks;
+#endif
+    }
 };
+
+#if HAVE_AVX512F
+SquareSet Attacks_AVX512F::getKingAttackMask(Square sq) noexcept
+{
+    return Attacks::getKingAttackMask(sq);
+}
+#endif
 
 }
 
