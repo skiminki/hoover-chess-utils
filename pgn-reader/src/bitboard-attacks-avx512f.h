@@ -162,7 +162,7 @@ public:
                 0xF0,
                 static_cast<std::uint64_t>(rooks));
 
-        const __m512i occupancyMasks = _mm512_set1_epi64(static_cast<std::uint64_t>(occupancyMask));
+        const __m512i occupancyMasksNegated = _mm512_set1_epi64(static_cast<std::uint64_t>(~occupancyMask));
 
         attackingSliders &= attackingSliderMasks;
 
@@ -172,12 +172,12 @@ public:
         {
             attackingSliders  = _mm512_rolv_epi64(attackingSliders, rotateLefts);
             attacks          |= attackingSliders;
-            attackingSliders  = attackingSliders &~ occupancyMasks;
+            attackingSliders  = attackingSliders & occupancyMasksNegated;
             attackingSliders &= attackingSliderMasks;
 
             attackingSliders  = _mm512_rolv_epi64(attackingSliders, rotateLefts);
             attacks          |= attackingSliders;
-            attackingSliders  = attackingSliders &~ occupancyMasks;
+            attackingSliders  = attackingSliders & occupancyMasksNegated;
 
             exitCond = _mm512_test_epi64_mask(attackingSliders, attackingSliderMasks);
 

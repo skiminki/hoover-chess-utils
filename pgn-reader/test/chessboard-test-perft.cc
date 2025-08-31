@@ -126,6 +126,7 @@ FenPerft fenPerfts[] = {
     { "8/8/8/8/1p2k1p1/pPb1PpPp/P1P2P1P/RB3KBN w - - 0 1", 1, 0, false }, // stalemate, no moves
     { "8/8/8/8/4k1p1/4PpPp/4nP1P/3Q1NKN w - - 0 1", 1, 1, false }, // in check, queen must move
     { "3bk3/8/8/1r3PpK/8/8/8/8 w - g6 0 1", 1, 4, false }, // EP capture exposes king horizontally to rook
+    { "3bk3/8/8/1r2pP1K/8/8/8/8 w - e6 0 1", 1, 4, false }, // EP capture exposes king horizontally to rook, other side
     { "4k3/8/8/1n1Pp2K/8/8/8/8 w - e6 0 1", 1, 7, false }, // EP capture, king on same rank, but not exposing to rook
     { "b1b1b1b1/1P3P2/8/3K4/8/8/7k/8 w - - 0 1", 1, 14, false }, // pinned promoting pawns (white to move)
     { "8/8/8/8/8/1b1b1b2/2PPP2k/3K4 w - - 0 1", 1, 4, false }, // pinned capturing pawns (white to move)
@@ -159,7 +160,8 @@ FenPerft fenPerfts[] = {
     { "q1k5/8/8/2pP4/8/8/8/7K w - c6 0 1", 1, 4, false }, // pinned en passant pawn capturing along the pin axis
     { "nrk1brnb/pp1ppp1p/2p5/3q1Pp1/8/PP6/1KPPP1PP/NR1QBRNB w - g6 0 10", 1, 5, false }, // en passant not possible in check
     { "rkb1rbnq/1pppp1pp/5p2/p7/7P/BPNn2P1/P1PPPP2/RK2RBNQ w KQkq - 2 10", 1, 34, false }, // FRC long castling into check
-    { "nrbkqbrn/1pppp2p/8/5p2/PR2PpQ1/8/2PP2PP/N1BK1BRN b Kkq e3 0 11", 1, 26, true },
+    { "nrbkqbrn/1pppp2p/8/5p2/PR2PpQ1/8/2PP2PP/N1BK1BRN b Kkq e3 0 11", 1, 26, false },
+    { "2k1rb1r/6p1/p4p2/1p1Pp2P/2n2B2/8/P1N1KPP1/3R3R w - e6 0 26", 1, 41, false },
 
 };
 

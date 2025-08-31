@@ -16,6 +16,7 @@
 
 #include "chessboard.h"
 
+#include "bitboard-attacks.h"
 #include "chessboard-movegen.h"
 #include "chessboard-priv.h"
 #include "chessboard-types-squareset.h"
@@ -320,9 +321,9 @@ void ChessBoard::validateBoard()
     const Color turn { getTurn() };
     const Color oppositeTurn { oppositeColor(turn) };
 
-    determineCheckersAndPinners();
+    updateCheckersAndPins();
 
-    if (determineAttackers(
+    if (Attacks::determineAttackers(
             m_occupancyMask,
             ~m_turnColorMask,
             m_pawns,

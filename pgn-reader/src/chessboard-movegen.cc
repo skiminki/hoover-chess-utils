@@ -37,7 +37,7 @@ bool ChessBoard::isLegalKingMove(const Square src, const Square dst, const Color
 {
     const SquareSet kingSqBit { SquareSet::square(src) };
 
-    return determineAttackers(
+    return Attacks::determineAttackers(
         m_occupancyMask & ~kingSqBit,
         m_turnColorMask & ~kingSqBit,
         m_pawns,

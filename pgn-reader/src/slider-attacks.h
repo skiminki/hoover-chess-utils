@@ -242,12 +242,21 @@ public:
 /// @brief Slider attacks implementation using PEXT/PDEP
 class SliderAttacksPextPdep
 {
+private:
+    static const std::array<SquareSet, 64U> ctPextRookMasks;
+    static const std::array<std::uint32_t, 64U> ctPextRookOffsets;
+    static const std::array<std::uint64_t, 102400U> ctPextRookAttackData;
+    static const std::array<SquareSet, 64U> ctPextBishopMasks;
+    static const std::array<std::uint32_t, 64U> ctPextBishopOffsets;
+    static const std::array<std::uint64_t, 5248U> ctPextBishopAttackData;
+
+
 public:
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for documentation
-    static SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept;
+    static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 
     /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
-    static SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
+    static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 };
 
 #if HAVE_PDEP_PEXT
@@ -255,6 +264,30 @@ public:
 /// @ingroup PgnReaderImpl
 /// @brief Type alias (PEXT/PDEP implementation)
 using SliderAttacks = SliderAttacksPextPdep;
+
+// get mask of rook attacks/moves on populated board
+SquareSet SliderAttacksPextPdep::getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    const SquareSet pextMask { ctPextBishopMasks[static_cast<std::uint8_t>(sq)] };
+    const std::uint64_t offset { ctPextBishopOffsets[static_cast<std::uint8_t>(sq)] };
+
+    return SquareSet {
+        ctPextBishopAttackData[
+            offset +
+            static_cast<std::uint64_t>(occupancyMask.parallelExtract(pextMask))] };
+}
+
+// get mask of rook attacks/moves on populated board
+SquareSet SliderAttacksPextPdep::getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    const SquareSet pextMask { ctPextRookMasks[static_cast<std::uint8_t>(sq)] };
+    const std::uint64_t offset { ctPextRookOffsets[static_cast<std::uint8_t>(sq)] };
+
+    return SquareSet {
+        ctPextRookAttackData[
+            offset +
+            static_cast<std::uint64_t>(occupancyMask.parallelExtract(pextMask))] };
+}
 
 #else
 
