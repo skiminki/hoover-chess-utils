@@ -20,6 +20,7 @@
 #include "chessboard-types.h"
 #include "chessboard-types-squareset.h"
 
+#include "bitboard-intercepts.h"
 #include "slider-attacks.h"
 
 #if HAVE_AVX512F
@@ -321,6 +322,116 @@ public:
     static inline SquareSet getKingAttackMask(Square sq) noexcept
     {
         return SquareSet { ctKingAttackMaskTable[getIndexOfSquare(sq)] };
+    }
+
+    static inline SquareSet determineAttackers(
+        const SquareSet occupancyMask,
+        const SquareSet turnColorMask,
+        const SquareSet pawns,
+        const SquareSet knights,
+        const SquareSet bishops,
+        const SquareSet rooks,
+        const SquareSet kings,
+        const Square sq,
+        const Color turn) noexcept
+    {
+        const SquareSet opponentPieces { occupancyMask & ~turnColorMask };
+        SquareSet attackers { };
+
+        // rooks and queens
+        const SquareSet horizVertHits { Attacks::getRookAttackMask(sq, occupancyMask) };
+        SquareSet attackers4 { horizVertHits & rooks };
+
+        // bishops and queens
+        const SquareSet diagHits { Attacks::getBishopAttackMask(sq, occupancyMask) };
+        const SquareSet attackers5 { diagHits & bishops };
+
+        // pawn attackers
+        const SquareSet attackers1 { Attacks::getPawnAttackMask(sq, turn) & pawns };
+
+        // king
+        const SquareSet attackers2 { Attacks::getKingAttackMask(sq) & kings };
+
+        // knights
+        const SquareSet attackers3 { Attacks::getKnightAttackMask(sq) & knights };
+
+        attackers = (attackers1 | attackers2 | attackers3 | attackers4 | attackers5) & opponentPieces;
+
+        return attackers;
+    }
+
+    /// @brief Determines all checkers and pinners
+    ///
+    /// @param[in]  occupancyMask    All occupied squares. These block slider attacks
+    /// @param[in]  turnColorMask    Pieces of the side to move
+    /// @param[in]  pawns            All pawns
+    /// @param[in]  knights          All knights
+    /// @param[in]  bishops          All bishops and queens
+    /// @param[in]  rooks            All rooks and queens
+    /// @param[in]  epSquare         En passant capturable pawn (if any)
+    /// @param[in]  kingSq           King of side to move
+    /// @param[in]  turn             Side to move
+    /// @param[out] out_checkers     Set of checking pieces
+    /// @param[out] out_pinnedPieces Set of pinned pieces. The capturable en passant pawn
+    ///                              is included if it is pinned diagonally.
+    ///
+    /// @remark A diagonally pinned en passant capturable pawn cannot be
+    /// captured due to the pin.
+    static inline void determineCheckersAndPins(
+        SquareSet occupancyMask,
+        SquareSet turnColorMask,
+        SquareSet pawns,
+        SquareSet knights,
+        SquareSet bishops,
+        SquareSet rooks,
+        SquareSet epCapturable,
+        Square kingSq,
+        Color turn,
+        SquareSet &out_checkers,
+        SquareSet &out_pinnedPieces) noexcept
+    {
+        const SquareSet opponentPieces { occupancyMask ^ turnColorMask };
+
+        // pawn checkers
+        out_checkers = Attacks::getPawnAttackMask(kingSq, turn) & pawns;
+
+        // knights
+        out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
+
+        // rooks and queens
+        const SquareSet firstHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask) };
+        out_checkers |= firstHVHits & rooks;
+
+        // bishops and queens
+        const SquareSet firstDiagHits { Attacks::getBishopAttackMask(kingSq, occupancyMask) };
+        out_checkers |= firstDiagHits & bishops;
+
+        out_checkers &= opponentPieces;
+
+        // potential pinners
+        const SquareSet secondHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask &~ firstHVHits) };
+        const SquareSet secondDiagHits { Attacks::getBishopAttackMask(kingSq, occupancyMask &~ firstDiagHits) };
+
+        SquareSet xrayHorizVertAttackers {
+            rooks & (occupancyMask & secondHVHits & opponentPieces) };
+        SquareSet xrayDiagAttackers {
+            bishops & (occupancyMask & secondDiagHits & opponentPieces) };
+
+        out_pinnedPieces = SquareSet { };
+        SQUARESET_ENUMERATE(
+            pinner,
+            xrayHorizVertAttackers,
+            {
+                SquareSet inBetween { Intercepts::getInterceptSquares(kingSq, pinner) };
+                out_pinnedPieces |= inBetween & turnColorMask;
+            });
+        SQUARESET_ENUMERATE(
+            pinner,
+            xrayDiagAttackers,
+            {
+                SquareSet inBetween { Intercepts::getInterceptSquares(kingSq, pinner) };
+                out_pinnedPieces |= inBetween & (turnColorMask | epCapturable);
+            });
     }
 
     /// @brief Determines all attacked squares

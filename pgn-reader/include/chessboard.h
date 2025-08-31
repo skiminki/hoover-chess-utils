@@ -1128,6 +1128,11 @@ private:
         SquareSet::square(Square::B1) | SquareSet::square(Square::G1) |
         SquareSet::square(Square::B8) | SquareSet::square(Square::G8) };
 
+    /// @brief Kings
+    ///
+    /// @sa @coderef{getKings()}
+    SquareSet m_kings { SquareSet::square(Square::E1) | SquareSet::square(Square::E8) };
+
     /// @brief Bishops and queens
     ///
     /// @sa @coderef{getBishopsAndQueens()}
@@ -1144,19 +1149,14 @@ private:
         SquareSet::square(Square::A8) | SquareSet::square(Square::H8) |
         SquareSet::square(Square::D1) | SquareSet::square(Square::D8) };
 
-    /// @brief Kings
-    ///
-    /// @sa @coderef{getKings()}
-    SquareSet m_kings { SquareSet::square(Square::E1) | SquareSet::square(Square::E8) };
-
     /// @brief Squares where there is a checker
     ///
-    /// @remark Set by @coderef{determineCheckersAndPinners()}
+    /// @remark Set by @coderef{updateCheckersAndPins()}
     SquareSet m_checkers { };
 
     /// @brief Squares with pinned pieces
     ///
-    /// @remark Set by @coderef{determineCheckersAndPinners()}
+    /// @remark Set by @coderef{updateCheckersAndPins()}
     SquareSet m_pinnedPieces { };
 
     /// @brief Current ply number
@@ -1200,7 +1200,7 @@ private:
     /// @brief Determines checkers and pinned pieces.
     ///
     /// This function sets @coderef{m_checkers} and @coderef{m_pinnedPieces}.
-    void determineCheckersAndPinners() noexcept;
+    void updateCheckersAndPins() noexcept;
 
     /// @brief Validates the board for items that are common for both
     /// @coderef{setBoard()} and @coderef{loadFEN()} and sets @coderef{m_checkers}.
@@ -1278,17 +1278,6 @@ private:
 
         return 5U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 2U;
     }
-
-    static inline SquareSet determineAttackers(
-        SquareSet occupancyMask,
-        SquareSet turnColorMask,
-        SquareSet pawns,
-        SquareSet knights,
-        SquareSet bishops,
-        SquareSet rooks,
-        SquareSet kings,
-        Square sq,
-        Color turn) noexcept;
 
     // note: assumes that the move is legal
     static constexpr inline bool isPawnDoubleSquareMove(Square src, Square dst) noexcept

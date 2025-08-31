@@ -84,7 +84,7 @@ consteval auto generatePextBishopMasks() noexcept
     return ret;
 }
 
-consteval auto generatePextOffsets(const std::array<SquareSet, 64U> &masks) noexcept
+constexpr auto generatePextOffsets(const std::array<SquareSet, 64U> &masks) noexcept
 {
     std::array<std::uint32_t, 64U> ret { };
     std::uint32_t offset { };
@@ -169,6 +169,8 @@ constexpr auto calculatePextBishopAttackData(const std::array<SquareSet, 64U> &m
 }
 #endif
 
+}
+
 // masks for PEXT/PDEP. In general, these have the form:
 //
 // 0 0 0 0 0 0 0 0
@@ -181,20 +183,14 @@ constexpr auto calculatePextBishopAttackData(const std::array<SquareSet, 64U> &m
 // 0 0 0 0 0 0 0 0
 //
 // 'R' is 0
-constexpr std::array<SquareSet, 64U> ctPextRookMasks { generatePextRookMasks() };
-constexpr std::array<SquareSet, 64U> ctPextBishopMasks { generatePextBishopMasks() };
+const std::array<SquareSet, 64U> SliderAttacksPextPdep::ctPextRookMasks { generatePextRookMasks() };
+const std::array<SquareSet, 64U> SliderAttacksPextPdep::ctPextBishopMasks { generatePextBishopMasks() };
 
 
-// quick sanity checks
-static_assert(ctPextRookMasks[0].popcount() == 12);
-static_assert(ctPextRookMasks[4].popcount() == 11);
-static_assert(ctPextRookMasks[12].popcount() == 10);
-static_assert(ctPextRookMasks[18] == SquareSet { UINT64_C(0x00'04'04'04'04'7A'04'00) });
+const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextRookOffsets { generatePextOffsets(ctPextRookMasks) };
+const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextBishopOffsets { generatePextOffsets(ctPextBishopMasks) };
 
-constexpr std::array<std::uint32_t, 64U> ctPextRookOffsets { generatePextOffsets(ctPextRookMasks) };
-constexpr std::array<std::uint32_t, 64U> ctPextBishopOffsets { generatePextOffsets(ctPextBishopMasks) };
-
-std::array<std::uint64_t, calculatePextDataSize(ctPextRookMasks)> ctPextRookAttackData {
+const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> SliderAttacksPextPdep::ctPextRookAttackData {
 
 //    calculatePextRookAttackData(ctPextRookMasks, ctPextRookOffsets)
 
@@ -202,41 +198,12 @@ std::array<std::uint64_t, calculatePextDataSize(ctPextRookMasks)> ctPextRookAtta
 
 };
 
-std::array<std::uint64_t, calculatePextDataSize(ctPextBishopMasks)> ctPextBishopAttackData {
+const std::array<std::uint64_t, calculatePextDataSize(generatePextBishopMasks())> SliderAttacksPextPdep::ctPextBishopAttackData {
 
 //    calculatePextBishopAttackData(ctPextBishopMasks, ctPextBishopOffsets)
 
 #include "slider-attacks-pext-pdep-bishop.inc"
 
 };
-
-static_assert(ctPextRookAttackData.size() == 102400U);
-static_assert(ctPextBishopAttackData.size() == 5248U);
-
-}
-
-// get mask of rook attacks/moves on populated board
-SquareSet SliderAttacksPextPdep::getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
-{
-    const SquareSet pextMask { ctPextBishopMasks[static_cast<std::uint8_t>(sq)] };
-    const std::uint64_t offset { ctPextBishopOffsets[static_cast<std::uint8_t>(sq)] };
-
-    return SquareSet {
-        ctPextBishopAttackData[
-            offset +
-            static_cast<std::uint64_t>(occupancyMask.parallelExtract(pextMask))] };
-}
-
-// get mask of rook attacks/moves on populated board
-SquareSet SliderAttacksPextPdep::getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
-{
-    const SquareSet pextMask { ctPextRookMasks[static_cast<std::uint8_t>(sq)] };
-    const std::uint64_t offset { ctPextRookOffsets[static_cast<std::uint8_t>(sq)] };
-
-    return SquareSet {
-        ctPextRookAttackData[
-            offset +
-            static_cast<std::uint64_t>(occupancyMask.parallelExtract(pextMask))] };
-}
 
 }
