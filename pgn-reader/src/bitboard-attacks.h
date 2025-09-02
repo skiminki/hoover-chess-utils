@@ -504,7 +504,7 @@ public:
 
             // Check whether the EP capturable pawn is horizontally pinned. This can only happen
             // when the king is on the same row
-            if ((SquareSet::row(0U) << (static_cast<std::uint64_t>(kingSq) & 56U))
+            if ((epCapturable & (SquareSet::row(0U) << (static_cast<std::uint64_t>(kingSq) & 56U)))
                 != SquareSet::none())
             {
                 const SquareSet adjacentPawnsMinus1 { adjacentPawns.removeFirstSquare() };
