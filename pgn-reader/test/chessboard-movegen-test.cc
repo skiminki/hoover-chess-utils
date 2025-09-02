@@ -385,6 +385,10 @@ TEST(MoveGen, illegalMoves)
     board.loadFEN("1k2r3/8/8/2pP4/8/8/8/4K3 w - c6 0 1");
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::C6);
 
+    // Pawn double advance but wrong starting rank
+    board.loadFEN("rnbqkbnr/ppp1pppp/3p4/8/8/4P3/PPPP1PPP/RNBQKBNR w KQkq - 0 2");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestNoCapture, SquareSet::all(), Square::E5);
+
     // King walking into a check
     board.loadFEN("8/r7/3K4/7k/8/8/8/8 w - - 0 1");
     PLAY_MOVE_EXPECT_NO_MOVES(board, KingAndDest, SquareSet::all(), Square::D7);
