@@ -54,11 +54,7 @@ bool ChessBoard::operator == (const ChessBoard &o) const noexcept
 
     if (getEpSquare() != o.getEpSquare())
     {
-        Square ep1 { canEpCapture() ? getEpSquare() : Square::NONE };
-        Square ep2 { o.canEpCapture() ? o.getEpSquare() : Square::NONE };
-
-        if (ep1 != ep2)
-            return false;
+        return false;
     }
 
     if (getCurrentPlyNum() != o.getCurrentPlyNum())
