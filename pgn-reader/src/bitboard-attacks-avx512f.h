@@ -74,14 +74,14 @@ public:
     };
 
     // the order of sliders:
-    // - advancing top-left
-    // - advancing top-right
-    // - advancing bottom-left
-    // - advancing bottom-right
-    // - advancing top
-    // - advancing bottom
-    // - advancing left
-    // - advancing right
+    // - bishop advancing top-left
+    // - bishop advancing top-right
+    // - bishop advancing bottom-left
+    // - bishop advancing bottom-right
+    // - rook advancing top
+    // - rook bishop advancing bottom
+    // - rook advancing left
+    // - rook advancing right
     alignas(__m512i) static constexpr std::array<std::uint64_t, 8U> ctAttackingSliderMasks {
         static_cast<std::uint64_t>(~(SquareSet::row(7U) | SquareSet::column(0U))),
         static_cast<std::uint64_t>(~(SquareSet::row(7U) | SquareSet::column(7U))),
@@ -152,7 +152,7 @@ public:
             return attacks;
 
         const __m512i rotateLefts = _mm512_load_epi64(ctAttackingSliderRotateLefts.data());
-        __m512i attackingSliderMasks =  _mm512_load_epi64(ctAttackingSliderMasks.data());
+        const __m512i attackingSliderMasks =  _mm512_load_epi64(ctAttackingSliderMasks.data());
 
         __m512i attackingSliders { };
 
@@ -233,6 +233,105 @@ public:
             SquareSet { attacks64 } |
             getKingAttackMask(king);
     }
+
+#if 0 // note: this is quite a lot slower than the regular PEXT/PDEP implementation
+    static inline void determineSliderCheckersAndPins(
+        SquareSet occupancyMask,
+        SquareSet turnColorMask,
+        SquareSet bishops,
+        SquareSet rooks,
+        SquareSet epCapturable,
+        Square kingSq,
+        SquareSet &out_checkers,
+        SquareSet &out_pinnedPieces)
+    {
+        // rays expanding outwards from king towards a checker or possibly pinned piece
+        __m512i kingRays { _mm512_set1_epi64(static_cast<std::uint64_t>(SquareSet::square(kingSq))) };
+
+        __m512i oppSliders {
+            _mm512_set_epi64(
+                static_cast<std::uint64_t>(rooks &~ turnColorMask),
+                static_cast<std::uint64_t>(rooks &~ turnColorMask),
+                static_cast<std::uint64_t>(rooks &~ turnColorMask),
+                static_cast<std::uint64_t>(rooks &~ turnColorMask),
+                static_cast<std::uint64_t>(bishops &~ turnColorMask),
+                static_cast<std::uint64_t>(bishops &~ turnColorMask),
+                static_cast<std::uint64_t>(bishops &~ turnColorMask),
+                static_cast<std::uint64_t>(bishops &~ turnColorMask)) };
+
+        // Traces from potentially pinned pieces outwards. Used to commit the pinned piece in
+        // case the trace hits an x-ray attacker
+        __m512i xrays { };
+
+        // pinned pieces
+        __m512i pinnedPieces { };
+
+        const __m512i occupancyMasks { _mm512_set1_epi64(static_cast<std::uint64_t>(occupancyMask)) };
+        __m512i checkers { };
+        const __m512i pinnables {
+            _mm512_set_epi64(
+                static_cast<std::uint64_t>(turnColorMask),
+                static_cast<std::uint64_t>(turnColorMask),
+                static_cast<std::uint64_t>(turnColorMask),
+                static_cast<std::uint64_t>(turnColorMask),
+                static_cast<std::uint64_t>(turnColorMask | epCapturable),
+                static_cast<std::uint64_t>(turnColorMask | epCapturable),
+                static_cast<std::uint64_t>(turnColorMask | epCapturable),
+                static_cast<std::uint64_t>(turnColorMask | epCapturable)) };
+
+        const __m512i rotateLefts = _mm512_load_epi64(ctAttackingSliderRotateLefts.data());
+        const __m512i attackingSliderMasks =  _mm512_load_epi64(ctAttackingSliderMasks.data());
+
+        // Filter out king rays about to go out of board. At this point, all
+        // king rays are still on king, so we're not losing any hits
+        kingRays &= attackingSliderMasks;
+
+        while (true)
+        {
+            // expand king rays
+            kingRays = _mm512_rolv_epi64(kingRays, rotateLefts);
+
+            // add checkers if king rays meet opponent's sliders
+            checkers |= kingRays & oppSliders;
+
+            // spawn x-rays if king rays meet pinnable pieces
+            const __m512i newPinnables { kingRays & pinnables };
+            pinnedPieces |= newPinnables; // note: we'll zap pinned pieces if xray doesn't end in opponent slider
+            xrays |= newPinnables;
+
+            // Check for x-ray termination. That is one of:
+            // - the ray is about to go out of bounds
+            // - the ray is on occupied square other than a potential pinned piece
+            const __mmask8 keepXrays { _mm512_testn_epi64_mask(xrays, ((occupancyMasks &~ pinnedPieces) | ~attackingSliderMasks)) };
+            // Do we keep the pinned piece on x-ray termination? We do if:
+            // - the x-ray terminates on opponent slider hit
+            const __mmask8 keepPinnedPieces { _mm512_test_epi64_mask(xrays, oppSliders) };
+
+            // terminate king rays on occupied squares
+            kingRays &= ~occupancyMasks;
+
+            // terminate king rays that would go out of bounds on the next iteration
+            kingRays &= attackingSliderMasks;
+
+            // now, expand and conditionally terminate x-rays
+            xrays = _mm512_maskz_rolv_epi64(keepXrays, xrays, rotateLefts);
+
+            // exit comdition: no more king rays and x-rays
+            const __mmask8 exitCond { _mm512_test_epi64_mask(kingRays | xrays, kingRays | xrays) };
+
+            // zap pinned pieces of terminated x-rays, unless we decided to keep
+            // them on termination
+            pinnedPieces = _mm512_maskz_mov_epi64(keepXrays | keepPinnedPieces, pinnedPieces);
+
+            if (exitCond == 0U)
+                break;
+        }
+
+        out_checkers = SquareSet { static_cast<std::uint64_t>(_mm512_reduce_or_epi64(checkers)) };
+        out_pinnedPieces = SquareSet { static_cast<std::uint64_t>(_mm512_reduce_or_epi64(pinnedPieces)) };
+    }
+#endif
+
 };
 
 }
