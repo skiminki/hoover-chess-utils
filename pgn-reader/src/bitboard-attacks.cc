@@ -161,10 +161,24 @@ consteval auto concatenateArrays(const std::array<std::uint64_t, N> &first, cons
     return ret;
 }
 
+template <std::size_t N>
+consteval auto interleaveArrays(const std::array<std::uint64_t, N> &first, const std::array<std::uint64_t, N> &second) noexcept
+{
+    std::array<std::array<std::uint64_t, 2U>, N> ret { };
+
+    for (std::size_t i { }; i < N; ++i)
+    {
+        ret[i][0U] = first[i];
+        ret[i][1U] = second[i];
+    }
+
+    return ret;
 }
 
-const std::array<std::uint64_t, 128U> Attacks::ctPawnAttackMaskTableFlattened {
-    concatenateArrays(generateWhitePawnAttackMaskTable(), generateBlackPawnAttackMaskTable())
+}
+
+const std::array<std::array<std::uint64_t, 2U>, 64U > Attacks::ctPawnAttackMaskTable {
+    interleaveArrays(generateWhitePawnAttackMaskTable(), generateBlackPawnAttackMaskTable())
 };
 
 const std::array<std::uint64_t, 64U> Attacks::ctKnightAttackMaskTable { generateKnightAttackMaskTable() };

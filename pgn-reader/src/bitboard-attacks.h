@@ -21,6 +21,7 @@
 #include "chessboard-types-squareset.h"
 
 #include "bitboard-intercepts.h"
+#include "lookup-utils.h"
 #include "slider-attacks.h"
 
 #if HAVE_AVX512F
@@ -38,22 +39,14 @@ namespace hoover_chess_utils::pgn_reader
 class Attacks
 {
 private:
-    /// @brief Pawn attack masks, flattened for both colors
-    ///
-    /// Layout:
-    ///
-    /// - <tt>element[0..63]</tt>: White pawn attacks per square. Non-zero
-    ///   for ranks 1 to 7 (rows 0..6).
-    /// - <tt>element[64..127]</tt>: Black pawn attacks per square. Non-zero
-    ///   for ranks 2 to 8 (rows 1..7).
+    /// @brief Pawn attack masks
     ///
     /// This table is used for both pawn-to-attacked-square and attacking-pawn-to-square
     /// tables. Hence the inclusion of ranks 1 and 8.
     ///
-    /// @sa @c getPawnAttackMask()
-    /// @sa @c getPawnAttackerMask()
-    /// @sa @c getPawnAttackersMask()
-    static const std::array<std::uint64_t, 128U> ctPawnAttackMaskTableFlattened;
+    /// @sa @coderef{getPawnAttackMask()}
+    /// @sa @coderef{getPawnAttackerMask()}
+    static const std::array<std::array<std::uint64_t, 2U>, 64U> ctPawnAttackMaskTable;
 
     /// @brief Knight attack masks
     ///
@@ -87,13 +80,12 @@ public:
     ///
     /// @remark Validity of pawn position is not assumed. Hence, attack squares
     /// are provided for white pawns on 1st rank and black pawns on 8th rank.
-    static SquareSet getPawnAttackMask(Square sq, Color pawnColor) noexcept
+    static inline SquareSet getPawnAttackMask(Square sq, Color pawnColor) noexcept
     {
         static_assert(static_cast<std::uint64_t>(Color::WHITE) == 0U);
         static_assert(static_cast<std::uint64_t>(Color::BLACK) == 8U);
 
-        return SquareSet {
-            ctPawnAttackMaskTableFlattened[(static_cast<std::uint64_t>(pawnColor) << 3U) | getIndexOfSquare(sq)] };
+        return SquareSet { turnSpecificArrayLookup(ctPawnAttackMaskTable, static_cast<std::size_t>(sq), pawnColor) };
     }
 
     /// @brief Returns a set of squares from which a pawn can attack
@@ -124,7 +116,7 @@ public:
         static_assert(static_cast<std::uint64_t>(Color::BLACK) == 8U);
 
         return SquareSet {
-            ctPawnAttackMaskTableFlattened[((static_cast<std::uint64_t>(pawnColor) ^ 8U) << 3U) | getIndexOfSquare(sq)] };
+            turnSpecificArrayLookup(ctPawnAttackMaskTable, static_cast<std::size_t>(sq), oppositeColor(pawnColor)) };
     }
 
     /// @brief For a given set of squares, returns the squares where pawns can
@@ -387,7 +379,8 @@ public:
     /// @param[in]  knights          All knights
     /// @param[in]  bishops          All bishops and queens
     /// @param[in]  rooks            All rooks and queens
-    /// @param[in]  epSquare         En passant capturable pawn (if any)
+    /// @param[in]  epSquare         En passant square or @coderef{Square::NONE}
+    /// @param[in]  epCapturable     En passant capturable pawn or @coderef{SquareSet::none()}
     /// @param[in]  kingSq           King of side to move
     /// @param[in]  turn             Side to move
     /// @param[out] out_checkers     Set of checking pieces
