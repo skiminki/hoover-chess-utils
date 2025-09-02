@@ -152,6 +152,9 @@ def main(argv):
     for path, subdirs, files in os.walk("scripts"):
         for name in files:
             checkFile(os.path.join(path, name))
+    for path, subdirs, files in os.walk("html"):
+        for name in files:
+            checkFile(os.path.join(path, name))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

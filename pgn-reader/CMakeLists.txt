@@ -23,8 +23,6 @@ FLEX_TARGET(PgnScanner src/pgnscanner.l ${CMAKE_CURRENT_BINARY_DIR}/pgnscanner.c
 configure_file(src/pgnreader-config.h.in pgnreader-config.h @ONLY)
 
 ##### Doxygen output
-find_package(Doxygen COMPONENTS doxygen dot)
-
 if(Doxygen_FOUND)
   set(DOXYGEN_ALIASES
       "coderef{1}=<tt>@ref \\1</tt>"
@@ -50,23 +48,7 @@ if(Doxygen_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${CMAKE_SOURCE_DIR}/build-config.dox)
 
-  set(DOXYGEN_ALIASES
-      "coderef{1}=<tt>@ref \\1</tt>"
-      "true=<tt>true</tt>"
-      "false=<tt>false</tt>"
-      "apionly{1}=\\1"
-      "fullonly{1}="
-      )
-  set(DOXYGEN_ENABLED_SECTIONS)
-  set(DOXYGEN_EXTRACT_ALL NO)
-  set(DOXYGEN_EXTRACT_PRIVATE NO)
-  set(DOXYGEN_SHOW_ENUM_VALUES NO)
-  set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
-  doxygen_add_docs(
-      pgn-reader-api-docs
-      ${CMAKE_CURRENT_SOURCE_DIR}/doc
-      ${CMAKE_CURRENT_SOURCE_DIR}/include
-      ${CMAKE_SOURCE_DIR}/build-config.dox)
+
 endif()
 
 add_library(
