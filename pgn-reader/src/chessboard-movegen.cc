@@ -64,16 +64,13 @@ ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestNoCapture(SquareSet
     const Color turn { getTurn() };
     const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
 
-    const SquareSet allowedDstSqMask {
-        (SquareSet::row(2U) | SquareSet::row(3U) | SquareSet::row(4U) | SquareSet::row(5U) | SquareSet::row(6U))
-        >> static_cast<std::uint8_t>(turn) };
+    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
 
-    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
-
-    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
+    const SquareSet singleAdvancingPawnSquare {
+        (PawnLookups::singleAdvanceNoPromoLegalDstMask(turn) & dstSqBit).rotr(pawnAdvanceShift) };
 
     const SquareSet doubleAdvancingPawnSquare {
-        (singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
+        (PawnLookups::rank3(turn) & singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
 
     const SquareSet advancingPawn {
         (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
@@ -82,7 +79,7 @@ ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestNoCapture(SquareSet
     if (advancingPawn != SquareSet::none()) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (pinCheck(src, dst)) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces)) [[likely]]
         {
             return Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
         }
@@ -100,16 +97,13 @@ std::size_t ChessBoard::generateMovesForPawnAndDestNoCapture(ShortMoveList &move
     const Color turn { getTurn() };
     const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
 
-    const SquareSet allowedDstSqMask {
-        (SquareSet::row(2U) | SquareSet::row(3U) | SquareSet::row(4U) | SquareSet::row(5U) | SquareSet::row(6U))
-        >> static_cast<std::uint8_t>(turn) };
+    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
 
-    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
-
-    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
+    const SquareSet singleAdvancingPawnSquare {
+        (PawnLookups::singleAdvanceNoPromoLegalDstMask(turn) & dstSqBit).rotr(pawnAdvanceShift) };
 
     const SquareSet doubleAdvancingPawnSquare {
-        (singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
+        (PawnLookups::rank3(turn) & singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
 
     const SquareSet advancingPawn {
         (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
@@ -118,7 +112,7 @@ std::size_t ChessBoard::generateMovesForPawnAndDestNoCapture(ShortMoveList &move
     if (advancingPawn != SquareSet::none()) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (pinCheck(src, dst)) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces)) [[likely]]
         {
             moves[0U] = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
             return 1U;
@@ -150,7 +144,7 @@ IteratorType ChessBoard::generateMovesForPawnAndDestCaptureTempl(IteratorType i,
             dstOkMask &
             srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
             {
-                if (pinCheck(src, dst))
+                if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
                 {
                     *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE };
                     ++i;
@@ -159,27 +153,11 @@ IteratorType ChessBoard::generateMovesForPawnAndDestCaptureTempl(IteratorType i,
     }
     else
     {
-        const int retractOneAdd { -8 + (2 * static_cast<int>(turn)) }; // pawn step backwards
-        const Square epPawn { addToSquareNoOverflowCheck(dst, retractOneAdd) };
-
-        SquareSet checkResolvedOk { (m_checkers &~ SquareSet::square(epPawn)).allIfNone() };
-
         SQUARESET_ENUMERATE(
             src,
-            checkResolvedOk &
             srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
             {
-                const SquareSet exposedHorizLine {
-                    SliderAttacksGeneric::getHorizRookAttackMask(
-                        epPawn,
-                        m_occupancyMask &~ SquareSet::square(src)) };
-
-                const SquareSet kingBit { m_kings & m_turnColorMask };
-                const SquareSet oppRooks { m_rooks & ~m_turnColorMask };
-
-                if (pinCheck(src, m_epSquare) &&
-                    ((kingBit & exposedHorizLine) == SquareSet::none() ||
-                     (oppRooks & exposedHorizLine) == SquareSet::none()))
+                if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
                 {
                     *i = Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT };
                     ++i;
@@ -212,8 +190,8 @@ ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(Squa
     const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
 
     // 7th or 0th rank
-    const SquareSet allowedDstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
-    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
+    const SquareSet allowedDstSqMask { PawnLookups::rank8(turn) };
+    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
 
     const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
 
@@ -224,7 +202,7 @@ ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(Squa
     if (advancingPawn != SquareSet::none()) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (pinCheck(src, dst)) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces)) [[likely]]
         {
             return Move { src, dst, pieceToTypeAndPromotion(promo) };
         }
@@ -243,8 +221,8 @@ std::size_t ChessBoard::generateMovesForPawnAndDestPromoNoCapture(ShortMoveList 
     const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMask(dst) };
 
     // 7th or 0th rank
-    const SquareSet allowedDstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
-    const std::int8_t pawnAdvanceShift = 8 - 2 * static_cast<int8_t>(turn);
+    const SquareSet allowedDstSqMask { PawnLookups::rank8(turn) };
+    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
 
     const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
 
@@ -255,7 +233,7 @@ std::size_t ChessBoard::generateMovesForPawnAndDestPromoNoCapture(ShortMoveList 
     if (advancingPawn != SquareSet::none()) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (pinCheck(src, dst)) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces)) [[likely]]
         {
             moves[0U] = Move { src, dst, pieceToTypeAndPromotion(promo) };
             return 1U;
@@ -275,7 +253,7 @@ IteratorType ChessBoard::generateMovesForPawnAndDestPromoCaptureTempl(IteratorTy
     const Color turn { getTurn() };
 
     const SquareSet dstSqBit { SquareSet::square(dst) };
-    const SquareSet dstSqMask { SquareSet::row(7U).rotl(static_cast<std::int8_t>(turn)) };
+    const SquareSet dstSqMask { PawnLookups::rank8(turn) };
 
     SquareSet dstOkMask {
         (blocksAllChecksMask(dst) & m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
@@ -285,7 +263,7 @@ IteratorType ChessBoard::generateMovesForPawnAndDestPromoCaptureTempl(IteratorTy
         dstOkMask &
         srcSqMask & m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(dst, turn),
         {
-            if (pinCheck(src, dst))
+            if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
             {
                 *i = Move { src, dst, pieceToTypeAndPromotion(promo) };
                 ++i;
@@ -347,7 +325,7 @@ IteratorType ChessBoard::generateMovesForBishopAndDestTempl(IteratorType i, Squa
         ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
          & pieces),
         {
-            if (pinCheck(src, dst))
+            if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
             {
                 *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE };
                 ++i;
@@ -382,7 +360,7 @@ IteratorType ChessBoard::generateMovesForRookAndDestTempl(IteratorType i, Square
         ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
          & pieces),
         {
-            if (pinCheck(src, dst))
+            if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
             {
                 *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_ROOK_MOVE };
                 ++i;
@@ -418,7 +396,7 @@ IteratorType ChessBoard::generateMovesForQueenAndDestTempl(IteratorType i, Squar
         ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
          & pieces),
         {
-            if (pinCheck(src, dst))
+            if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
             {
                 *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE };
                 ++i;
@@ -471,7 +449,7 @@ std::size_t ChessBoard::generateMovesForKingAndDest(ShortMoveList &moves, Square
 ChessBoard::Move ChessBoard::generateSingleMoveForLongCastling() const noexcept
 {
     // long castling requested
-    if (m_checkers == SquareSet::none())
+    if (m_checkers == SquareSet::none()) [[likely]]
     {
         const SquareSet attackedSquares {
             Attacks::determineAttackedSquares(
@@ -515,7 +493,7 @@ std::size_t ChessBoard::generateMovesForLongCastling(ShortMoveList &moves) const
 ChessBoard::Move ChessBoard::generateSingleMoveForShortCastling() const noexcept
 {
     // long castling requested
-    if (m_checkers == SquareSet::none())
+    if (m_checkers == SquareSet::none()) [[likely]]
     {
         const SquareSet attackedSquares {
             Attacks::determineAttackedSquares(

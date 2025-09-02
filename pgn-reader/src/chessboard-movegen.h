@@ -24,6 +24,7 @@
 #include "bitboard-attacks.h"
 #include "bitboard-intercepts.h"
 #include "chessboard-priv.h"
+#include "pawn-lookups.h"
 
 #include <algorithm>
 #include <array>
@@ -34,117 +35,6 @@
 
 namespace hoover_chess_utils::pgn_reader
 {
-
-template <Color side>
-struct SideSpecificsTempl;
-
-template <>
-struct SideSpecificsTempl<Color::WHITE>
-{
-    static constexpr SquareSet rank1     { SquareSet::row(0U) };
-    static constexpr SquareSet rank2     { SquareSet::row(1U) };
-    static constexpr SquareSet rank3     { SquareSet::row(2U) };
-    static constexpr SquareSet rank4     { SquareSet::row(3U) };
-    static constexpr SquareSet rank5     { SquareSet::row(4U) };
-    static constexpr SquareSet rank6     { SquareSet::row(5U) };
-    static constexpr SquareSet rank7     { SquareSet::row(6U) };
-    static constexpr SquareSet promoRank { SquareSet::row(7U) };
-
-    static constexpr SquareSet pawnAdvance(SquareSet pawns) noexcept
-    {
-        return pawns << 8U;
-    }
-
-    static constexpr SquareSet captureLeft(SquareSet pawns) noexcept
-    {
-        return (pawns & ~SquareSet::column(0U)) << 7U;
-    }
-
-    static constexpr SquareSet captureRight(SquareSet pawns) noexcept
-    {
-        return (pawns & ~SquareSet::column(7U)) << 9U;
-    }
-
-    static constexpr Square captureLeftSq(Square sq) noexcept
-    {
-        assert(columnOf(sq) >= 1U);
-        assert(rowOf(sq) <= 6U);
-        return addToSquareNoOverflowCheck(sq, 7);
-    }
-
-    static constexpr Square captureRightSq(Square sq) noexcept
-    {
-        assert(columnOf(sq) <= 6U);
-        assert(rowOf(sq) <= 6U);
-        return addToSquareNoOverflowCheck(sq, 9);
-    }
-
-    static constexpr Square pawnRetreatSq(Square sq) noexcept
-    {
-        assert(sq >= Square::A3);
-        return addToSquareNoOverflowCheck(sq, -8);
-    }
-
-    static constexpr Square pawnDoubleRetreatSq(Square sq) noexcept
-    {
-        assert(rowOf(sq) == 3U);
-        return addToSquareNoOverflowCheck(sq, -16);
-    }
-};
-
-template <>
-struct SideSpecificsTempl<Color::BLACK>
-{
-    static constexpr SquareSet rank1     { SquareSet::row(7U) };
-    static constexpr SquareSet rank2     { SquareSet::row(6U) };
-    static constexpr SquareSet rank3     { SquareSet::row(5U) };
-    static constexpr SquareSet rank4     { SquareSet::row(4U) };
-    static constexpr SquareSet rank5     { SquareSet::row(3U) };
-    static constexpr SquareSet rank6     { SquareSet::row(2U) };
-    static constexpr SquareSet rank7     { SquareSet::row(1U) };
-    static constexpr SquareSet promoRank { SquareSet::row(0U) };
-
-    static constexpr SquareSet pawnAdvance(SquareSet pawns) noexcept
-    {
-        return pawns >> 8U;
-    }
-
-    static constexpr SquareSet captureLeft(SquareSet pawns) noexcept
-    {
-        return (pawns & ~SquareSet::column(0U)) >> 9U;
-    }
-
-    static constexpr SquareSet captureRight(SquareSet pawns) noexcept
-    {
-        return (pawns & ~SquareSet::column(7U)) >> 7U;
-    }
-
-    static constexpr Square captureLeftSq(Square sq) noexcept
-    {
-        assert(columnOf(sq) >= 1U);
-        assert(rowOf(sq) >= 1U);
-        return addToSquareNoOverflowCheck(sq, -9);
-    }
-
-    static constexpr Square captureRightSq(Square sq) noexcept
-    {
-        assert(columnOf(sq) <= 6U);
-        assert(rowOf(sq) >= 1U);
-        return addToSquareNoOverflowCheck(sq, -7);
-    }
-
-    static constexpr Square pawnRetreatSq(Square sq) noexcept
-    {
-        assert(sq <= Square::H6);
-        return addToSquareNoOverflowCheck(sq, +8);
-    }
-
-    static constexpr Square pawnDoubleRetreatSq(Square sq) noexcept
-    {
-        assert(rowOf(sq) == 4U);
-        return addToSquareNoOverflowCheck(sq, +16);
-    }
-};
 
 template <bool shortCastling>
 struct CastlingSideSpecificsTempl;
@@ -170,21 +60,13 @@ SquareSet ChessBoard::blocksAllChecksMask(Square dst) const noexcept
         (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny() & blockableChecksMask;
 }
 
-bool ChessBoard::pinCheck(Square src, Square dst) const noexcept
-{
-    const SquareSet srcBit { SquareSet::square(src) };
-    const SquareSet dstBit { SquareSet::square(dst) };
-
-    return ((m_pinnedPieces & srcBit) == SquareSet::none() ||
-            (Intercepts::getPinRestiction<true>(m_kingSq, src) & dstBit) != SquareSet::none());
-}
 
 template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, Color turn>
 auto ChessBoard::generateMovesForPawnsTempl(
     IteratorType i,
     ParamType legalDestinations) const noexcept -> IteratorType
 {
-    using SideSpecifics = SideSpecificsTempl<turn>;
+    using SideSpecifics = PawnLookups_SideSpecificsTempl<turn>;
 
     const SquareSet pawns { m_pawns & m_turnColorMask };
 
@@ -402,39 +284,15 @@ auto ChessBoard::generateMovesForPawnsTempl(
             });
     }
 
-    // EP captures, incl. pinned
+    // EP captures
     if (m_epSquare <= Square::H8)
     {
-        const Square epPawn { SideSpecifics::pawnRetreatSq(m_epSquare) };
-        SquareSet checkResolvedOk;
-
-        if constexpr (type == MoveGenType::CHECK)
-        {
-            // single check is resolved if we're capturing the checker
-            checkResolvedOk = (SquareSet::square(epPawn) & m_checkers).allIfAny();
-        }
-        else
-        {
-            static_assert(type == MoveGenType::NO_CHECK);
-            checkResolvedOk = SquareSet::all();
-        }
-
         SQUARESET_ENUMERATE(
             src,
-            checkResolvedOk &
             Attacks::getPawnAttackerMask(m_epSquare, turn) & pawns,
             {
-                const SquareSet exposedHorizLine {
-                    SliderAttacksGeneric::getHorizRookAttackMask(
-                        epPawn,
-                        m_occupancyMask &~ SquareSet::square(src)) };
-
-                const SquareSet kingBit { m_kings & m_turnColorMask };
-                const SquareSet oppRooks { m_rooks & ~m_turnColorMask };
-
-                if (pinCheck(src, m_epSquare) &&
-                    ((kingBit & exposedHorizLine).allIfNone() |
-                     (oppRooks & exposedHorizLine).allIfNone()) == SquareSet::all())
+                // The only legality check we need is the capturer pin check
+                if (Attacks::pinCheck(src, SquareSet::square(m_epSquare), m_kingSq, m_pinnedPieces))
                 {
                     *i = Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT };
                     ++i;
@@ -603,8 +461,9 @@ auto ChessBoard::generateMovesForCastling(
     if (sqRook == Square::NONE)
         return i;
 
-    const Square sqKingTarget { makeSquare(CastlingSideSpecifics::kingTargetColumn, (static_cast<std::uint8_t>(turn) / 8U) * 7U) };
-    const Square sqRookTarget { makeSquare(CastlingSideSpecifics::rookTargetColumn, (static_cast<std::uint8_t>(turn) / 8U) * 7U) };
+    const std::uint8_t targetRowAdd = (-static_cast<std::uint8_t>(turn)) & 63U;
+    const Square sqKingTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::kingTargetColumn + targetRowAdd) };
+    const Square sqRookTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::rookTargetColumn + targetRowAdd) };
 
     // note: (startSq, endSq]
     const SquareSet kingPathHalfOpen { Intercepts::getInterceptSquares(m_kingSq, sqKingTarget) };

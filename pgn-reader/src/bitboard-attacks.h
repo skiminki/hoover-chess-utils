@@ -87,7 +87,7 @@ public:
     ///
     /// @remark Validity of pawn position is not assumed. Hence, attack squares
     /// are provided for white pawns on 1st rank and black pawns on 8th rank.
-    static inline SquareSet getPawnAttackMask(Square sq, Color pawnColor) noexcept
+    static SquareSet getPawnAttackMask(Square sq, Color pawnColor) noexcept
     {
         static_assert(static_cast<std::uint64_t>(Color::WHITE) == 0U);
         static_assert(static_cast<std::uint64_t>(Color::BLACK) == 8U);
@@ -324,6 +324,26 @@ public:
         return SquareSet { ctKingAttackMaskTable[getIndexOfSquare(sq)] };
     }
 
+    /// @brief Checks whether a move by a possibly pinned piece does not expose
+    /// a check.
+    ///
+    /// @param[in]   src           Source square
+    /// @param[in]   dstBit        Destination square bit
+    /// @param[in]   kingSq        King square
+    /// @param[in]   pinnedPieces  Set of pinned pieces
+    /// @return                    Move legality (from the point of pin)
+    ///
+    /// In case the piece on @p src is not pinned, this function will always
+    /// return @true.
+    ///
+    /// In case the piece on @p src is pinned, this function checks whether the
+    /// piece moves directly towards or away from the king.
+    static inline bool pinCheck(Square src, SquareSet dstBit, Square kingSq, SquareSet pinnedPieces) noexcept
+    {
+        return ((pinnedPieces & SquareSet::square(src)) == SquareSet::none() ||
+                (Intercepts::getPinRestiction<true>(kingSq, src) & dstBit) != SquareSet::none());
+    }
+
     static inline SquareSet determineAttackers(
         const SquareSet occupancyMask,
         const SquareSet turnColorMask,
@@ -335,27 +355,26 @@ public:
         const Square sq,
         const Color turn) noexcept
     {
-        const SquareSet opponentPieces { occupancyMask & ~turnColorMask };
         SquareSet attackers { };
 
         // rooks and queens
         const SquareSet horizVertHits { Attacks::getRookAttackMask(sq, occupancyMask) };
-        SquareSet attackers4 { horizVertHits & rooks };
+        SquareSet attackers1 { horizVertHits & rooks };
 
         // bishops and queens
         const SquareSet diagHits { Attacks::getBishopAttackMask(sq, occupancyMask) };
-        const SquareSet attackers5 { diagHits & bishops };
+        const SquareSet attackers2 { diagHits & bishops };
 
         // pawn attackers
-        const SquareSet attackers1 { Attacks::getPawnAttackMask(sq, turn) & pawns };
+        const SquareSet attackers3 { Attacks::getPawnAttackMask(sq, turn) & pawns };
 
         // king
-        const SquareSet attackers2 { Attacks::getKingAttackMask(sq) & kings };
+        const SquareSet attackers4 { Attacks::getKingAttackMask(sq) & kings };
 
         // knights
-        const SquareSet attackers3 { Attacks::getKnightAttackMask(sq) & knights };
+        const SquareSet attackers5 { Attacks::getKnightAttackMask(sq) & knights };
 
-        attackers = (attackers1 | attackers2 | attackers3 | attackers4 | attackers5) & opponentPieces;
+        attackers = (attackers1 | attackers2 | attackers3 | attackers4 | attackers5) & ~turnColorMask;
 
         return attackers;
     }
@@ -384,6 +403,7 @@ public:
         SquareSet knights,
         SquareSet bishops,
         SquareSet rooks,
+        Square epSquare,
         SquareSet epCapturable,
         Square kingSq,
         Color turn,
@@ -431,30 +451,88 @@ public:
 
         out_checkers &= opponentPieces;
 
-        // potential pinners
-        const SquareSet secondHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask &~ firstHVHits) };
-        const SquareSet secondDiagHits { Attacks::getBishopAttackMask(kingSq, occupancyMask &~ firstDiagHits) };
+        // Resolve pinned pieces. Notes:
+        // - We'll remove only pinnable pieces from the first hits. The idea is to avoid
+        //   x-rays over non-pinnable pieces in order to minimize the number of pinners
+        // - In the second hit check, we'll remove pieces that are already determined to be checkers.
+        //   The reason is the same as the above.
+        const SquareSet secondHVHits {
+            Attacks::getRookAttackMask(kingSq, (occupancyMask &~ firstHVHits) | opponentPieces) };
+        const SquareSet secondDiagHits {
+            Attacks::getBishopAttackMask(kingSq, (occupancyMask &~ firstDiagHits) | (opponentPieces &~ epCapturable)) };
 
-        SquareSet xrayHorizVertAttackers {
-            rooks & (occupancyMask & secondHVHits & opponentPieces) };
-        SquareSet xrayDiagAttackers {
-            bishops & (occupancyMask & secondDiagHits & opponentPieces) };
+        const SquareSet pinners {
+            ((rooks & secondHVHits) | (bishops & secondDiagHits)) & opponentPieces &~ out_checkers };
 
         out_pinnedPieces = SquareSet { };
         SQUARESET_ENUMERATE(
             pinner,
-            xrayHorizVertAttackers,
-            {
-                SquareSet inBetween { Intercepts::getInterceptSquares(kingSq, pinner) };
-                out_pinnedPieces |= inBetween & turnColorMask;
-            });
-        SQUARESET_ENUMERATE(
-            pinner,
-            xrayDiagAttackers,
+            pinners,
             {
                 SquareSet inBetween { Intercepts::getInterceptSquares(kingSq, pinner) };
                 out_pinnedPieces |= inBetween & (turnColorMask | epCapturable);
             });
+#endif
+        // The rest of this function is EP capture legality checking. Short-circuit if there's no EP to capture
+        if (epCapturable == SquareSet::none())
+            return;
+
+        // If we're in check and the only checker is not the EP pawn, EP capture
+        // is not legal
+        if ((out_checkers &~ epCapturable) != SquareSet::none())
+            out_pinnedPieces |= epCapturable;
+
+        // If not marked illegal yet, check whether the EP capture is legal.
+        if ((epCapturable &~ out_pinnedPieces) != SquareSet::none())
+        {
+            // Adjacent pawns. This leaves one pawn in case there's
+            // adjacent pawns both sides.
+            const SquareSet adjacentPawns {
+                ((((epCapturable & ~SquareSet::column(0U)) >> 1U) |
+                  ((epCapturable & ~SquareSet::column(7U)) << 1U))
+
+                 & pawns & turnColorMask)
+            };
+
+            // If all (usually 1) adjacent pawns are pinned and can't capture
+            // along the pin direction, mark the EP pawn pinned, too. Capture is
+            // not legal.
+            SquareSet epCaptureLegalMask { };
+            SQUARESET_ENUMERATE(
+                epCapturer,
+                adjacentPawns,
+                {
+                    if (pinCheck(epCapturer, SquareSet::square(epSquare), kingSq, out_pinnedPieces))
+                        epCaptureLegalMask = SquareSet::all();
+                });
+
+            // add EP capturable to pinned if neither capture is legal
+            out_pinnedPieces |= epCapturable &~ epCaptureLegalMask;
+
+            // Check whether the EP capturable pawn is horizontally pinned. This can only happen
+            // when the king is on the same row
+            if ((SquareSet::row(0U) << (static_cast<std::uint64_t>(kingSq) & 56U))
+                != SquareSet::none())
+            {
+                const SquareSet adjacentPawnsMinus1 { adjacentPawns.removeFirstSquare() };
+
+                const SquareSet exposedHorizLine {
+                    SliderAttacksGeneric::getHorizRookAttackMask(
+                        epCapturable.firstSquare(),
+                        occupancyMask &~ (adjacentPawns &~ adjacentPawnsMinus1)) };
+
+                const SquareSet kingBit { SquareSet::square(kingSq) };
+                const SquareSet oppRooks { rooks & ~turnColorMask };
+
+                const SquareSet pinnedEp { epCapturable &
+                    (kingBit & exposedHorizLine).allIfAny() &
+                    (oppRooks & exposedHorizLine).allIfAny() };
+
+                // add the EP pawn in pinned pieces if capturing it would
+                // horizontally expose the king to a rook
+                out_pinnedPieces |= pinnedEp;
+            }
+        }
     }
 
     /// @brief Determines all attacked squares
