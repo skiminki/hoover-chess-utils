@@ -75,8 +75,8 @@ public:
         return std::popcount(m_bitmask);
     }
 
-    /// @brief Returns the first (lowest-value) square in the set or @c
-    /// #Square::NONE if the set is empty.
+    /// @brief Returns the first (lowest-value) square in the set or
+    /// @coderef{Square::NONE} if the set is empty.
     ///
     /// @return First (lowest-value) square in the set or @coderef{Square::NONE} for
     /// empty set.
@@ -94,6 +94,14 @@ public:
     {
         std::uint8_t tmp = 63U - std::countl_zero(m_bitmask);
         return tmp <= 63U ? Square { tmp } : Square::NONE;
+    }
+
+    /// @brief Returns a square set with the first square (if any) removed.
+    ///
+    /// @return The square set with the first square removed
+    constexpr inline SquareSet removeFirstSquare() const noexcept
+    {
+        return SquareSet { m_bitmask & (m_bitmask - 1U) };
     }
 
     /// @brief Returns an intersection with another square set.

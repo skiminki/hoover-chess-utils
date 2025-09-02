@@ -77,6 +77,7 @@ add_library(
   src/chessboard-movegen.cc
   src/chessboard-printboard.cc
   src/chessboard-types-squareset.cc
+  src/pawn-lookups.cc
   src/pgnreader.cc
   src/pgnreader-error.cc
   src/pgnparser.cc

@@ -501,7 +501,9 @@ public:
     /// @throws PgnError(PgnErrorCode::BAD_FEN)  Move number overflow (max: 99999)
     ///
     /// EP capture does not have to be a legal move as long as the EP square is
-    /// empty and there is a pawn to capture.
+    /// empty and there is a pawn to capture. If case there is no legal EP
+    /// capture moves (but the other requirements are met), this function resets
+    /// the EP square.
     ///
     /// @note In case an exception is thrown, the board may be left in a bad
     /// state.
@@ -570,7 +572,9 @@ public:
     /// The castling indicator may be in FEN, Shredded-FEN, or X-FEN format.
     ///
     /// EP capture does not have to be a legal move as long as the EP square is
-    /// empty and there is a pawn to capture.
+    /// empty and there is a pawn to capture. If case there is no legal EP
+    /// capture moves (but the other requirements are met), this function resets
+    /// the EP square.
     ///
     /// @note In case an exception is thrown, the board may be left in a bad
     /// state.
@@ -823,17 +827,11 @@ public:
 
     /// @brief Returns en-passant square
     ///
-    /// @return En-passant square or @coderef{Square::NONE}
+    /// @return En-passant square or @coderef{Square::NONE} is EP-capture is not
+    /// legal.
     ///
-    /// When en-passant square is other than @coderef{Square::NONE}, then
-    /// following is true:
-    /// - The en-passant square is empty
-    /// - There is an opponent pawn to be en-passant captured
-    ///
-    /// However, the following is not guaranteed:
-    /// - There is a pawn that can perform an en-passant capture
-    /// - The en-passant capture is legal, *i.e.*, the capturing pawn may be
-    ///   pinned
+    /// @remark When EP square is other than @coderef{Square::NONE}, at least
+    /// one EP capture is guaranteed to be legal.
     ///
     /// @sa @coderef{canEpCapture()}
     inline Square getEpSquare() const noexcept
@@ -1064,9 +1062,12 @@ public:
     /// @return Whether there is a legal en-passant capture move
     ///
     /// This function determines whether there is a legal en-passant capture
-    /// move. This function is mainly useful for generating FENs, position
-    /// databases, and similar.
-    bool canEpCapture() const noexcept;
+    /// move. This function is useful for generating FENs, position databases,
+    /// and similar.
+    bool canEpCapture() const noexcept
+    {
+        return m_epSquare != Square::NONE;
+    }
 
     /// @brief Generates a list of all legal moves for the current position
     ///
@@ -1289,20 +1290,6 @@ private:
     }
 
     inline SquareSet blocksAllChecksMask(Square dst) const noexcept;
-
-    /// @brief Checks whether a move by a possibly pinned piece does not expose
-    /// a check.
-    ///
-    /// @param[in]   src      Source square
-    /// @param[in]   dst      Destination square
-    /// @return               Move legality (from the point of pin)
-    ///
-    /// In case the piece on @p src is not pinned, this function will always
-    /// return @true.
-    ///
-    /// In case the piece on @p src is pinned, this function checks whether the
-    /// piece moves directly towards or away from the king.
-    inline bool pinCheck(Square src, Square dst) const noexcept;
 
     /// @brief Move generator type
     enum class MoveGenType : std::uint8_t

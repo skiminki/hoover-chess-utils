@@ -291,11 +291,14 @@ void ChessBoard::validateBoard()
         throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: pawns on 8th rank");
     }
 
+    const Color turn { getTurn() };
+    const Color oppositeTurn { oppositeColor(turn) };
+
     // ep square validation
     if (m_epSquare != Square::NONE)
     {
-        const std::uint8_t epRow { static_cast<std::uint8_t>(getTurn() == Color::WHITE ? 5U : 2U) };
-        const std::uint8_t pawnRow { static_cast<std::uint8_t>(getTurn() == Color::WHITE ? 4U : 3U) };
+        const std::uint8_t epRow { static_cast<std::uint8_t>(turn == Color::WHITE ? 5U : 2U) };
+        const std::uint8_t pawnRow { static_cast<std::uint8_t>(turn == Color::WHITE ? 4U : 3U) };
 
         // EP square on correct row?
         if (rowOf(m_epSquare) != epRow)
@@ -316,10 +319,19 @@ void ChessBoard::validateBoard()
         {
             throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: EP square not empty");
         }
-    }
 
-    const Color turn { getTurn() };
-    const Color oppositeTurn { oppositeColor(turn) };
+        // Filter out EP pawn if no pawn can capture it. However, this we don't
+        // consider an error.
+        const SquareSet adjacentPawns {
+            ((((m_pawns & m_turnColorMask) & ~SquareSet::column(0U)) >> 1U) |
+             (((m_pawns & m_turnColorMask) & ~SquareSet::column(7U)) << 1U))
+            & SquareSet::square(pawnSquare)
+        };
+
+        // No adjacent pawns?
+        if (adjacentPawns == SquareSet::none())
+            m_epSquare = Square::NONE;
+    }
 
     updateCheckersAndPins();
 

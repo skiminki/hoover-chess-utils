@@ -51,50 +51,11 @@ std::size_t ChessBoard::getNumberOfLegalMoves() const noexcept
     return generateMovesIteratorTempl(LegalMoveCounterIterator { }).getNumberOfLegalMoves();
 }
 
-bool ChessBoard::canEpCapture() const noexcept
-{
-    if (m_epSquare <= Square::H8)
-    {
-        // ctPawnAttackerMasks, retractOneAdd optimization
-        static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
-        static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
-
-        const Color turn { getTurn() };
-        const int retractOneAdd { -8 + (2 * static_cast<int>(turn)) }; // pawn step backwards
-        const Square epPawn { addToSquareNoOverflowCheck(m_epSquare, retractOneAdd) };
-
-        SquareSet checkResolvedOk { (m_checkers &~ SquareSet::square(epPawn)).allIfNone() };
-
-        SQUARESET_ENUMERATE(
-            src,
-            checkResolvedOk &
-            m_pawns & m_turnColorMask & Attacks::getPawnAttackerMask(m_epSquare, turn),
-            {
-                const SquareSet exposedHorizLine {
-                    SliderAttacksGeneric::getHorizRookAttackMask(
-                        epPawn,
-                        m_occupancyMask &~ SquareSet::square(src)) };
-
-                const SquareSet kingBit { m_kings & m_turnColorMask };
-                const SquareSet oppRooks { m_rooks & ~m_turnColorMask };
-
-                if (pinCheck(src, m_epSquare) &&
-                    ((kingBit & exposedHorizLine) == SquareSet::none() ||
-                     (oppRooks & exposedHorizLine) == SquareSet::none()))
-                {
-                    return true;
-                }
-            });
-    }
-
-    return false;
-}
-
 void ChessBoard::updateCheckersAndPins() noexcept
 {
     // Pawn that can be EP-captured may be considered pinned
-    SquareSet epSquare { SquareSet::squareOrNone(m_epSquare) };
-    SquareSet epCapturable { epSquare };
+    SquareSet epSquareBit { SquareSet::squareOrNone(m_epSquare) };
+    SquareSet epCapturable { epSquareBit };
 
     static_assert(static_cast<int>(Color::WHITE) == 0);
     static_assert(static_cast<int>(Color::BLACK) == 8);
@@ -107,13 +68,14 @@ void ChessBoard::updateCheckersAndPins() noexcept
         m_knights,
         m_bishops,
         m_rooks,
+        m_epSquare,
         epCapturable,
         m_kingSq,
         getTurn(),
         m_checkers,
         m_pinnedPieces);
 
-    // If EP pawn is pinned (diagonally), it can never be captured. So, we'll reset it
+    // If EP pawn is pinned, it can never be captured. So, we'll reset it
     if ((m_pinnedPieces & epCapturable) != SquareSet::none())
         m_epSquare = Square::NONE;
 }
@@ -124,7 +86,7 @@ void ChessBoard::doMove(const Move m) noexcept
 
     m_epSquare = Square::NONE;
 
-    if (m.isRegularMove())
+    if (m.isRegularMove()) [[likely]]
     {
         // regular move
         const SquareSet srcSqBit { SquareSet::square(m.getSrc()) };
@@ -159,7 +121,16 @@ void ChessBoard::doMove(const Move m) noexcept
             m_halfMoveClock = saturatingIncrease(m_halfMoveClock);
 
         if ((pawnBit != SquareSet::none()) && isPawnDoubleSquareMove(m.getSrc(), m.getDst()))
-            m_epSquare = static_cast<Square>((getIndexOfSquare(m.getSrc()) + getIndexOfSquare(m.getDst())) / 2U);
+        {
+            // we'll lit m_epSquare only if there are adjacent opponent pawns to capture it
+            const SquareSet adjacentPawns {
+                ((((m_pawns & ~m_turnColorMask) & ~SquareSet::column(0U)) >> 1U) |
+                 (((m_pawns & ~m_turnColorMask) & ~SquareSet::column(7U)) << 1U))
+                & dstSqBit };
+
+            if (adjacentPawns != SquareSet::none())
+                m_epSquare = static_cast<Square>((getIndexOfSquare(m.getSrc()) + getIndexOfSquare(m.getDst())) / 2U);
+        }
 
         // reset castling rights
         if (kingBit != SquareSet::none())
