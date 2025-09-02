@@ -17,19 +17,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 set -e
-
 cd "$(dirname "$0")"
 
-# full docs build
-BUILD_DIR=build/docs-pgn-reader-docs
-cmake -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Release
-cmake --build "${BUILD_DIR}" --parallel --target pgn-reader-docs
-
-# API docs build
-BUILD_DIR=build/docs-hoover-chess-utils
-cmake -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Release
-cmake --build "${BUILD_DIR}" --parallel --target hoover-chess-utils-docs
-
-echo
-echo "Hoover chess utilities documentation at:  file://${PWD}/build/docs-hoover-chess-utils/html/index.html"
-echo "PGN reader lib full documentation:        file://${PWD}/build/docs-pgn-reader-docs/pgn-reader/html/index.html"
+mkdir -p build/
+cp -r html build/github-pages
+cp -r build/docs-hoover-chess-utils/html build/github-pages/hoover-chess-utils
+cp -r build/docs-pgn-reader-docs/pgn-reader/html build/github-pages/pgn-reader

@@ -44,6 +44,41 @@ cpufeatures_detect_avx512vl()
 
 set(HAVE_PDEP_PEXT ${HAVE_BMI2})
 
+##### The main Doxygen build
+find_package(Doxygen COMPONENTS doxygen dot)
+
+
+if(Doxygen_FOUND)
+  set(DOXYGEN_ALIASES
+      "coderef{1}=<tt>@ref \\1</tt>"
+      "true=<tt>true</tt>"
+      "false=<tt>false</tt>"
+      "apionly{1}=\\1"
+      "fullonly{1}="
+      )
+
+  set(DOXYGEN_AUTOLINK_SUPPORT NO)
+  set(DOXYGEN_ENABLED_SECTIONS full)
+  set(DOXYGEN_ENABLED_SECTIONS)
+  set(DOXYGEN_EXTRACT_ALL NO)
+  set(DOXYGEN_EXTRACT_PRIVATE NO)
+  set(DOXYGEN_FILE_PATTERNS *.h *.dox)
+  set(DOXYGEN_FULL_PATH_NAMES YES)
+  set(DOXYGEN_HTML_EXTRA_STYLESHEET ${CMAKE_SOURCE_DIR}/pgn-reader/doc/chessboard-table.css)
+  set(DOXYGEN_SHOW_ENUM_VALUES NO)
+  set(DOXYGEN_STRIP_FROM_PATH ${CMAKE_SOURCE_DIR})
+  set(DOXYGEN_WARN_AS_ERROR FAIL_ON_WARNINGS)
+  set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
+  set(DOXYGEN_HTML_DYNAMIC_SECTIONS NO)
+
+  doxygen_add_docs(
+      hoover-chess-utils-docs
+      ${CMAKE_SOURCE_DIR}/pgn-reader/doc
+      ${CMAKE_SOURCE_DIR}/pgn-reader/include
+      ${CMAKE_SOURCE_DIR}/build-config.dox)
+endif()
+
+
 ##### Subdirectories
 add_subdirectory(pgn-reader)
 add_subdirectory(utils)
