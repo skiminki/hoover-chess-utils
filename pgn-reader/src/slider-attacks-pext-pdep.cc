@@ -84,7 +84,7 @@ consteval auto generatePextBishopMasks() noexcept
     return ret;
 }
 
-constexpr auto generatePextOffsets(const std::array<SquareSet, 64U> &masks) noexcept
+consteval auto generatePextOffsets(const std::array<SquareSet, 64U> &masks) noexcept
 {
     std::array<std::uint32_t, 64U> ret { };
     std::uint32_t offset { };
@@ -187,8 +187,10 @@ const std::array<SquareSet, 64U> SliderAttacksPextPdep::ctPextRookMasks { genera
 const std::array<SquareSet, 64U> SliderAttacksPextPdep::ctPextBishopMasks { generatePextBishopMasks() };
 
 
-const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextRookOffsets { generatePextOffsets(ctPextRookMasks) };
-const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextBishopOffsets { generatePextOffsets(ctPextBishopMasks) };
+const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextRookOffsets {
+    generatePextOffsets(generatePextRookMasks()) };
+const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextBishopOffsets {
+    generatePextOffsets(generatePextBishopMasks()) };
 
 const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> SliderAttacksPextPdep::ctPextRookAttackData {
 
