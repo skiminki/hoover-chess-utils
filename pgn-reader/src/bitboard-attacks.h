@@ -390,6 +390,29 @@ public:
         SquareSet &out_checkers,
         SquareSet &out_pinnedPieces) noexcept
     {
+
+#if 0 & HAVE_AVX512F // quite a lot slower than the PDEP/PEXT implementation on Zen4, so disable for now
+        Attacks_AVX512F::determineSliderCheckersAndPins(
+            occupancyMask,
+            turnColorMask,
+            bishops,
+            rooks,
+            epCapturable,
+            kingSq,
+            out_checkers,
+            out_pinnedPieces);
+
+        const SquareSet opponentPieces { occupancyMask &~ turnColorMask };
+
+        // pawn checkers
+        out_checkers |= Attacks::getPawnAttackMask(kingSq, turn) & pawns;
+
+        // knights
+        out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
+
+        out_checkers &= opponentPieces;
+
+#else
         const SquareSet opponentPieces { occupancyMask ^ turnColorMask };
 
         // pawn checkers

@@ -19,6 +19,7 @@
 # Note: The original script and EPD files can be found at:
 # https://github.com/AndyGrant/Ethereal/tree/8f952ee13081fe5ef7d8d955b137efc122ea1a57/src/perft
 
+import os
 import re
 import subprocess
 import sys
@@ -67,7 +68,7 @@ def run_perfts(perftPath, suitePath, maxDepth):
     futureList = [ ]
     exceptionList = [ ]
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers = os.cpu_count() - 1) as executor:
         for line in lineList:
             lineNum = lineNum + 1
             line = line.strip()
