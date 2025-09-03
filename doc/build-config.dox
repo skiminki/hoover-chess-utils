@@ -22,6 +22,15 @@
 ///   <th>Description</th>
 /// </tr>
 /// <tr>
+///   <td>@anchor HAVE_AVX512F @c HAVE_AVX512F</td>
+///   <td>AVX-512F instruction set is available. This is the foundation (base) ISA of AVX-512.</td>
+/// </tr>
+/// <tr>
+///   <td>@anchor HAVE_AVX512VL @c HAVE_AVX512VL</td>
+///   <td>AVX-512VL (vector length extensions) instruction set is available. This extends many
+///       AVX-512 instructions to the smaller 128-bit and 256-bit widths.</td>
+/// </tr>
+/// <tr>
 ///   <td>@anchor HAVE_BMI2 @c HAVE_BMI2</td>
 ///   <td>x86 BMI2 instruction set is available.</td>
 /// </tr>

@@ -46,7 +46,7 @@ if(Doxygen_FOUND)
   doxygen_add_docs(
       pgn-reader-docs
       ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CMAKE_SOURCE_DIR}/build-config.dox)
+      ${CMAKE_SOURCE_DIR}/doc/build-config.dox)
 
 
 endif()

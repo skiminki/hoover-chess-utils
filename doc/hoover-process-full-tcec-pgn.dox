@@ -1,0 +1,58 @@
+// Hoover Chess Utilities / PGN reader
+// Copyright (C) 2025  Sami Kiminki
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+/// @page hoover_process_full_tcec_pgn hoover-process-full-tcec-pgn (command-line utility)
+///
+/// This utility processes one event and produces the "full" TCEC games PGN file.
+///
+/// Inputs
+/// ------
+/// - Season number and event number
+/// - Opening classification PGN in
+///   <a href="https://www.cs.kent.ac.uk/people/staff/djb/pgn-extract/">pgn-extract</a>
+///   format.
+///   - Every game in the PGN contains a single opening line. The end
+///     position of the game is used for an opening match.
+/// - One or more PGN + URL-prefix pairs describing a sub-event
+///   - PGN file contains the games. The file is from the
+///     <a href="https://github.com/TCEC-Chess/tcecgames/tree/main/master-archive">TCEC games master archive</a>.
+///   - URL-prefix is the TCEC web GUI URL to that event. It will be appended
+///     with @c "&game=<game_no>" in the per-game @c Site tags.
+///   - Note: Usually events consists of a single sub-event. The main exception are the
+///     TCEC Cup events, in which every round is a organized as a separate sub-event.
+///
+/// Outputs
+/// -------
+/// A processed and validated PGN file with sub-events concatenated in
+/// stdout. Notes on tags:
+/// - Event
+///   - Event tags are formatted as
+///     <tt>TCEC Season &lt;season&gt; (&lt;event_num/subevent_num&gt;) &lt;event_name/subevent_name&gt;</tt>.
+///     For example: <tt>"TCEC Season 13 (06b) Cup 1 Round16"</tt> and
+///     <tt>"TCEC Season 28 (36) Division P"</tt>.
+/// - Site
+///   - The site tag is the URL prefix and game identifier. For example:
+///     <tt>https://tcec-chess.com/#season=28&div=p&game=224</tt>.
+/// - Opening tags: ECO, Opening, Variation
+///   - Standard starting position --- The last position in a game that
+///     has a hit in the opening classification PGN specifies the
+///     opening. The tags are copied as is from the opening PGN.
+///   - FRC, DFRC --- The tool has a built-in classifier for FRC and
+///     DFRC starting positions including castling rights.
+/// - Result
+///   - Result tag is validated to match with the game result.
+///
+/// The PGN comments are preserved as is.
