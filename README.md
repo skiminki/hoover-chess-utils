@@ -4,6 +4,15 @@ Hoover chess utilities is a small set of command-line tools for
 building the [TCEC games database](https://github.com/TCEC-Chess/tcecgames/) and providing
 database query functionality to TCEC_hoover_bot in [TCEC Twitch chat](https://www.twitch.tv/tcec_chess_tv).
 
+## Documentation
+
+Documentation of Hoover Chess Utilities is available at:
+https://skiminki.github.io/hoover-chess-utils/hoover-chess-utils/index.html (work in progress).
+
+More detailed documentation of the PGN reader lib is available at:
+https://skiminki.github.io/hoover-chess-utils/pgn-reader/index.html (work in progress).
+
+
 ## Building
 
 ### Prerequisites
