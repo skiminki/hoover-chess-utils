@@ -1,0 +1,42 @@
+// Hoover Chess Utilities / PGN reader
+// Copyright (C) 2025  Sami Kiminki
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+/// @mainpage Hoover Chess Utilities
+///
+/// Hoover Chess Utilities is a set of command-line tools for building
+/// the <a href="https://github.com/TCEC-Chess/tcecgames/">TCEC games database</a>
+/// and providing database query functionality to TCEC_hoover_bot in
+/// the <a href="https://www.twitch.tv/tcec_chess_tv">TCEC Twitch chat</a>.
+///
+/// The core logic is in the PGN reader library, which has the usual
+/// functionality such as reading PGNs, playing out the moves, and writing
+/// moves (in SAN format). The library has an extensive funcional test
+/// suite and performance testing utilities. The command-line tools
+/// are small standalone utilities that use the library for most of
+/// the PGN-related processing.
+///
+///
+/// Index
+/// -----
+/// -# @ref PgnReaderAPI
+///    -# Full documentation is at
+///       https://skiminki.github.io/hoover-chess-utils/pgn-reader/topics.html .
+/// -# Utilities
+///    -# @subpage hoover_compactify_tcec_pgn
+///    -# @subpage hoover_process_full_tcec_pgn
+///    -# @subpage hoover_tdb_query
+/// -# Configuration management
+///    -# @ref build_config

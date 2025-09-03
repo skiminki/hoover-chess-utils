@@ -73,9 +73,9 @@ if(Doxygen_FOUND)
 
   doxygen_add_docs(
       hoover-chess-utils-docs
+      ${CMAKE_SOURCE_DIR}/doc
       ${CMAKE_SOURCE_DIR}/pgn-reader/doc
-      ${CMAKE_SOURCE_DIR}/pgn-reader/include
-      ${CMAKE_SOURCE_DIR}/build-config.dox)
+      ${CMAKE_SOURCE_DIR}/pgn-reader/include)
 endif()
 
 
