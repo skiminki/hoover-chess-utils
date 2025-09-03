@@ -29,7 +29,7 @@
 //
 // MOVETEXT            = LINE <result>
 //
-// LINE                = COMMENT* (MOVE_ITEM COMMENT? VARIATION*)*
+// LINE                = COMMENT* (MOVE_ITEM COMMENT* VARIATION* COMMENT*)*
 //
 // VARIATION           = <variation_start> LINE <variation_end>
 //
@@ -288,22 +288,22 @@ private:
     {
         bool parsed { };
 
-        token = tryParseComment(token);
-
         while (true)
         {
+            token = parseComments(token);
+
             std::tie(token, parsed) = tryParseMoveItem(token);
             if (!parsed)
                 return token;
 
             if (parsed)
             {
-                token = tryParseComment(token);
+                token = parseComments(token);
 
                 while (token == PgnScannerToken::VARIATION_START)
-                {
                     token = parseVariation();
-                }
+
+                token = parseComments(token);
             }
         }
     }
@@ -487,20 +487,26 @@ private:
         return std::make_tuple(token, true);
     }
 
-    PgnScannerToken tryParseComment(PgnScannerToken token)
+    PgnScannerToken parseComments(PgnScannerToken token)
     {
-        if (token == PgnScannerToken::COMMENT_START)
+        while (true)
         {
-            parseCommentBlock();
-            return scanner.nextToken();
-        }
-        else if (token == PgnScannerToken::COMMENT_TEXT)
-        {
-            parseSingleLineComment();
-            return scanner.nextToken();
-        }
+            switch (token)
+            {
+                case PgnScannerToken::COMMENT_START:
+                    parseCommentBlock();
+                    token = scanner.nextToken();
+                    break;
 
-        return token;
+                case PgnScannerToken::COMMENT_TEXT:
+                    parseSingleLineComment();
+                    token = scanner.nextToken();
+                    break;
+
+                default:
+                    return token;
+            }
+        }
     }
 
     void parseCommentBlock()

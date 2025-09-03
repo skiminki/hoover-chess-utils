@@ -382,6 +382,83 @@ TEST(PgnReader, filters_cornerCases3)
         }
 }
 
+TEST(PgnReader, commentsAtTheBeginning)
+{
+    std::string_view pgn {
+        "; comment\n{ comment } *"
+    };
+
+    const CallBackStats stats { collectCallBackStats(pgn, PgnReaderActionFilter { PgnReaderActionClass::Comment }) };
+
+    EXPECT_EQ(stats.count_gameTerminated, 1U);
+    EXPECT_EQ(stats.count_comment, 2U);
+
+}
+
+TEST(PgnReader, commentsAtTheEnd)
+{
+    std::string_view pgn {
+        "* ; comment\n{ comment }"
+    };
+
+    const CallBackStats stats { collectCallBackStats(pgn, PgnReaderActionFilter { PgnReaderActionClass::Comment }) };
+
+    EXPECT_EQ(stats.count_gameTerminated, 1U);
+    EXPECT_EQ(stats.count_comment, 2U);
+}
+
+TEST(PgnReader, commentsBetweenTags)
+{
+    std::string_view pgn {
+        "[tag1 \"value1\"] ;comment 1\n[tag2 \"value2\"] { comment2 } [tag3 \"value3\"] *"
+    };
+
+    const CallBackStats stats {
+        collectCallBackStats(
+            pgn,
+            PgnReaderActionFilter { PgnReaderActionClass::Comment, PgnReaderActionClass::PgnTag }) };
+
+    EXPECT_EQ(stats.count_gameTerminated, 1U);
+    EXPECT_EQ(stats.count_pgnTag, 3U);
+    EXPECT_EQ(stats.count_comment, 2U);
+}
+
+TEST(PgnReader, emptyCommentsDontCount)
+{
+    std::string_view pgn {
+        "; \n[tag1 \"value1\"] 1. e4 ; \n*"
+    };
+
+    const CallBackStats stats {
+        collectCallBackStats(
+            pgn,
+            PgnReaderActionFilter { PgnReaderActionClass::Comment, PgnReaderActionClass::Move, PgnReaderActionClass::PgnTag }) };
+
+    EXPECT_EQ(stats.count_gameTerminated, 1U);
+    EXPECT_EQ(stats.count_afterMove, 1U);
+    EXPECT_EQ(stats.count_pgnTag, 1U);
+    EXPECT_EQ(stats.count_comment, 0U);
+
+}
+
+TEST(PgnReader, singleLineComments)
+{
+    std::string_view pgn {
+        "; 123\n[tag1 \"value1\"] 1. e4 ;345 \n;def\n*"
+    };
+
+    const CallBackStats stats {
+        collectCallBackStats(
+            pgn,
+            PgnReaderActionFilter { PgnReaderActionClass::Comment, PgnReaderActionClass::Move, PgnReaderActionClass::PgnTag }) };
+
+    EXPECT_EQ(stats.count_gameTerminated, 1U);
+    EXPECT_EQ(stats.count_afterMove, 1U);
+    EXPECT_EQ(stats.count_pgnTag, 1U);
+    EXPECT_EQ(stats.count_comment, 3U);
+
+}
+
 namespace
 {
 struct PgnTagCollectorActions : public PgnReaderActions
