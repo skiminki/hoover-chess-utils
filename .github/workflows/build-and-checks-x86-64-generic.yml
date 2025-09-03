@@ -42,6 +42,7 @@ jobs:
         path: build/github-pages/
 
   deploy:
+    if: github.event_name != 'pull_request' && github.repository == 'skiminki/hoover-chess-utils' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
