@@ -1281,6 +1281,45 @@ TEST(PgnReader, illegalCastlingMoves)
         "O-O-O");
 }
 
+namespace
+{
+class CommentMoveTextOrderVerifier : public PgnReaderActions
+{
+private:
+    bool m_inMoveText { };
+
+public:
+    CommentMoveTextOrderVerifier()
+    {
+    }
+
+    void moveTextSection() override
+    {
+        m_inMoveText = true;
+    }
+
+    void comment([[maybe_unused]] std::string_view comment) override
+    {
+        EXPECT_TRUE(m_inMoveText);
+    }
+};
+}
+
+TEST(PgnReader, startMoveCommentAndMoveTextOrdering)
+{
+    std::string_view pgn {
+        "[Tag \"Key\"]\n"
+        "{ Comment }\n"
+        "1. e4\n"
+        "1/2-1/2"
+    };
+
+    CommentMoveTextOrderVerifier actions { };
+    PgnReader::readFromMemory(
+        pgn, actions,
+        PgnReaderActionFilter { PgnReaderActionClass::Comment });
+}
+
 TEST(PgnReaderActionFilter, sanity)
 {
     PgnReaderActionFilter filter { };
@@ -1303,7 +1342,6 @@ TEST(PgnReaderActionCompileTimeFilter, sanity)
         Filter::actionsToBitmask(PgnReaderActionClass { 0U },
                                  PgnReaderActionClass { 2U },
                                  PgnReaderActionClass { 4U }) == 1U + 4U + 16U);
-
 }
 
 }
