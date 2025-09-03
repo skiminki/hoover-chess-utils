@@ -20,16 +20,16 @@
 
 // Used PGN parsing rules are as follows:
 //
-// PGN                 = (COMMENT | GAME)* <end_of_file>
+// PGN                 = (COMMENT* GAME)* <end_of_file>
 //
 // GAME                = TAGPAIRS MOVETEXT
 //
-// TAGPAIRS            = (COMMENT | TAGPAIR)*
+// TAGPAIRS            = (COMMENT* TAGPAIR)*
 // TAGPAIR             = <tag_start> <tag_key> <tag_value> <tag_end>
 //
 // MOVETEXT            = LINE <result>
 //
-// LINE                = COMMENT? (MOVE_ITEM COMMENT? VARIATION*)*
+// LINE                = COMMENT* (MOVE_ITEM COMMENT? VARIATION*)*
 //
 // VARIATION           = <variation_start> LINE <variation_end>
 //
@@ -66,6 +66,8 @@
 #include <format>
 #include <iterator>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace hoover_chess_utils::pgn_reader
 {
@@ -211,6 +213,9 @@ private:
     T_ActionHandler &actionHandler;
     StringBuilder strBuilder { };
     StringBuilder strBuilder2 { };
+
+    bool inMoveTextSection { };
+    std::vector<std::string> pendingComments { };
 
     static std::string_view copyToken(const char *src, char *dst, std::size_t maxLen)
     {
@@ -525,7 +530,11 @@ private:
                     ++pendingNewlines;
                     break;
                 case PgnScannerToken::COMMENT_END:
-                    actionHandler.comment(strBuilder.getStringView());
+                    if (inMoveTextSection)
+                        actionHandler.comment(strBuilder.getStringView());
+                    else
+                        pendingComments.push_back(std::string { strBuilder.getStringView() });
+
                     return;
 
                 default:
@@ -581,8 +590,19 @@ private:
 
         if (commentStart != commentEnd)
         {
-            actionHandler.comment(std::string_view(commentStart, commentEnd));
+            if (inMoveTextSection)
+                actionHandler.comment(std::string_view { commentStart, commentEnd });
+            else
+                pendingComments.push_back(std::string { commentStart, commentEnd });
         }
+    }
+
+    void flushPendingComments()
+    {
+        for (const auto &str : pendingComments)
+            actionHandler.comment(str);
+
+        pendingComments.clear();
     }
 
 public:
@@ -606,6 +626,7 @@ public:
                 {
                     if (token == PgnScannerToken::END_OF_FILE)
                     {
+                        flushPendingComments();
                         actionHandler.endOfPGN();
                         return;
                     }
@@ -626,7 +647,10 @@ public:
                 while (true)
                 {
                     if (token == PgnScannerToken::TAG_START)
+                    {
+                        flushPendingComments();
                         parseTagPair();
+                    }
                     else if (token == PgnScannerToken::COMMENT_START)
                         parseCommentBlock();
                     else if (token == PgnScannerToken::COMMENT_TEXT)
@@ -639,6 +663,8 @@ public:
 
                 // MOVETEXT
                 actionHandler.moveTextSection();
+                flushPendingComments();
+                inMoveTextSection = true;
 
                 token = parseLine(token);
 
@@ -652,6 +678,7 @@ public:
                 }
 
                 actionHandler.gameTerminated(scanner.getTokenInfo().result.result);
+                inMoveTextSection = false;
             }
         }
         catch (const PgnError &ex)
