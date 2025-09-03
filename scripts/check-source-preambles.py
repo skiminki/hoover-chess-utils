@@ -126,7 +126,8 @@ def checkFile(filename):
     elif (filename.endswith(".pgn") or filename.endswith(".epd") or filename.endswith(".css") or
           filename.endswith("pgn-reader/src/slider-attacks-pext-pdep-bishop.inc") or
           filename.endswith("pgn-reader/src/slider-attacks-pext-pdep-rook.inc") or
-          filename.endswith("config.h.in") or filename.endswith("README.txt") or filename.endswith("README.md") or
+          filename.endswith("config.h.in") or filename.endswith("README.txt") or
+          filename.endswith("README.md") or filename.endswith(".html") or
           filename.endswith("LICENSE")):
         # ignore
         return
