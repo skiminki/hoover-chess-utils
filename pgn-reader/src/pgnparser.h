@@ -18,44 +18,6 @@
 #define HOOVER_CHESS_UTILS__PGN_READER__PGNPARSER_H_INCLUDED
 
 
-// Used PGN parsing rules are as follows:
-//
-// PGN                 = (COMMENT* GAME)* <end_of_file>
-//
-// GAME                = TAGPAIRS MOVETEXT
-//
-// TAGPAIRS            = (COMMENT* TAGPAIR)*
-// TAGPAIR             = <tag_start> <tag_key> <tag_value> <tag_end>
-//
-// MOVETEXT            = LINE <result>
-//
-// LINE                = COMMENT* (MOVE_ITEM COMMENT* VARIATION* COMMENT*)*
-//
-// VARIATION           = <variation_start> LINE <variation_end>
-//
-// MOVE_ITEM           = (<movenum_white> | <movenum_black>)? MOVE <nag>*
-//
-// ; note: <move_*> terminals are generally in form:
-// ; - piece
-// ; - source square mask encoding the possible source squares
-// ; - capture
-// ; - destination square
-// ; - promotion piece (Piece::NONE if not a pawn promotion)
-// ; - check/mate mark (ignored)
-// MOVE              = <move>
-//                   | <move_short_castle>
-//                   | <move_long_castle>
-//
-// COMMENT           = <comment_start> (<comment_text> | <comment_newline>)* <comment_end>
-//                   | <comment_text>
-//
-// See pgnscannertokens.h for the used tokens (terminals). Tokens are here in
-// lowercase in brackets, e.g., <end_of_file>.
-//
-// The rules are derived from the informal description in
-// https://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm .
-
-
 #include "chessboard.h"
 #include "pgnreader-types.h"
 #include "pgnscanner.h"
@@ -72,6 +34,9 @@
 
 namespace hoover_chess_utils::pgn_reader
 {
+
+/// @addtogroup PgnReaderImpl
+/// @{
 
 // PGN parser actions are structured as follows:
 //
@@ -206,6 +171,139 @@ public:
     }
 };
 
+/// @brief The PGN parser
+///
+/// @tparam T_ActionHandler     Semantic action handler
+///
+/// <table><caption>Grammar for PGN parsing</caption>
+/// <tr>
+///   <th colspan="3">Rule</th>
+///   <th>Parsing function</th>
+///   <th>Remarks</th>
+/// </tr>
+/// <tr>
+///   <td>PGN</td>
+///   <td>&rArr;</td>
+///   <td>GAME* COMMENT* @pgnscannertoken{END_OF_FILE}</td>
+///   <td>@coderef{parse()}</td>
+///   <td>Any number of games with possibly trailing comments.</td>
+/// </tr>
+/// <tr>
+///   <td>GAME</td>
+///   <td>&rArr;</td>
+///   <td>TAGPAIRS MOVETEXT</td>
+///   <td>@coderef{parse()}</td>
+///   <td>A PGN game consists of a list of tag pairs followed by move text section.</td>
+/// </tr>
+/// <tr>
+///   <td>TAGPAIRS</td>
+///   <td>&rArr;</td>
+///   <td>(COMMENT* TAGPAIR)*</td>
+///   <td>@coderef{parse()}</td>
+///   <td>List of PGN key/value tags.</td>
+/// </tr>
+/// <tr>
+///   <td>TAGPAIR</td>
+///   <td>&rArr;</td>
+///   <td>@pgnscannertoken{TAG_START} @pgnscannertoken{TAG_KEY} @pgnscannertoken{TAG_VALUE} @pgnscannertoken{TAG_END}</td>
+///   <td>@coderef{parseTagPair()}</td>
+///   <td>A single PGN key/value tag.</td>
+/// </tr>
+/// <tr>
+///   <td>MOVETEXT</td>
+///   <td>&rArr;</td>
+///   <td>LINE @pgnscannertoken{RESULT}</td>
+///   <td>@coderef{parse()}</td>
+///   <td>The move text section of a PGN game.</td>
+/// </tr>
+/// <tr>
+///   <td>LINE</td>
+///   <td>&rArr;</td>
+///   <td>(COMMENT | @pgnscannertoken{MOVENUM})* (MOVE_ITEM (COMMENT | @pgnscannertoken{MOVENUM} | MOVE_ITEM | VARIATION)* )?</td>
+///   <td>@coderef{parseLine()}</td>
+///   <td>A line consists of any number of moves, interleaved with optional
+///       comments, move numbers, and variations. A variation may not appear
+///       before the first move. Move numbers are completely optional in
+///       PGNs. When present, however, they are validated to be correct by
+///       @coderef{PgnReader}.</td>
+/// </tr>
+/// <tr>
+///   <td>VARIATION</td>
+///   <td>&rArr;</td>
+///   <td>@pgnscannertoken{VARIATION_START} LINE @pgnscannertoken{VARIATION_END}</td>
+///   <td>@coderef{parseVariation()}</td>
+///   <td>Variation is an alternative line to a move.</td>
+/// </tr>
+/// <tr>
+///   <td>MOVE_ITEM</td>
+///   <td>&rArr;</td>
+///   <td>MOVE &lt;nag&gt;*</td>
+///   <td>@coderef{parseLine()}<br>@coderef{parseNagsAfterMove()}</td>
+///   <td>A move followed by any number of numeric annotation glyphs (NAGs)</td>
+/// </tr>
+/// <tr>
+///   <td rowspan="11">MOVE</td>
+///   <td rowspan="11">&rArr;</td>
+///   <td>@coderef{PgnScannerToken::MOVE_PAWN} |</td>
+///   <td rowspan="11">@coderef{parseLine()}</td>
+///   <td>A pawn advancing move (non-promoting)</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PAWN_CAPTURE} |</td>
+///   <td>A pawn capture move (non-promoting)</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PAWN_PROMO} |</td>
+///   <td>A pawn advancing move (promoting)</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE} |</td>
+///   <td>A pawn capture move (promoting)</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PIECE_KNIGHT} |</td>
+///   <td>Knight move</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PIECE_BISHOP} |</td>
+///   <td>Bishop move</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PIECE_ROOK} |</td>
+///   <td>Rook move</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PIECE_QUEEN} |</td>
+///   <td>Queen move</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_PIECE_KING} |</td>
+///   <td>King move</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_SHORT_CASTLE} |</td>
+///   <td>Short castling move (O-O)</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{PgnScannerToken::MOVE_LONG_CASTLE}</td>
+///   <td>Long castling move (O-O-O)</td>
+/// </tr>
+/// <tr>
+///   <td rowspan="2">COMMENT</td>
+///   <td rowspan="2">&rArr;</td>
+///   <td>@pgnscannertoken{COMMENT_START} (@pgnscannertoken{COMMENT_TEXT} | @pgnscannertoken{COMMENT_NEWLINE})* @pgnscannertoken{COMMENT_END}</td>
+///   <td>@coderef{parseCommentBlock()}</td>
+///   <td>PGN block comment.</td>
+/// </tr>
+/// <tr>
+///   <td>@pgnscannertoken{COMMENT_TEXT}</td>
+///   <td>@coderef{parseSingleLineComment()}</td>
+///   <td>PGN single line comment.</td>
+/// </tr>
+/// </table>
+///
+/// The rules are derived from the informal description in
+/// https://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm .
 template <typename T_ActionHandler>
 class PgnParser
 {
@@ -219,6 +317,7 @@ private:
     std::vector<std::string> pendingComments { };
 
     void unexpectedTokenError(
+        PgnErrorCode errorCode,
         std::uint32_t expectedTokenMask,
         PgnScannerToken token)
     {
@@ -234,7 +333,7 @@ private:
         }
 
         throw PgnError(
-            PgnErrorCode::UNEXPECTED_TOKEN,
+            errorCode,
             std::format(
                 "Expected token {} but got: {} ({})",
                 expectedTokens, PgnScanner::scannerTokenToString(token), static_cast<std::uint8_t>(token)));
@@ -245,22 +344,20 @@ private:
         strBuilder.clear();
         strBuilder2.clear();
         PgnScannerToken token { scanner.nextToken() };
-        if (token != PgnScannerToken::TAG_KEY)
-            throw PgnError(
+        if (token != PgnScannerToken::TAG_KEY) [[unlikely]]
+            unexpectedTokenError(
                 PgnErrorCode::BAD_PGN_TAG,
-                std::format("Expected token TAG_KEY but got: {} ({})",
-                            static_cast<std::uint8_t>(token),
-                            PgnScanner::scannerTokenToString(token)));
+                pgnScannerTokenToMaskBit(PgnScannerToken::TAG_KEY),
+                token);
 
         strBuilder.appendString(scanner.YYText(), scanner.YYLeng());
 
         token = scanner.nextToken();
-        if (token != PgnScannerToken::TAG_VALUE)
-            throw PgnError(
+        if (token != PgnScannerToken::TAG_VALUE) [[unlikely]]
+            unexpectedTokenError(
                 PgnErrorCode::BAD_PGN_TAG,
-                std::format("Expected token TAG_VALUE but got: {} ({})",
-                            static_cast<std::uint8_t>(token),
-                            PgnScanner::scannerTokenToString(token)));
+                pgnScannerTokenToMaskBit(PgnScannerToken::TAG_VALUE),
+                token);
 
         // TAG value string has format "...", so we'll crop the first and the
         // last chars away. In addition, we need to parse escapes
@@ -285,62 +382,24 @@ private:
             strBuilder2.getStringView());
 
         token = scanner.nextToken();
-        if (token != PgnScannerToken::TAG_END)
-            throw PgnError(
+        if (token != PgnScannerToken::TAG_END) [[unlikely]]
+            unexpectedTokenError(
                 PgnErrorCode::BAD_PGN_TAG,
-                std::format("Expected token TAG_END but got: {} ({})",
-                            static_cast<std::uint8_t>(token),
-                            PgnScanner::scannerTokenToString(token)));
+                pgnScannerTokenToMaskBit(PgnScannerToken::TAG_END),
+                token);
     }
-
-
-    static constexpr std::uint32_t ctLineTokenMask_moves {
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN_CAPTURE) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN_PROMO) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PIECE) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_SHORT_CASTLE) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_LONG_CASTLE)
-    };
-
-    static constexpr std::uint32_t ctLineTokenMask_allExceptVariations {
-        ctLineTokenMask_moves |
-        pgnScannerTokenToMaskBit(PgnScannerToken::MOVENUM) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_START) |
-        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_TEXT)
-    };
-
-    static constexpr std::uint32_t ctLineTokenMask_all {
-        ctLineTokenMask_moves |
-        ctLineTokenMask_allExceptVariations |
-        pgnScannerTokenToMaskBit(PgnScannerToken::VARIATION_START)
-    };
 
     PgnScannerToken parseLine(PgnScannerToken token)
     {
-
-        // initially, we except all but variations. Variations are enabled after
-        // a move is parsed.
-        std::uint32_t validTokenMask { ctLineTokenMask_allExceptVariations };
+        bool variationAllowed { };
 
         while (true)
         {
-            if ((pgnScannerTokenToMaskBit(token) & validTokenMask) == 0U)
-            {
-                // An unallowed line token? If so, it is an error
-                if ((pgnScannerTokenToMaskBit(token) & ctLineTokenMask_all) != 0U) [[unlikely]]
-                    unexpectedTokenError(validTokenMask, token);
-            }
-
             switch (token)
             {
                 case PgnScannerToken::MOVENUM:
                     handleMoveNum(scanner.getTokenInfo().moveNum);
                     token = scanner.nextToken();
-
-                    // after MOVENUM, only move tokens are allowed
-                    validTokenMask = ctLineTokenMask_moves;
                     break;
 
                 case PgnScannerToken::COMMENT_START:
@@ -356,69 +415,82 @@ private:
                 case PgnScannerToken::MOVE_PAWN:
                     handleMovePawn(scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PAWN_CAPTURE:
                     handleMovePawnCapture(scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PAWN_PROMO:
                     handleMovePawnPromo(scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE:
                     handleMovePawnPromoCapture(scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
                     break;
 
-                case PgnScannerToken::MOVE_PIECE:
-                    switch (scanner.getTokenInfo().pieceMove.piece)
-                    {
-                        case Piece::KNIGHT:
-                            handleMoveKnight(scanner.getTokenInfo().pieceMove);
-                            break;
-
-                        case Piece::BISHOP:
-                            handleMoveBishop(scanner.getTokenInfo().pieceMove);
-                            break;
-
-                        case Piece::ROOK:
-                            handleMoveRook(scanner.getTokenInfo().pieceMove);
-                            break;
-
-                        case Piece::QUEEN:
-                            handleMoveQueen(scanner.getTokenInfo().pieceMove);
-                            break;
-
-                        default: // KING
-                            handleMoveKing(scanner.getTokenInfo().pieceMove);
-                            break;
-                    }
+                case PgnScannerToken::MOVE_PIECE_KNIGHT:
+                    handleMoveKnight(scanner.getTokenInfo().pieceMove);
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
+                    break;
+
+                case PgnScannerToken::MOVE_PIECE_BISHOP:
+                    handleMoveBishop(scanner.getTokenInfo().pieceMove);
+                    token = parseNagsAfterMove();
+                    variationAllowed = true;
+                    break;
+
+                case PgnScannerToken::MOVE_PIECE_ROOK:
+                    handleMoveRook(scanner.getTokenInfo().pieceMove);
+                    token = parseNagsAfterMove();
+                    variationAllowed = true;
+                    break;
+
+                case PgnScannerToken::MOVE_PIECE_QUEEN:
+                    handleMoveQueen(scanner.getTokenInfo().pieceMove);
+                    token = parseNagsAfterMove();
+                    variationAllowed = true;
+                    break;
+
+                case PgnScannerToken::MOVE_PIECE_KING:
+                    handleMoveKing(scanner.getTokenInfo().pieceMove);
+                    token = parseNagsAfterMove();
+                    variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_SHORT_CASTLE:
                     handleMoveShortCastle();
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_LONG_CASTLE:
                     handleMoveLongCastle();
                     token = parseNagsAfterMove();
-                    validTokenMask = ctLineTokenMask_all;
+                    variationAllowed = true;
                     break;
 
                 case PgnScannerToken::VARIATION_START:
-                    token = parseVariation();
-                    break;
+                    if (variationAllowed) [[likely]]
+                    {
+                        token = parseVariation();
+                        break;
+                    }
+                    else [[unlikely]]
+                    {
+                        throw PgnError(
+                            PgnErrorCode::UNEXPECTED_TOKEN,
+                            std::format(
+                                "VARIATION_START not allowed in a line before move"));
+                    }
 
                 default:
                     return token;
@@ -433,13 +505,12 @@ private:
         PgnScannerToken token { scanner.nextToken() };
         token = parseLine(token);
 
-        if (token != PgnScannerToken::VARIATION_END)
+        if (token != PgnScannerToken::VARIATION_END) [[unlikely]]
         {
-            throw PgnError(
+            unexpectedTokenError(
                 PgnErrorCode::UNEXPECTED_TOKEN,
-                std::format("Expected token VARIATION_END but got: {} ({})",
-                            static_cast<std::uint8_t>(token),
-                            PgnScanner::scannerTokenToString(token)));
+                pgnScannerTokenToMaskBit(PgnScannerToken::VARIATION_END),
+                token);
         }
 
         actionHandler.variationEnd();
@@ -586,12 +657,13 @@ private:
 
                     return;
 
-                default:
-                    throw PgnError(
+                default: [[unlikely]]
+                    unexpectedTokenError(
                         PgnErrorCode::UNEXPECTED_TOKEN,
-                        std::format("Expected token COMMENT_TEXT | COMMENT_NEWLINE | COMMENT_END but got: {} ({})",
-                                    static_cast<std::uint8_t>(token),
-                                    PgnScanner::scannerTokenToString(token)));
+                        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_TEXT) |
+                        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_NEWLINE) |
+                        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_END),
+                        token);
             }
         }
     }
@@ -665,12 +737,12 @@ public:
     {
         try
         {
-            // every iteration parses a game
+            // every full iteration parses a game
             while (true)
             {
                 PgnScannerToken token { scanner.nextToken() };
 
-                // PGN = (COMMENT | GAME)* <end_of_file>
+                // PGN ==> GAME* COMMENT* <end_of_file>
                 while (true)
                 {
                     if (token == PgnScannerToken::END_OF_FILE)
@@ -717,14 +789,11 @@ public:
 
                 token = parseLine(token);
 
-                if (token != PgnScannerToken::RESULT)
-                {
-                    throw PgnError(
+                if (token != PgnScannerToken::RESULT) [[unlikely]]
+                    unexpectedTokenError(
                         PgnErrorCode::UNEXPECTED_TOKEN,
-                        std::format("Expected token RESULT but got: {} ({})",
-                                    static_cast<std::uint8_t>(token),
-                                    PgnScanner::scannerTokenToString(token)));
-                }
+                        pgnScannerTokenToMaskBit(PgnScannerToken::RESULT),
+                        token);
 
                 actionHandler.gameTerminated(scanner.getTokenInfo().result.result);
                 inMoveTextSection = false;
@@ -737,6 +806,8 @@ public:
         }
     }
 };
+
+/// @}
 
 }
 
