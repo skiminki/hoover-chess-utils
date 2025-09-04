@@ -284,7 +284,10 @@ TEST(PgnReader, filters)
         "[PgnTag2 \"PgnValue2\"] { comment 2 }\n"
         "\n"
         "{ Starting comment }\n"
-        "1. d4! { Move comment} ({ Variation comment } 1. e4!? d5?! ({ Subvariation starting comment } 1... c5 $1 { Subvariation comment 2}))(1. c4 c5)(1. Nf3)(1. d4 g6 2. Bf4 Nf6 3. Nc3 Bg7 4. Qd2 O-O 5. O-O-O) 1... d5 2. c4 c6 3. Nf3 e6 4. cxd5 { End comment }\n"
+        "1. d4! { Move comment}\n"
+        "({ Variation comment } 1. e4!? d5?!\n"
+        "({ Subvariation starting comment }\n"
+        "1... c5 $1 { Subvariation comment 2}))(1. c4 c5)(1. Nf3)(1. d4 g6 2. Bf4 Nf6 3. Nc3 Bg7 4. Qd2 O-O 5. O-O-O) 1... d5 2. c4 c6 3. Nf3 e6 4. cxd5 { End comment }\n"
         "*\n"
     };
 

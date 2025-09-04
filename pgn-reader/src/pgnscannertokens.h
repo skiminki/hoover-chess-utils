@@ -61,6 +61,11 @@ enum PgnScannerToken : std::uint8_t
     ERROR,
 };
 
+constexpr inline std::uint32_t pgnScannerTokenToMaskBit(PgnScannerToken token) noexcept
+{
+    return std::uint32_t { 1U << static_cast<unsigned>(token) };
+};
+
 struct PgnScannerTokenInfo_PAWN_MOVE
 {
     SquareSet srcMask;
