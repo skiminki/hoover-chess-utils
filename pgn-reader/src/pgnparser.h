@@ -62,6 +62,7 @@
 #include "stringbuilder.h"
 
 #include <array>
+#include <bit>
 #include <cstring>
 #include <format>
 #include <iterator>
@@ -217,18 +218,26 @@ private:
     bool inMoveTextSection { };
     std::vector<std::string> pendingComments { };
 
-    static std::string_view copyToken(const char *src, char *dst, std::size_t maxLen)
+    void unexpectedTokenError(
+        std::uint32_t expectedTokenMask,
+        PgnScannerToken token)
     {
-        std::size_t i;
-        for (i = 0; i < maxLen; ++i)
-        {
-            const char c { src[i] };
-            if (c == '\0')
-                break;
+        std::string expectedTokens { };
 
-            dst[i] = c;
+        while (expectedTokenMask != 0U)
+        {
+            if (!expectedTokens.empty())
+                expectedTokens += " | ";
+
+            expectedTokens += PgnScanner::scannerTokenToString(PgnScannerToken { static_cast<std::uint8_t>(std::countr_zero(expectedTokenMask)) });
+            expectedTokenMask = expectedTokenMask & (expectedTokenMask - 1U);
         }
-        return std::string_view(dst, i);
+
+        throw PgnError(
+            PgnErrorCode::UNEXPECTED_TOKEN,
+            std::format(
+                "Expected token {} but got: {} ({})",
+                expectedTokens, PgnScanner::scannerTokenToString(token), static_cast<std::uint8_t>(token)));
     }
 
     void parseTagPair()
@@ -284,26 +293,135 @@ private:
                             PgnScanner::scannerTokenToString(token)));
     }
 
+
+    static constexpr std::uint32_t ctLineTokenMask_moves {
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN_CAPTURE) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN_PROMO) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_PIECE) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_SHORT_CASTLE) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVE_LONG_CASTLE)
+    };
+
+    static constexpr std::uint32_t ctLineTokenMask_allExceptVariations {
+        ctLineTokenMask_moves |
+        pgnScannerTokenToMaskBit(PgnScannerToken::MOVENUM) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_START) |
+        pgnScannerTokenToMaskBit(PgnScannerToken::COMMENT_TEXT)
+    };
+
+    static constexpr std::uint32_t ctLineTokenMask_all {
+        ctLineTokenMask_moves |
+        ctLineTokenMask_allExceptVariations |
+        pgnScannerTokenToMaskBit(PgnScannerToken::VARIATION_START)
+    };
+
     PgnScannerToken parseLine(PgnScannerToken token)
     {
-        bool parsed { };
+
+        // initially, we except all but variations. Variations are enabled after
+        // a move is parsed.
+        std::uint32_t validTokenMask { ctLineTokenMask_allExceptVariations };
 
         while (true)
         {
-            token = parseComments(token);
-
-            std::tie(token, parsed) = tryParseMoveItem(token);
-            if (!parsed)
-                return token;
-
-            if (parsed)
+            if ((pgnScannerTokenToMaskBit(token) & validTokenMask) == 0U)
             {
-                token = parseComments(token);
+                // An unallowed line token? If so, it is an error
+                if ((pgnScannerTokenToMaskBit(token) & ctLineTokenMask_all) != 0U) [[unlikely]]
+                    unexpectedTokenError(validTokenMask, token);
+            }
 
-                while (token == PgnScannerToken::VARIATION_START)
+            switch (token)
+            {
+                case PgnScannerToken::MOVENUM:
+                    handleMoveNum(scanner.getTokenInfo().moveNum);
+                    token = scanner.nextToken();
+
+                    // after MOVENUM, only move tokens are allowed
+                    validTokenMask = ctLineTokenMask_moves;
+                    break;
+
+                case PgnScannerToken::COMMENT_START:
+                    parseCommentBlock();
+                    token = scanner.nextToken();
+                    break;
+
+                case PgnScannerToken::COMMENT_TEXT:
+                    parseSingleLineComment();
+                    token = scanner.nextToken();
+                    break;
+
+                case PgnScannerToken::MOVE_PAWN:
+                    handleMovePawn(scanner.getTokenInfo().pawnMove);
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::MOVE_PAWN_CAPTURE:
+                    handleMovePawnCapture(scanner.getTokenInfo().pawnMove);
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::MOVE_PAWN_PROMO:
+                    handleMovePawnPromo(scanner.getTokenInfo().pawnMove);
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE:
+                    handleMovePawnPromoCapture(scanner.getTokenInfo().pawnMove);
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::MOVE_PIECE:
+                    switch (scanner.getTokenInfo().pieceMove.piece)
+                    {
+                        case Piece::KNIGHT:
+                            handleMoveKnight(scanner.getTokenInfo().pieceMove);
+                            break;
+
+                        case Piece::BISHOP:
+                            handleMoveBishop(scanner.getTokenInfo().pieceMove);
+                            break;
+
+                        case Piece::ROOK:
+                            handleMoveRook(scanner.getTokenInfo().pieceMove);
+                            break;
+
+                        case Piece::QUEEN:
+                            handleMoveQueen(scanner.getTokenInfo().pieceMove);
+                            break;
+
+                        default: // KING
+                            handleMoveKing(scanner.getTokenInfo().pieceMove);
+                            break;
+                    }
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::MOVE_SHORT_CASTLE:
+                    handleMoveShortCastle();
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::MOVE_LONG_CASTLE:
+                    handleMoveLongCastle();
+                    token = parseNagsAfterMove();
+                    validTokenMask = ctLineTokenMask_all;
+                    break;
+
+                case PgnScannerToken::VARIATION_START:
                     token = parseVariation();
+                    break;
 
-                token = parseComments(token);
+                default:
+                    return token;
             }
         }
     }
@@ -399,84 +517,9 @@ private:
         actionHandler.moveNum(makePlyNum(moveNum.num, moveNum.color));
     }
 
-    std::tuple<PgnScannerToken, bool> tryParseMoveItem(PgnScannerToken token)
+    PgnScannerToken parseNagsAfterMove()
     {
-        bool gotMoveNum { };
-
-        if (token == PgnScannerToken::MOVENUM)
-        {
-            handleMoveNum(scanner.getTokenInfo().moveNum);
-            token = scanner.nextToken();
-            gotMoveNum = true;
-        }
-
-        switch (token)
-        {
-            case PgnScannerToken::MOVE_PAWN:
-                handleMovePawn(scanner.getTokenInfo().pawnMove);
-                break;
-
-            case PgnScannerToken::MOVE_PAWN_CAPTURE:
-                handleMovePawnCapture(scanner.getTokenInfo().pawnMove);
-                break;
-
-            case PgnScannerToken::MOVE_PAWN_PROMO:
-                handleMovePawnPromo(scanner.getTokenInfo().pawnMove);
-                break;
-
-            case PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE:
-                handleMovePawnPromoCapture(scanner.getTokenInfo().pawnMove);
-                break;
-
-            case PgnScannerToken::MOVE_PIECE:
-                switch (scanner.getTokenInfo().pieceMove.piece)
-                {
-                    case Piece::KNIGHT:
-                        handleMoveKnight(scanner.getTokenInfo().pieceMove);
-                        break;
-
-                    case Piece::BISHOP:
-                        handleMoveBishop(scanner.getTokenInfo().pieceMove);
-                        break;
-
-                    case Piece::ROOK:
-                        handleMoveRook(scanner.getTokenInfo().pieceMove);
-                        break;
-
-                    case Piece::QUEEN:
-                        handleMoveQueen(scanner.getTokenInfo().pieceMove);
-                        break;
-
-                    default: // KING
-                        handleMoveKing(scanner.getTokenInfo().pieceMove);
-                        break;
-                }
-                break;
-
-            case PgnScannerToken::MOVE_SHORT_CASTLE:
-                handleMoveShortCastle();
-                break;
-
-            case PgnScannerToken::MOVE_LONG_CASTLE:
-                handleMoveLongCastle();
-                break;
-
-            default:
-                if (gotMoveNum)
-                {
-                    throw PgnError(
-                        PgnErrorCode::UNEXPECTED_TOKEN,
-                        std::format("Expected token MOVE | MOVE_SHORT_CASTLE | MOVE_LONG_CASTLE but got: {} ({})",
-                                    static_cast<std::uint8_t>(token),
-                                    PgnScanner::scannerTokenToString(token)));
-                }
-                else
-                {
-                    return std::make_tuple(token, false);
-                }
-        }
-
-        token = scanner.nextToken();
+        PgnScannerToken token { scanner.nextToken() };
 
         while (token == PgnScannerToken::NAG)
         {
@@ -484,7 +527,7 @@ private:
             token = scanner.nextToken();
         }
 
-        return std::make_tuple(token, true);
+        return token;
     }
 
     PgnScannerToken parseComments(PgnScannerToken token)
