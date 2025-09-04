@@ -147,12 +147,15 @@ TEST(PgnScannerTest, BasicTokenize)
             break;
         }
 
-        case PgnScannerToken::MOVE_PIECE:
+        case PgnScannerToken::MOVE_PIECE_KNIGHT:
+        case PgnScannerToken::MOVE_PIECE_BISHOP:
+        case PgnScannerToken::MOVE_PIECE_ROOK:
+        case PgnScannerToken::MOVE_PIECE_QUEEN:
+        case PgnScannerToken::MOVE_PIECE_KING:
         {
             const PgnScannerTokenInfo_PIECE_MOVE &pieceMove { pgnScanner.getTokenInfo().pieceMove };
             std::cout << std::format(
-                "({}{}{}{})",
-                StringUtils::pieceToSanStr(pieceMove.piece).getStringView(),
+                "({}{}{})",
                 StringUtils::sourceMaskToString(pieceMove.srcMask).getStringView(),
                 pieceMove.capture ? "x" : "",
                 StringUtils::squareToString(pieceMove.dstSq, "??"));

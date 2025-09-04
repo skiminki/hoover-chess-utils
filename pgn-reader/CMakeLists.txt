@@ -30,6 +30,7 @@ if(Doxygen_FOUND)
       "false=<tt>false</tt>"
       "apionly{1}="
       "fullonly{1}=\\1"
+      "pgnscannertoken{1}=<tt>&lt\;@link hoover_chess_utils::pgn_reader::PgnScannerToken::\\1 \\1@endlink&gt\;</tt>"
       )
   set(DOXYGEN_AUTOLINK_SUPPORT NO)
   set(DOXYGEN_ENABLED_SECTIONS full)

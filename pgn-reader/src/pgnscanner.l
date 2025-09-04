@@ -35,6 +35,7 @@
 #undef yyFlexLexer
 #include "pgnscanner.h"
 
+#include <cassert>
 #include <format>
 
 #undef  YY_DECL
@@ -85,19 +86,17 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 {piece_char}{col_char}{row_char}{cm}      {
     setTokenInfo_PIECE_MOVE(
         SquareSet::all(),
-        getPieceForChar(YYText()[0]),
         false,
         charCoordToSq(YYText()[1], YYText()[2]));
-    return PgnScannerToken::MOVE_PIECE;
+    return getMovePieceScannerTokenForChar(YYText()[0]);
 }
 
 {piece_char}"x"{col_char}{row_char}{cm}      {
     setTokenInfo_PIECE_MOVE(
         SquareSet::all(),
-        getPieceForChar(YYText()[0]),
         true,
         charCoordToSq(YYText()[2], YYText()[3]));
-    return PgnScannerToken::MOVE_PIECE;
+    return getMovePieceScannerTokenForChar(YYText()[0]);
 }
 
 {piece_char}{col_char}?{row_char}?"x"?{col_char}{row_char}{cm}      {
@@ -107,7 +106,6 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 {col_char}x{col_char}{row_char}={promo_char}{cm} {
     setTokenInfo_PAWN_MOVE(
         colCharToMask(YYText()[0]),
-        true,
         charCoordToSq(YYText()[2], YYText()[3]),
         getPieceForChar(YYText()[5]));
     return PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE;
@@ -116,7 +114,6 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 {col_char}x{col_char}{row_char}{cm} {
     setTokenInfo_PAWN_MOVE(
         colCharToMask(YYText()[0]),
-        true,
         charCoordToSq(YYText()[2],
         YYText()[3]),
         Piece::NONE);
@@ -126,7 +123,6 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 {col_char}{row_char}={promo_char}{cm}  {
     setTokenInfo_PAWN_MOVE(
         SquareSet::all(),
-        false,
         charCoordToSq(YYText()[0], YYText()[1]),
         getPieceForChar(YYText()[3]));
     return PgnScannerToken::MOVE_PAWN_PROMO;
@@ -135,7 +131,6 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 {col_char}{row_char}{cm} {
     setTokenInfo_PAWN_MOVE(
         SquareSet::all(),
-        false,
         charCoordToSq(YYText()[0], YYText()[1]),
         Piece::NONE);
     return PgnScannerToken::MOVE_PAWN;
@@ -225,15 +220,15 @@ void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_MOVENUM(const char
 }
 
 void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_PAWN_MOVE(
-    SquareSet srcMask, bool capture, Square dstSq, Piece promoPiece)
+    SquareSet srcMask, Square dstSq, Piece promoPiece)
 {
-    m_tokenInfo.pawnMove = PgnScannerTokenInfo_PAWN_MOVE { srcMask, capture, dstSq, promoPiece };
+    m_tokenInfo.pawnMove = PgnScannerTokenInfo_PAWN_MOVE { srcMask, dstSq, promoPiece };
 }
 
 void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_PIECE_MOVE(
-    SquareSet srcMask, Piece piece, bool capture, Square dstSq)
+    SquareSet srcMask, bool capture, Square dstSq)
 {
-    m_tokenInfo.pieceMove = PgnScannerTokenInfo_PIECE_MOVE { srcMask, piece, capture, dstSq };
+    m_tokenInfo.pieceMove = PgnScannerTokenInfo_PIECE_MOVE { srcMask, capture, dstSq };
 }
 
 void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_NAG(std::uint8_t nag)
@@ -257,39 +252,44 @@ hoover_chess_utils::pgn_reader::PgnScanner::tokenizePieceMove(std::string_view s
     // {piece_char}{col_char}?{row_char}?x?{col_char}{row_char}{cm}
 
     SquareSet srcMask { SquareSet::all() };
-    char dstCol { };
-    char dstRow { };
+    Square dst;
     bool capture { };
 
-    auto i = str.begin();
+    auto i = str.end() - 1;
 
-    ++i;
+    // discard check/mate marker. '#' and '+' compare less than '0'
+    if (*i < '1') [[unlikely]]
+        --i;
 
-    while (i != str.end())
+    // destination square coordinates
+    dst = charCoordToSq(*(i - 1), *i);
+    i -= 2;
+
+    // capture marker?
+    if (*i == 'x')
     {
-        const char c { *i };
-        if (c >= 'a' && c <= 'h')
-        {
-            if (dstCol)
-                srcMask &= colCharToMask(dstCol);
-
-            dstCol = c;
-        }
-        else if (c >= '1' && c <= '8')
-        {
-            if (dstRow)
-                srcMask &= rowCharToMask(dstRow);
-
-            dstRow = c;
-        }
-        else if (c == 'x')
-            capture = true;
-
-        ++i;
+        capture = true;
+        --i;
     }
 
-    setTokenInfo_PIECE_MOVE(srcMask, getPieceForChar(str[0]), capture, charCoordToSq(dstCol, dstRow));
-    return PgnScannerToken::MOVE_PIECE;
+    // source row character?
+    if (*i >= '1' && *i <= '8') [[unlikely]]
+    {
+        srcMask &= rowCharToMask(*i);
+        --i;
+    }
+
+    // source column character?
+    if (*i >= 'a' && *i <= 'h') [[unlikely]]
+    {
+        srcMask &= colCharToMask(*i);
+        --i;
+    }
+
+    assert(i == str.begin());
+
+    setTokenInfo_PIECE_MOVE(srcMask, capture, dst);
+    return getMovePieceScannerTokenForChar(*i);
 }
 
 hoover_chess_utils::pgn_reader::PgnScannerToken
@@ -329,7 +329,6 @@ hoover_chess_utils::pgn_reader::PgnScanner::tokenizeUnusualPawnMove(std::string_
         {
             setTokenInfo_PAWN_MOVE(
                 srcMask,
-                capture,
                 charCoordToSq(dstCol, dstRow),
                 getPieceForChar(i[1U]));
             return capture ? PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE : PgnScannerToken::MOVE_PAWN_PROMO;
@@ -340,7 +339,6 @@ hoover_chess_utils::pgn_reader::PgnScanner::tokenizeUnusualPawnMove(std::string_
 
     setTokenInfo_PAWN_MOVE(
         srcMask,
-        capture,
         charCoordToSq(dstCol, dstRow),
         Piece::NONE);
 
