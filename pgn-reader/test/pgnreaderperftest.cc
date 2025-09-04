@@ -271,7 +271,7 @@ int main(int argc, char **argv)
             const std::chrono::duration<double> pgnReadTagsDuration = endPgnReadTags - startPgnReadTags;
             const std::chrono::duration<double> pgnMoveWriterDuration = endPgnWriteMoves - startPgnWriteMoves;
 
-            std::cout << "Iteration " << (i + 1)
+            std::cout << "Iteration " << (i + 1) << ": "
                       << (actions.games / 2U) << " games, "
                       << actions.pgnTags << " pgn tags, "
                       << actions.moves << " moves, "
