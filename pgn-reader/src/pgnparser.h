@@ -38,67 +38,144 @@ namespace hoover_chess_utils::pgn_reader
 /// @addtogroup PgnReaderImpl
 /// @{
 
-// PGN parser actions are structured as follows:
-//
-// - PGN tags section
-// - Move text section
-// - Game result and game termination marker
+/// @brief PGN parser null semantic actions. This is useful only for testing and documentation purposes.
+///
+/// The overall sequence of the callbacks is as follows:
+/// -# @coderef{gameStart()} – invoked at the beginning of each game
+/// -# @coderef{pgnTag()} – invoked once per PGN tag pair
+///    - Any number of comments may precede a PGN tag pair
+///    - Escapes of tag pair values are processed before the callback is invoked
+/// -# @coderef{moveTextSection()} – after PGN tag section and before the first move
+///    - Note that the any comments between the last PGN tag and the first move are deferred after this callback
+/// -# Move numbers, moves, NAGs, comments, variations
+///    - The move-related callbacks are: @coderef{moveNum()}, @coderef{movePawn()},
+///      @coderef{movePawnCapture()}, @coderef{movePawnPromo()}, @coderef{movePawnPromoCapture()},
+///      @coderef{moveKnight()}, @coderef{moveBishop()}, @coderef{moveRook()}, @coderef{moveQueen()},
+///      @coderef{moveKing()}, @coderef{moveShortCastle()}, @coderef{moveLongCastle()}. There are
+///      no ordering restrictions.
+///    - Any number of NAGs may follow a move. One callback to @coderef{nag()} per NAG.
+///    - A variation starts with @coderef{variationStart()} and ends with @coderef{variationEnd()}.
+///      - Variations may be nested. The parser will ensure that @coderef{variationStart()}/@coderef{variationEnd()}
+///        call pairs are balanced or an exception is thrown.
+///      - The parent line must have at least one move before a variation can start. The variation represents
+///        an alternative to that move. However, after the variation has ended, another variation can
+///        begin immediately, representing another alternative to the parent line move.
+///    - Single line comments and block comments are not distinguished.
+///      - A block comment triggers a @coderef{comment()}. Newlines are replaced with a single '\\n'
+///        regardless of whether they used '\\n', '\\r', '\\n\\r', or '\\r\\n'
+///      - A non-empty single line comment triggers a @coderef{comment()}
+///      - Escapes are not processed
+///      - Comments may appear anywhere except between a move and its NAG(s).
+/// -# @coderef{gameTerminated()} – game end with a result. No other callbacks related to the game
+///    can occur.
+/// -# @coderef{endOfPGN()} – invoked at the end of the PGN file
+/// -# Possible trailing comments
 class PgnParser_NullActions
 {
 public:
     //// 1. Preamble
 
-    // game start, next state: 2. PGN tags section
+    /// @brief Called on game start before anything else
     void gameStart() { }
-
-    // End of PGN, no more actions from the parser
-    void endOfPGN() { }
-
 
     //// 2. PGN tags section
 
-    // new PGN tag
+    /// @brief Called on PGN tag pair
+    ///
+    /// @param[in]  key      PGN tag key
+    /// @param[in]  value    PGN tag value (escapes processed)
     void pgnTag(const std::string_view &key, const std::string_view &value)
     {
         static_cast<void>(key);
         static_cast<void>(value);
     }
 
-    // end of PGN tags section, next state: 3. Move text section
+    /// @brief Called between the end of the tag pair section and the beginning
+    /// of the move text section.
     void moveTextSection() { }
 
     //// 3. Move text section
 
-    // Comments can appear almost anywhere: start of game, after move, start of variation, etc
+    /// @brief Called on comment
+    ///
+    /// @param[in] str    Comment string. May be multiline string for multiline block comments.
+    ///
+    /// @remark On ordering of comments and other callbacks:
+    /// - PGN comments before the first PGN tag pair: callbacks
+    ///   after @coderef{gameStart()}.
+    /// - PGN comments between the last PGN tag pair and the first move: callbacks
+    ///   after @coderef{moveTextSection()}.
+    /// - PGN comments after game termination marker (game result):
+    ///   - If the PGN input has a next game: after @coderef{gameStart()}
+    ///   - Otherwise: just before @coderef{endOfPGN()}
     void comment(const std::string_view &str)
     {
         static_cast<void>(str);
     }
 
-    // numeric annotation glyph
+    /// @brief Called on numeric annotation glyph
+    ///
+    /// @param[in]  nagNum    Glyph number
+    ///
+    /// @sa https://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c10
     void nag(std::uint8_t nagNum)
     {
         static_cast<void>(nagNum);
     }
 
+    /// @brief Called on move number
+    ///
+    /// @param[in]  plyNum
+    ///
+    /// @sa @coderef{colorOfPly()}, @coderef{moveNum()}
     void moveNum(std::uint32_t plyNum)
     {
         static_cast<void>(plyNum);
     }
 
-    // moves
+    /// @brief Pawn advancing move (non-promoting)
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void movePawn(SquareSet srcMask, Square dst)
     {
         static_cast<void>(srcMask);
         static_cast<void>(dst);
     }
 
+    /// @brief Pawn capturing move (non-promoting)
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void movePawnCapture(SquareSet srcMask, Square dst)
     {
         static_cast<void>(srcMask);
         static_cast<void>(dst);
     }
 
+    /// @brief Pawn advancing move (promoting)
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  promo       Promotion piece
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void movePawnPromo(SquareSet srcMask, Square dst, Piece promo)
     {
         static_cast<void>(srcMask);
@@ -106,6 +183,17 @@ public:
         static_cast<void>(promo);
     }
 
+    /// @brief Pawn capturing move (promoting)
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  promo       Promotion piece
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void movePawnPromoCapture(SquareSet srcMask, Square dst, Piece promo)
     {
         static_cast<void>(srcMask);
@@ -113,6 +201,17 @@ public:
         static_cast<void>(promo);
     }
 
+    /// @brief Knight move
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  capture     Whether the move is a capture
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void moveKnight(SquareSet srcMask, Square dst, bool capture)
     {
         static_cast<void>(srcMask);
@@ -120,6 +219,17 @@ public:
         static_cast<void>(capture);
     }
 
+    /// @brief Bishop move
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  capture     Whether the move is a capture
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void moveBishop(SquareSet srcMask, Square dst, bool capture)
     {
         static_cast<void>(srcMask);
@@ -127,6 +237,17 @@ public:
         static_cast<void>(capture);
     }
 
+    /// @brief Rook move
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  capture     Whether the move is a capture
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void moveRook(SquareSet srcMask, Square dst, bool capture)
     {
         static_cast<void>(srcMask);
@@ -134,6 +255,17 @@ public:
         static_cast<void>(capture);
     }
 
+    /// @brief Queen move
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  capture     Whether the move is a capture
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void moveQueen(SquareSet srcMask, Square dst, bool capture)
     {
         static_cast<void>(srcMask);
@@ -141,6 +273,17 @@ public:
         static_cast<void>(capture);
     }
 
+    /// @brief King move
+    ///
+    /// @param[in]  srcMask     Set of allowed squares as specified by the move
+    /// @param[in]  dst         Destination square
+    /// @param[in]  capture     Whether the move is a capture
+    ///
+    /// @remark
+    /// - When source rank and file are specified, @p srcMask is a single square (@coderef{SquareSet::square()}).
+    /// - When source rank is specified, @p srcMask is all squares of the rank (@coderef{SquareSet::row()}).
+    /// - When source file is specified, @p srcMask is all squares of the file (@coderef{SquareSet::column()}).
+    /// - Otherwise, @p srcMask is all squares of the board (@coderef{SquareSet::all()}).
     void moveKing(SquareSet srcMask, Square dst, bool capture)
     {
         static_cast<void>(srcMask);
@@ -148,32 +291,41 @@ public:
         static_cast<void>(capture);
     }
 
+    /// @brief Short castling move
     void moveShortCastle()
     {
     }
 
+    /// @brief Long castling move
     void moveLongCastle()
     {
     }
 
+    /// @brief Beginning of a recursive annotation variation (RAV)
     void variationStart()
     {
     }
 
+    /// @brief End of a recursive annotation variation (RAV)
     void variationEnd()
     {
     }
 
-    // Game termination, next state: 1. Preamble
+    /// @brief Called on game end.
+    ///
+    /// @param[in]  result     Result of the game
     void gameTerminated(PgnResult result)
     {
         static_cast<void>(result);
     }
+
+    /// @brief Called at the end of the PGN after everything else.
+    void endOfPGN() { }
 };
 
 /// @brief The PGN parser
 ///
-/// @tparam T_ActionHandler     Semantic action handler
+/// @tparam T_ActionHandler     Semantic action handler. See @coderef{PgnParser_NullActions} for description.
 ///
 /// <table><caption>Grammar for PGN parsing</caption>
 /// <tr>
@@ -302,19 +454,32 @@ public:
 /// </tr>
 /// </table>
 ///
-/// The rules are derived from the informal description in
+/// Strings may use backslashes for quoting the next character as is. This is
+/// useful only for quoting a quote (@c ") or a backslash (@c \\) character.
+///
+/// The rules are derived from the description in
 /// https://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm .
+///
+/// @remark The grammar used by this parser differs from the grammar in https://www.saremba.de/chessgml/standards/pgn/pgn-complete.htm#c18
+/// in various ways:
+/// - Comments are not included in the specification. However, they must be
+///   handled by a concrete parser implementation.
+/// - The syntax in specification allows variations without parent
+///   moves. This implementation decided to disallow that in the parser rather
+///   than in the later stages.
+/// - The syntax in specification allows NAGs without the preceding token being
+///   a move or another NAG. This implementation is stricter.
 template <typename T_ActionHandler>
 class PgnParser
 {
 private:
-    PgnScanner &scanner;
-    T_ActionHandler &actionHandler;
-    StringBuilder strBuilder { };
-    StringBuilder strBuilder2 { };
+    PgnScanner &m_scanner;
+    T_ActionHandler &m_actionHandler;
+    StringBuilder m_strBuilder { };
+    StringBuilder m_strBuilder2 { };
 
-    bool inMoveTextSection { };
-    std::vector<std::string> pendingComments { };
+    bool m_inMoveTextSection { };
+    std::vector<std::string> m_pendingComments { };
 
     void unexpectedTokenError(
         PgnErrorCode errorCode,
@@ -341,18 +506,18 @@ private:
 
     void parseTagPair()
     {
-        strBuilder.clear();
-        strBuilder2.clear();
-        PgnScannerToken token { scanner.nextToken() };
+        m_strBuilder.clear();
+        m_strBuilder2.clear();
+        PgnScannerToken token { m_scanner.nextToken() };
         if (token != PgnScannerToken::TAG_KEY) [[unlikely]]
             unexpectedTokenError(
                 PgnErrorCode::BAD_PGN_TAG,
                 pgnScannerTokenToMaskBit(PgnScannerToken::TAG_KEY),
                 token);
 
-        strBuilder.appendString(scanner.YYText(), scanner.YYLeng());
+        m_strBuilder.appendString(m_scanner.YYText(), m_scanner.YYLeng());
 
-        token = scanner.nextToken();
+        token = m_scanner.nextToken();
         if (token != PgnScannerToken::TAG_VALUE) [[unlikely]]
             unexpectedTokenError(
                 PgnErrorCode::BAD_PGN_TAG,
@@ -362,26 +527,26 @@ private:
         // TAG value string has format "...", so we'll crop the first and the
         // last chars away. In addition, we need to parse escapes
         bool escape = false;
-        for (const char c : std::string_view { scanner.YYText() + 1, static_cast<std::size_t>(scanner.YYLeng() - 2) })
+        for (const char c : std::string_view { m_scanner.YYText() + 1, static_cast<std::size_t>(m_scanner.YYLeng() - 2) })
         {
             if (escape)
             {
-                strBuilder2.pushBack(c);
+                m_strBuilder2.pushBack(c);
                 escape = false;
             }
             else if (c != '\\')
             {
-                strBuilder2.pushBack(c);
+                m_strBuilder2.pushBack(c);
             }
             else
                 escape = true;
         }
 
-        actionHandler.pgnTag(
-            strBuilder.getStringView(),
-            strBuilder2.getStringView());
+        m_actionHandler.pgnTag(
+            m_strBuilder.getStringView(),
+            m_strBuilder2.getStringView());
 
-        token = scanner.nextToken();
+        token = m_scanner.nextToken();
         if (token != PgnScannerToken::TAG_END) [[unlikely]]
             unexpectedTokenError(
                 PgnErrorCode::BAD_PGN_TAG,
@@ -398,70 +563,70 @@ private:
             switch (token)
             {
                 case PgnScannerToken::MOVENUM:
-                    handleMoveNum(scanner.getTokenInfo().moveNum);
-                    token = scanner.nextToken();
+                    handleMoveNum(m_scanner.getTokenInfo().moveNum);
+                    token = m_scanner.nextToken();
                     break;
 
                 case PgnScannerToken::COMMENT_START:
                     parseCommentBlock();
-                    token = scanner.nextToken();
+                    token = m_scanner.nextToken();
                     break;
 
                 case PgnScannerToken::COMMENT_TEXT:
                     parseSingleLineComment();
-                    token = scanner.nextToken();
+                    token = m_scanner.nextToken();
                     break;
 
                 case PgnScannerToken::MOVE_PAWN:
-                    handleMovePawn(scanner.getTokenInfo().pawnMove);
+                    handleMovePawn(m_scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PAWN_CAPTURE:
-                    handleMovePawnCapture(scanner.getTokenInfo().pawnMove);
+                    handleMovePawnCapture(m_scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PAWN_PROMO:
-                    handleMovePawnPromo(scanner.getTokenInfo().pawnMove);
+                    handleMovePawnPromo(m_scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PAWN_PROMO_CAPTURE:
-                    handleMovePawnPromoCapture(scanner.getTokenInfo().pawnMove);
+                    handleMovePawnPromoCapture(m_scanner.getTokenInfo().pawnMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PIECE_KNIGHT:
-                    handleMoveKnight(scanner.getTokenInfo().pieceMove);
+                    handleMoveKnight(m_scanner.getTokenInfo().pieceMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PIECE_BISHOP:
-                    handleMoveBishop(scanner.getTokenInfo().pieceMove);
+                    handleMoveBishop(m_scanner.getTokenInfo().pieceMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PIECE_ROOK:
-                    handleMoveRook(scanner.getTokenInfo().pieceMove);
+                    handleMoveRook(m_scanner.getTokenInfo().pieceMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PIECE_QUEEN:
-                    handleMoveQueen(scanner.getTokenInfo().pieceMove);
+                    handleMoveQueen(m_scanner.getTokenInfo().pieceMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
 
                 case PgnScannerToken::MOVE_PIECE_KING:
-                    handleMoveKing(scanner.getTokenInfo().pieceMove);
+                    handleMoveKing(m_scanner.getTokenInfo().pieceMove);
                     token = parseNagsAfterMove();
                     variationAllowed = true;
                     break;
@@ -500,9 +665,9 @@ private:
 
     PgnScannerToken parseVariation()
     {
-        actionHandler.variationStart();
+        m_actionHandler.variationStart();
 
-        PgnScannerToken token { scanner.nextToken() };
+        PgnScannerToken token { m_scanner.nextToken() };
         token = parseLine(token);
 
         if (token != PgnScannerToken::VARIATION_END) [[unlikely]]
@@ -513,28 +678,28 @@ private:
                 token);
         }
 
-        actionHandler.variationEnd();
+        m_actionHandler.variationEnd();
 
-        return scanner.nextToken();
+        return m_scanner.nextToken();
     }
 
     inline void handleMovePawn(const PgnScannerTokenInfo_PAWN_MOVE &move) const
     {
-        actionHandler.movePawn(
+        m_actionHandler.movePawn(
             move.srcMask,
             move.dstSq);
     }
 
     inline void handleMovePawnCapture(const PgnScannerTokenInfo_PAWN_MOVE &move) const
     {
-        actionHandler.movePawnCapture(
+        m_actionHandler.movePawnCapture(
             move.srcMask,
             move.dstSq);
     }
 
     inline void handleMovePawnPromo(const PgnScannerTokenInfo_PAWN_MOVE &move) const
     {
-        actionHandler.movePawnPromo(
+        m_actionHandler.movePawnPromo(
             move.srcMask,
             move.dstSq,
             move.promoPiece);
@@ -542,7 +707,7 @@ private:
 
     inline void handleMovePawnPromoCapture(const PgnScannerTokenInfo_PAWN_MOVE &move) const
     {
-        actionHandler.movePawnPromoCapture(
+        m_actionHandler.movePawnPromoCapture(
             move.srcMask,
             move.dstSq,
             move.promoPiece);
@@ -550,52 +715,52 @@ private:
 
     inline void handleMoveKnight(const PgnScannerTokenInfo_PIECE_MOVE &move) const
     {
-        actionHandler.moveKnight(move.srcMask, move.dstSq, move.capture);
+        m_actionHandler.moveKnight(move.srcMask, move.dstSq, move.capture);
     }
 
     inline void handleMoveBishop(const PgnScannerTokenInfo_PIECE_MOVE &move) const
     {
-        actionHandler.moveBishop(move.srcMask, move.dstSq, move.capture);
+        m_actionHandler.moveBishop(move.srcMask, move.dstSq, move.capture);
     }
 
     inline void handleMoveRook(const PgnScannerTokenInfo_PIECE_MOVE &move) const
     {
-        actionHandler.moveRook(move.srcMask, move.dstSq, move.capture);
+        m_actionHandler.moveRook(move.srcMask, move.dstSq, move.capture);
     }
 
     inline void handleMoveQueen(const PgnScannerTokenInfo_PIECE_MOVE &move) const
     {
-        actionHandler.moveQueen(move.srcMask, move.dstSq, move.capture);
+        m_actionHandler.moveQueen(move.srcMask, move.dstSq, move.capture);
     }
 
     inline void handleMoveKing(const PgnScannerTokenInfo_PIECE_MOVE &move) const
     {
-        actionHandler.moveKing(move.srcMask, move.dstSq, move.capture);
+        m_actionHandler.moveKing(move.srcMask, move.dstSq, move.capture);
     }
 
     inline void handleMoveShortCastle() const
     {
-        actionHandler.moveShortCastle();
+        m_actionHandler.moveShortCastle();
     }
 
     inline void handleMoveLongCastle() const
     {
-        actionHandler.moveLongCastle();
+        m_actionHandler.moveLongCastle();
     }
 
     void handleMoveNum(const PgnScannerTokenInfo_MOVENUM &moveNum) const
     {
-        actionHandler.moveNum(makePlyNum(moveNum.num, moveNum.color));
+        m_actionHandler.moveNum(makePlyNum(moveNum.num, moveNum.color));
     }
 
     PgnScannerToken parseNagsAfterMove()
     {
-        PgnScannerToken token { scanner.nextToken() };
+        PgnScannerToken token { m_scanner.nextToken() };
 
         while (token == PgnScannerToken::NAG)
         {
-            actionHandler.nag(scanner.getTokenInfo().nag.nag);
-            token = scanner.nextToken();
+            m_actionHandler.nag(m_scanner.getTokenInfo().nag.nag);
+            token = m_scanner.nextToken();
         }
 
         return token;
@@ -609,12 +774,12 @@ private:
             {
                 case PgnScannerToken::COMMENT_START:
                     parseCommentBlock();
-                    token = scanner.nextToken();
+                    token = m_scanner.nextToken();
                     break;
 
                 case PgnScannerToken::COMMENT_TEXT:
                     parseSingleLineComment();
-                    token = scanner.nextToken();
+                    token = m_scanner.nextToken();
                     break;
 
                 default:
@@ -625,35 +790,35 @@ private:
 
     void parseCommentBlock()
     {
-        strBuilder.clear();
+        m_strBuilder.clear();
 
         std::size_t pendingNewlines { };
 
         while (true)
         {
-            const PgnScannerToken token { scanner.nextToken() };
+            const PgnScannerToken token { m_scanner.nextToken() };
             switch (token)
             {
                 case PgnScannerToken::COMMENT_TEXT:
-                    if (!strBuilder.isEmpty())
+                    if (!m_strBuilder.isEmpty())
                     {
                         while (pendingNewlines > 0U)
                         {
-                            strBuilder.pushBack('\n');
+                            m_strBuilder.pushBack('\n');
                             --pendingNewlines;
                         }
                     }
                     pendingNewlines = 0U;
-                    strBuilder.appendString(scanner.YYText(), scanner.YYLeng());
+                    m_strBuilder.appendString(m_scanner.YYText(), m_scanner.YYLeng());
                     break;
                 case PgnScannerToken::COMMENT_NEWLINE:
                     ++pendingNewlines;
                     break;
                 case PgnScannerToken::COMMENT_END:
-                    if (inMoveTextSection)
-                        actionHandler.comment(strBuilder.getStringView());
+                    if (m_inMoveTextSection)
+                        m_actionHandler.comment(m_strBuilder.getStringView());
                     else
-                        pendingComments.push_back(std::string { strBuilder.getStringView() });
+                        m_pendingComments.push_back(std::string { m_strBuilder.getStringView() });
 
                     return;
 
@@ -670,8 +835,8 @@ private:
 
     void parseSingleLineComment()
     {
-        const char *commentStart { scanner.YYText() };
-        const char *commentEnd { commentStart + static_cast<std::size_t>(scanner.YYLeng()) };
+        const char *commentStart { m_scanner.YYText() };
+        const char *commentEnd { commentStart + static_cast<std::size_t>(m_scanner.YYLeng()) };
 
         ++commentStart; // eat the ';'
 
@@ -711,27 +876,36 @@ private:
 
         if (commentStart != commentEnd)
         {
-            if (inMoveTextSection)
-                actionHandler.comment(std::string_view { commentStart, commentEnd });
+            if (m_inMoveTextSection)
+                m_actionHandler.comment(std::string_view { commentStart, commentEnd });
             else
-                pendingComments.push_back(std::string { commentStart, commentEnd });
+                m_pendingComments.push_back(std::string { commentStart, commentEnd });
         }
     }
 
     void flushPendingComments()
     {
-        for (const auto &str : pendingComments)
-            actionHandler.comment(str);
+        for (const auto &str : m_pendingComments)
+            m_actionHandler.comment(str);
 
-        pendingComments.clear();
+        m_pendingComments.clear();
     }
 
 public:
-    PgnParser(PgnScanner &_scanner, T_ActionHandler &_actionHandler) :
-        scanner { _scanner },
-        actionHandler { _actionHandler }
+    /// @brief Constructor
+    ///
+    /// @param[in]  scanner          PGN scanner
+    /// @param[in]  actionHandler    Semantic action handler. See @coderef{PgnParser_NullActions} for description.
+    PgnParser(PgnScanner &scanner, T_ActionHandler &actionHandler) :
+        m_scanner { scanner },
+        m_actionHandler { actionHandler }
     {
     }
+
+    PgnParser(const PgnParser &) = delete;
+    PgnParser(PgnParser &&) = delete;
+    PgnParser &operator = (const PgnParser &) & = delete;
+    PgnParser &operator = (PgnParser &&) & = delete;
 
     void parse()
     {
@@ -740,7 +914,7 @@ public:
             // every full iteration parses a game
             while (true)
             {
-                PgnScannerToken token { scanner.nextToken() };
+                PgnScannerToken token { m_scanner.nextToken() };
 
                 // PGN ==> GAME* COMMENT* <end_of_file>
                 while (true)
@@ -748,7 +922,7 @@ public:
                     if (token == PgnScannerToken::END_OF_FILE)
                     {
                         flushPendingComments();
-                        actionHandler.endOfPGN();
+                        m_actionHandler.endOfPGN();
                         return;
                     }
                     else if (token == PgnScannerToken::COMMENT_START)
@@ -758,11 +932,11 @@ public:
                     else
                         break;
 
-                    token = scanner.nextToken();
+                    token = m_scanner.nextToken();
                 }
 
                 // GAME = TAGPAIRS MOVETEXT
-                actionHandler.gameStart();
+                m_actionHandler.gameStart();
 
                 // TAGPAIRS = (COMMENT | TAGPAIR)*
                 while (true)
@@ -779,13 +953,13 @@ public:
                     else
                         break;
 
-                    token = scanner.nextToken();
+                    token = m_scanner.nextToken();
                 }
 
                 // MOVETEXT
-                actionHandler.moveTextSection();
+                m_actionHandler.moveTextSection();
                 flushPendingComments();
-                inMoveTextSection = true;
+                m_inMoveTextSection = true;
 
                 token = parseLine(token);
 
@@ -795,14 +969,14 @@ public:
                         pgnScannerTokenToMaskBit(PgnScannerToken::RESULT),
                         token);
 
-                actionHandler.gameTerminated(scanner.getTokenInfo().result.result);
-                inMoveTextSection = false;
+                m_actionHandler.gameTerminated(m_scanner.getTokenInfo().result.result);
+                m_inMoveTextSection = false;
             }
         }
         catch (const PgnError &ex)
         {
             // add position info in the exception
-            throw PgnError(scanner, ex);
+            throw PgnError(m_scanner, ex);
         }
     }
 };

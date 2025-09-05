@@ -156,7 +156,7 @@ struct PgnScannerTokenInfo_PAWN_MOVE
 {
     /// @brief Allowed source squares per the move specification.
     ///
-    /// - When source rank and file are specified, this is a single bit (@coderef{SquareSet::square()}).
+    /// - When source rank and file are specified, this is a single square (@coderef{SquareSet::square()}).
     /// - When source rank is specified, this is all squares of the rank (@coderef{SquareSet::row()}).
     /// - When source file is specified, this is all squares of the file (@coderef{SquareSet::column()}).
     /// - Otherwise, this is all squares of the board (@coderef{SquareSet::all()}).
@@ -174,7 +174,7 @@ struct PgnScannerTokenInfo_PIECE_MOVE
 {
     /// @brief Allowed source squares per the move specification.
     ///
-    /// - When source rank and file are specified, this is a single bit (@coderef{SquareSet::square()}).
+    /// - When source rank and file are specified, this is a single square (@coderef{SquareSet::square()}).
     /// - When source rank is specified, this is all squares of the rank (@coderef{SquareSet::row()}).
     /// - When source file is specified, this is all squares of the file (@coderef{SquareSet::column()}).
     /// - Otherwise, this is all squares of the board (@coderef{SquareSet::all()}).
