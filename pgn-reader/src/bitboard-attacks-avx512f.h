@@ -264,6 +264,7 @@ public:
         __m512i xrays { };
 
         // pinned pieces
+        __m512i potentiallyPinnedPieces { };
         __m512i pinnedPieces { };
 
         const __m512i occupancyMasks { _mm512_set1_epi64(static_cast<std::uint64_t>(occupancyMask)) };
@@ -282,49 +283,51 @@ public:
         const __m512i rotateLefts = _mm512_load_epi64(ctAttackingSliderRotateLefts.data());
         const __m512i attackingSliderMasks =  _mm512_load_epi64(ctAttackingSliderMasks.data());
 
-        // Filter out king rays about to go out of board. At this point, all
-        // king rays are still on king, so we're not losing any hits
+        // Filter out king rays about to go out of board
         kingRays &= attackingSliderMasks;
 
         while (true)
         {
-            // expand king rays
+            // expand king rays by a square. These are guaranteed to be on the board after expansion
             kingRays = _mm512_rolv_epi64(kingRays, rotateLefts);
 
             // add checkers if king rays meet opponent's sliders
             checkers |= kingRays & oppSliders;
 
-            // spawn x-rays if king rays meet pinnable pieces
-            const __m512i newPinnables { kingRays & pinnables };
-            pinnedPieces |= newPinnables; // note: we'll zap pinned pieces if xray doesn't end in opponent slider
-            xrays |= newPinnables;
+            // king ray becomes an x-ray if it meets a pinnable piece
+            xrays |= kingRays & pinnables;
 
-            // Check for x-ray termination. That is one of:
-            // - the ray is about to go out of bounds
-            // - the ray is on occupied square other than a potential pinned piece
-            const __mmask8 keepXrays { _mm512_testn_epi64_mask(xrays, ((occupancyMasks &~ pinnedPieces) | ~attackingSliderMasks)) };
-            // Do we keep the pinned piece on x-ray termination? We do if:
-            // - the x-ray terminates on opponent slider hit
-            const __mmask8 keepPinnedPieces { _mm512_test_epi64_mask(xrays, oppSliders) };
-
-            // terminate king rays on occupied squares
-            kingRays &= ~occupancyMasks;
-
-            // terminate king rays that would go out of bounds on the next iteration
+            // filter out king rays that cannot expand anymore
             kingRays &= attackingSliderMasks;
 
-            // now, expand and conditionally terminate x-rays
-            xrays = _mm512_maskz_rolv_epi64(keepXrays, xrays, rotateLefts);
+            // terminate king rays on any piece
+            kingRays &= ~occupancyMasks;
 
-            // exit comdition: no more king rays and x-rays
-            const __mmask8 exitCond { _mm512_test_epi64_mask(kingRays | xrays, kingRays | xrays) };
-
-            // zap pinned pieces of terminated x-rays, unless we decided to keep
-            // them on termination
-            pinnedPieces = _mm512_maskz_mov_epi64(keepXrays | keepPinnedPieces, pinnedPieces);
-
-            if (exitCond == 0U)
+            // viable king rays left?
+            if (_mm512_test_epi64_mask(kingRays, kingRays) == 0U)
                 break;
+        }
+
+        potentiallyPinnedPieces = xrays; // potentially pinned, will resolve later
+
+        while (true)
+        {
+            // filter out x-rays that are about to go oob
+            xrays &= attackingSliderMasks;
+
+            // viable x-rays left?
+            if (_mm512_test_epi64_mask(xrays, xrays) == 0U)
+                break;
+
+            // expand x-rays
+            xrays = _mm512_rolv_epi64(xrays, rotateLefts);
+
+            // if an x-ray hits an opponent slider, that slider is a pinner
+            const __mmask8 commitPinnedPieces { _mm512_test_epi64_mask(xrays, oppSliders) };
+            pinnedPieces |= _mm512_maskz_mov_epi64(commitPinnedPieces, potentiallyPinnedPieces);
+
+            // x-rays terminate on any piece
+            xrays &= ~occupancyMasks;
         }
 
         out_checkers = SquareSet { static_cast<std::uint64_t>(_mm512_reduce_or_epi64(checkers)) };

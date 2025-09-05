@@ -404,7 +404,7 @@ public:
         SquareSet &out_pinnedPieces) noexcept
     {
 
-#if 0 & HAVE_AVX512F // quite a lot slower than the PDEP/PEXT implementation on Zen4, so disable for now
+#if 0 && HAVE_AVX512F // quite a lot slower than the PDEP/PEXT implementation on Zen4, so disable for now
         Attacks_AVX512F::determineSliderCheckersAndPins(
             occupancyMask,
             turnColorMask,
