@@ -75,6 +75,14 @@ public:
         return std::popcount(m_bitmask);
     }
 
+    /// @brief Returns whether 0 or 1 squares are in the set
+    ///
+    /// @return Population count is 0 or 1
+    constexpr inline bool popcountAtMostOne() const noexcept
+    {
+        return (m_bitmask & (m_bitmask - 1U)) == 0U;
+    }
+
     /// @brief Returns the first (lowest-value) square in the set or
     /// @coderef{Square::NONE} if the set is empty.
     ///
