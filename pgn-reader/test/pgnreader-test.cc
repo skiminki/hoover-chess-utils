@@ -240,7 +240,7 @@ struct CallBackCollectorActions : public PgnReaderActions
         ++stats.count_setBoardReferences;
     }
 
-    void afterMove(ChessBoard::Move move) override
+    void afterMove(Move move) override
     {
         static_cast<void>(move);
 
@@ -540,7 +540,7 @@ public:
         m_prevBoard = &prevBoard;
     }
 
-    void afterMove(ChessBoard::Move move) override
+    void afterMove(Move move) override
     {
         EXPECT_EQ(move.isRegularMove(),   (m_expectedMoveTypeClass == MoveTypeClass::REGULAR));
         EXPECT_EQ(move.isEnPassantMove(), (m_expectedMoveTypeClass == MoveTypeClass::EN_PASSANT));

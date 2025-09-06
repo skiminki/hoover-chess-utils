@@ -26,7 +26,7 @@ namespace hoover_chess_utils::pgn_reader
 
 struct DummyMoveIteratorDereference
 {
-    DummyMoveIteratorDereference &operator = (ChessBoard::Move) noexcept
+    DummyMoveIteratorDereference &operator = (Move) noexcept
     {
         return *this;
     }
@@ -93,7 +93,7 @@ public:
 struct SingleMoveIterator
 {
 private:
-    ChessBoard::Move m;
+    Move m;
     std::uint8_t numMoves;
     [[maybe_unused]] std::uint8_t reserved;
 
@@ -104,19 +104,19 @@ public:
         return *this;
     }
 
-    ChessBoard::Move &operator *() noexcept
+    Move &operator *() noexcept
     {
         return m;
     }
 
-    ChessBoard::Move getMove() noexcept
+    Move getMove() noexcept
     {
         if (numMoves == 1U) [[likely]]
             return m;
         else [[unlikely]] if (numMoves == 0U)
-            return ChessBoard::Move::illegalNoMove();
+            return Move::illegalNoMove();
         else
-            return ChessBoard::Move::illegalAmbiguousMove();
+            return Move::illegalAmbiguousMove();
     }
 };
 
@@ -130,7 +130,7 @@ struct MoveGenIteratorTraits
     // early after a legal move has been found.
     static constexpr bool moveGenCompleted(Iterator) noexcept;
 
-    // Whether this iterator stores moves (ChessBoard::MoveList::iterator) or
+    // Whether this iterator stores moves (MoveList::iterator) or
     // whether it's just interested on whether there is a move
     // (LegalMoveCounterIterator, LegalMoveDetectorIterator). This is used to
     // skip creating moves is addMoveIfLegal* functions if the actual moves
@@ -139,9 +139,9 @@ struct MoveGenIteratorTraits
 };
 
 template <>
-struct MoveGenIteratorTraits<ChessBoard::MoveList::iterator>
+struct MoveGenIteratorTraits<MoveList::iterator>
 {
-    using Iterator = ChessBoard::MoveList::iterator;
+    using Iterator = MoveList::iterator;
 
     static constexpr bool canCompleteEarly { false };
 

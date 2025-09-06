@@ -139,7 +139,7 @@ TEST(ChessBoard, bitmasks)
 
 TEST(ChessBoard, moveTypes)
 {
-    auto expectRegular = [] (ChessBoard::Move m) -> void
+    auto expectRegular = [] (Move m) -> void
     {
         EXPECT_TRUE(m.isRegularMove());
         EXPECT_FALSE(m.isEnPassantMove());
@@ -148,7 +148,7 @@ TEST(ChessBoard, moveTypes)
         EXPECT_FALSE(m.isIllegal());
     };
 
-    auto expectEnPassant = [] (ChessBoard::Move m) -> void
+    auto expectEnPassant = [] (Move m) -> void
     {
         EXPECT_FALSE(m.isRegularMove());
         EXPECT_TRUE(m.isEnPassantMove());
@@ -157,7 +157,7 @@ TEST(ChessBoard, moveTypes)
         EXPECT_FALSE(m.isIllegal());
     };
 
-    auto expectPromotion = [] (ChessBoard::Move m) -> void
+    auto expectPromotion = [] (Move m) -> void
     {
         EXPECT_FALSE(m.isRegularMove());
         EXPECT_FALSE(m.isEnPassantMove());
@@ -166,7 +166,7 @@ TEST(ChessBoard, moveTypes)
         EXPECT_FALSE(m.isIllegal());
     };
 
-    auto expectCastling = [] (ChessBoard::Move m) -> void
+    auto expectCastling = [] (Move m) -> void
     {
         EXPECT_FALSE(m.isRegularMove());
         EXPECT_FALSE(m.isEnPassantMove());
@@ -175,7 +175,7 @@ TEST(ChessBoard, moveTypes)
         EXPECT_FALSE(m.isIllegal());
     };
 
-    auto expectIllegal = [] (ChessBoard::Move m) -> void
+    auto expectIllegal = [] (Move m) -> void
     {
         EXPECT_FALSE(m.isRegularMove());
         EXPECT_FALSE(m.isEnPassantMove());
@@ -184,26 +184,26 @@ TEST(ChessBoard, moveTypes)
         EXPECT_TRUE(m.isIllegal());
     };
 
-    expectRegular(ChessBoard::Move { Square::B2, Square::B3, ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
-    expectRegular(ChessBoard::Move { Square::B2, Square::A3, ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE });
-    expectRegular(ChessBoard::Move { Square::B1, Square::A3, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE });
-    expectRegular(ChessBoard::Move { Square::B1, Square::A2, ChessBoard::MoveTypeAndPromotion::REGULAR_BISHOP_MOVE });
-    expectRegular(ChessBoard::Move { Square::B1, Square::A1, ChessBoard::MoveTypeAndPromotion::REGULAR_ROOK_MOVE });
-    expectRegular(ChessBoard::Move { Square::B1, Square::A1, ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE });
-    expectRegular(ChessBoard::Move { Square::B1, Square::A1, ChessBoard::MoveTypeAndPromotion::REGULAR_KING_MOVE });
+    expectRegular(Move { Square::B2, Square::B3, MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
+    expectRegular(Move { Square::B2, Square::A3, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE });
+    expectRegular(Move { Square::B1, Square::A3, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE });
+    expectRegular(Move { Square::B1, Square::A2, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE });
+    expectRegular(Move { Square::B1, Square::A1, MoveTypeAndPromotion::REGULAR_ROOK_MOVE });
+    expectRegular(Move { Square::B1, Square::A1, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE });
+    expectRegular(Move { Square::B1, Square::A1, MoveTypeAndPromotion::REGULAR_KING_MOVE });
 
-    expectEnPassant(ChessBoard::Move { Square::E5, Square::D6, ChessBoard::MoveTypeAndPromotion::EN_PASSANT });
+    expectEnPassant(Move { Square::E5, Square::D6, MoveTypeAndPromotion::EN_PASSANT });
 
-    expectPromotion(ChessBoard::Move { Square::D7, Square::D8, ChessBoard::MoveTypeAndPromotion::PROMO_KNIGHT });
-    expectPromotion(ChessBoard::Move { Square::D7, Square::D8, ChessBoard::MoveTypeAndPromotion::PROMO_BISHOP });
-    expectPromotion(ChessBoard::Move { Square::D7, Square::D8, ChessBoard::MoveTypeAndPromotion::PROMO_ROOK });
-    expectPromotion(ChessBoard::Move { Square::D7, Square::D8, ChessBoard::MoveTypeAndPromotion::PROMO_QUEEN });
+    expectPromotion(Move { Square::D7, Square::D8, MoveTypeAndPromotion::PROMO_KNIGHT });
+    expectPromotion(Move { Square::D7, Square::D8, MoveTypeAndPromotion::PROMO_BISHOP });
+    expectPromotion(Move { Square::D7, Square::D8, MoveTypeAndPromotion::PROMO_ROOK });
+    expectPromotion(Move { Square::D7, Square::D8, MoveTypeAndPromotion::PROMO_QUEEN });
 
-    expectCastling(ChessBoard::Move { Square::B1, Square::A1, ChessBoard::MoveTypeAndPromotion::CASTLING_LONG });
-    expectCastling(ChessBoard::Move { Square::B1, Square::C1, ChessBoard::MoveTypeAndPromotion::CASTLING_SHORT });
+    expectCastling(Move { Square::B1, Square::A1, MoveTypeAndPromotion::CASTLING_LONG });
+    expectCastling(Move { Square::B1, Square::C1, MoveTypeAndPromotion::CASTLING_SHORT });
 
-    expectIllegal(ChessBoard::Move::illegalNoMove());
-    expectIllegal(ChessBoard::Move::illegalAmbiguousMove());
+    expectIllegal(Move::illegalNoMove());
+    expectIllegal(Move::illegalAmbiguousMove());
 }
 
 
@@ -211,7 +211,7 @@ TEST(MoveGenIteratorTraits, basics)
 {
     // MoveList::iterator: no early completion; stores moves (in the list)
     {
-        using IteratorType = ChessBoard::MoveList::iterator;
+        using IteratorType = MoveList::iterator;
         STATIC_ASSERT_AND_TEST(MoveGenIteratorTraits<IteratorType>::storesMoves());
     }
 

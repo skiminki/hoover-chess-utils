@@ -98,7 +98,7 @@ public:
         EXPECT_FALSE(m_aborted);
     }
 
-    void afterMove(ChessBoard::Move move) override
+    void afterMove(Move move) override
     {
         static_cast<void>(move);
 
@@ -239,7 +239,7 @@ public:
         static_cast<void>(prevBoard);
     }
 
-    void afterMove(ChessBoard::Move move) override
+    void afterMove(Move move) override
     {
         static_cast<void>(move);
 

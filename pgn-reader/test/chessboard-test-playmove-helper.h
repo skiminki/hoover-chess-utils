@@ -31,21 +31,21 @@ template <typename ... Args>
 void playMove(
     ChessBoard &board,
     std::size_t expectNumMoves,
-    std::size_t (ChessBoard::*generateMovesFn)(ChessBoard::ShortMoveList &moves, SquareSet, Square, Args ...) const noexcept,
-    ChessBoard::Move (ChessBoard::*generateSingleMoveFn)(SquareSet, Square, Args ...) const noexcept,
+    std::size_t (ChessBoard::*generateMovesFn)(ShortMoveList &moves, SquareSet, Square, Args ...) const noexcept,
+    Move (ChessBoard::*generateSingleMoveFn)(SquareSet, Square, Args ...) const noexcept,
     SquareSet srcSqMask, Square dstSq, Args && ... args)
 {
-    ChessBoard::ShortMoveList moves;
+    ShortMoveList moves;
 
     std::size_t numMoves { (board.*generateMovesFn)(moves, srcSqMask, dstSq, std::forward<Args>(args) ...) };
     EXPECT_EQ(expectNumMoves, numMoves);
 
-    ChessBoard::Move singleMove { (board.*generateSingleMoveFn)(srcSqMask, dstSq, std::forward<Args>(args) ...) };
+    Move singleMove { (board.*generateSingleMoveFn)(srcSqMask, dstSq, std::forward<Args>(args) ...) };
 
     if (expectNumMoves == 0U)
     {
         EXPECT_TRUE(singleMove.isIllegal());
-        EXPECT_EQ(singleMove, ChessBoard::Move::illegalNoMove());
+        EXPECT_EQ(singleMove, Move::illegalNoMove());
     }
     else if (expectNumMoves == 1U)
     {
@@ -54,7 +54,7 @@ void playMove(
     else
     {
         EXPECT_TRUE(singleMove.isIllegal());
-        EXPECT_EQ(singleMove, ChessBoard::Move::illegalAmbiguousMove());
+        EXPECT_EQ(singleMove, Move::illegalAmbiguousMove());
     }
 
     if (numMoves == expectNumMoves)
@@ -94,20 +94,20 @@ void playMove(
 void playMove(
     ChessBoard &board,
     std::size_t expectNumMoves,
-    std::size_t (ChessBoard::*generateMovesFn)(ChessBoard::ShortMoveList &moves) const noexcept,
-    ChessBoard::Move (ChessBoard::*generateSingleMoveFn)() const noexcept)
+    std::size_t (ChessBoard::*generateMovesFn)(ShortMoveList &moves) const noexcept,
+    Move (ChessBoard::*generateSingleMoveFn)() const noexcept)
 {
-    ChessBoard::ShortMoveList moves;
+    ShortMoveList moves;
 
     std::size_t numMoves { (board.*generateMovesFn)(moves) };
     EXPECT_EQ(expectNumMoves, numMoves);
 
-    ChessBoard::Move singleMove { (board.*generateSingleMoveFn)() };
+    Move singleMove { (board.*generateSingleMoveFn)() };
 
     if (expectNumMoves == 0U)
     {
         EXPECT_TRUE(singleMove.isIllegal());
-        EXPECT_EQ(singleMove, ChessBoard::Move::illegalNoMove());
+        EXPECT_EQ(singleMove, Move::illegalNoMove());
     }
     else if (expectNumMoves == 1U)
     {
@@ -116,7 +116,7 @@ void playMove(
     else
     {
         EXPECT_TRUE(singleMove.isIllegal());
-        EXPECT_EQ(singleMove, ChessBoard::Move::illegalAmbiguousMove());
+        EXPECT_EQ(singleMove, Move::illegalAmbiguousMove());
     }
 
     if (numMoves == expectNumMoves)

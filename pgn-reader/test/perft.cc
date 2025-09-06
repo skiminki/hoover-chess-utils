@@ -47,7 +47,7 @@ struct Frame
 {
 
     // list of moves in the current stack
-    ChessBoard::MoveList moves;
+    MoveList moves;
     std::size_t numMoves;
     std::size_t i; // move list iterator
 

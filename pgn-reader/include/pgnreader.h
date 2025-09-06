@@ -131,7 +131,7 @@ public:
     /// The state of @c *prevBoard is before move.
     ///
     /// Callback is filtered by @coderef{PgnReaderActionClass::Move}.
-    virtual void afterMove(ChessBoard::Move move)
+    virtual void afterMove(Move move)
     {
         static_cast<void>(move);
     }

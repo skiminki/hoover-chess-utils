@@ -55,7 +55,7 @@ std::size_t ChessBoard::generateMoves(MoveList &moves) const noexcept
     return i - moves.begin();
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestNoCapture(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForPawnAndDestNoCapture(SquareSet srcSqMask, Square dst) const noexcept
 {
     // allowedDstSqMask optimization
     static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
@@ -168,7 +168,7 @@ IteratorType ChessBoard::generateMovesForPawnAndDestCaptureTempl(IteratorType i,
     return i;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestCapture(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForPawnAndDestCapture(SquareSet srcSqMask, Square dst) const noexcept
 {
     return generateMovesForPawnAndDestCaptureTempl(SingleMoveIterator { }, srcSqMask, dst).getMove();
 }
@@ -180,7 +180,7 @@ std::size_t ChessBoard::generateMovesForPawnAndDestCapture(ShortMoveList &moves,
     return i - moves.begin();
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
 {
     // allowedDstSqMask optimization
     static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
@@ -273,7 +273,7 @@ IteratorType ChessBoard::generateMovesForPawnAndDestPromoCaptureTempl(IteratorTy
     return i;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForPawnAndDestPromoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+Move ChessBoard::generateSingleMoveForPawnAndDestPromoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
 {
     return generateMovesForPawnAndDestPromoCaptureTempl(SingleMoveIterator { }, srcSqMask, dst, promo).getMove();
 }
@@ -300,7 +300,7 @@ IteratorType ChessBoard::generateMovesForKnightAndDestTempl(IteratorType i, Squa
     return i;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForKnightAndDest(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForKnightAndDest(SquareSet srcSqMask, Square dst) const noexcept
 {
     return generateMovesForKnightAndDestTempl(SingleMoveIterator { }, srcSqMask, dst).getMove();
 }
@@ -335,7 +335,7 @@ IteratorType ChessBoard::generateMovesForBishopAndDestTempl(IteratorType i, Squa
     return i;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForBishopAndDest(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForBishopAndDest(SquareSet srcSqMask, Square dst) const noexcept
 {
     return generateMovesForBishopAndDestTempl(SingleMoveIterator { }, srcSqMask, dst).getMove();
 }
@@ -370,7 +370,7 @@ IteratorType ChessBoard::generateMovesForRookAndDestTempl(IteratorType i, Square
     return i;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForRookAndDest(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForRookAndDest(SquareSet srcSqMask, Square dst) const noexcept
 {
     return generateMovesForRookAndDestTempl(SingleMoveIterator { }, srcSqMask, dst).getMove();
 }
@@ -406,7 +406,7 @@ IteratorType ChessBoard::generateMovesForQueenAndDestTempl(IteratorType i, Squar
     return i;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForQueenAndDest(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForQueenAndDest(SquareSet srcSqMask, Square dst) const noexcept
 {
     return generateMovesForQueenAndDestTempl(SingleMoveIterator { }, srcSqMask, dst).getMove();
 }
@@ -417,7 +417,7 @@ std::size_t ChessBoard::generateMovesForQueenAndDest(ShortMoveList &moves, Squar
     return i - moves.begin();
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForKingAndDest(SquareSet srcSqMask, Square dst) const noexcept
+Move ChessBoard::generateSingleMoveForKingAndDest(SquareSet srcSqMask, Square dst) const noexcept
 {
     const SquareSet dstSqBit { SquareSet::square(dst) };
 
@@ -446,7 +446,7 @@ std::size_t ChessBoard::generateMovesForKingAndDest(ShortMoveList &moves, Square
     return 0U;
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForLongCastling() const noexcept
+Move ChessBoard::generateSingleMoveForLongCastling() const noexcept
 {
     // long castling requested
     if (m_checkers == SquareSet::none()) [[likely]]
@@ -464,7 +464,7 @@ ChessBoard::Move ChessBoard::generateSingleMoveForLongCastling() const noexcept
         return generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, false>(SingleMoveIterator { }, attackedSquares).getMove();
     }
 
-    return ChessBoard::Move::illegalNoMove();
+    return Move::illegalNoMove();
 }
 
 std::size_t ChessBoard::generateMovesForLongCastling(ShortMoveList &moves) const noexcept
@@ -490,7 +490,7 @@ std::size_t ChessBoard::generateMovesForLongCastling(ShortMoveList &moves) const
     return i - moves.begin();
 }
 
-ChessBoard::Move ChessBoard::generateSingleMoveForShortCastling() const noexcept
+Move ChessBoard::generateSingleMoveForShortCastling() const noexcept
 {
     // long castling requested
     if (m_checkers == SquareSet::none()) [[likely]]
@@ -508,7 +508,7 @@ ChessBoard::Move ChessBoard::generateSingleMoveForShortCastling() const noexcept
         return generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, true>(SingleMoveIterator { }, attackedSquares).getMove();
     }
 
-    return ChessBoard::Move::illegalNoMove();
+    return Move::illegalNoMove();
 }
 
 std::size_t ChessBoard::generateMovesForShortCastling(ShortMoveList &moves) const noexcept

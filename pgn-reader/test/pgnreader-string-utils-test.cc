@@ -199,13 +199,13 @@ TEST(StringUtils, moveTypeAndPromotionToString)
 {
     for (std::size_t i { }; i < 256U; ++i)
     {
-        ChessBoard::MoveTypeAndPromotion tap { static_cast<ChessBoard::MoveTypeAndPromotion>(i) };
+        MoveTypeAndPromotion tap { static_cast<MoveTypeAndPromotion>(i) };
         std::string_view ex;
 
         switch (tap)
         {
 #define C(e)                                                       \
-            case ChessBoard::MoveTypeAndPromotion::e:              \
+            case MoveTypeAndPromotion::e:              \
                 ex = #e;                                           \
                 break
 
@@ -312,11 +312,11 @@ auto posAndMoveToSan(
     const char *fen,
     Square src,
     Square dest,
-    ChessBoard::MoveTypeAndPromotion typeAndPromotion)
+    MoveTypeAndPromotion typeAndPromotion)
 {
     ChessBoard board;
     board.loadFEN(fen);
-    return StringUtils::moveToSan(board, ChessBoard::Move { src, dest, typeAndPromotion });
+    return StringUtils::moveToSan(board, Move { src, dest, typeAndPromotion });
 }
 
 }
@@ -328,71 +328,71 @@ TEST(StringUtils, moveToSan)
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-            Square::E2, Square::E4, ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_MOVE).getStringView(),
+            Square::E2, Square::E4, MoveTypeAndPromotion::REGULAR_PAWN_MOVE).getStringView(),
         std::string_view("e4"));
 
     // regular pawn capture
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
-            Square::E4, Square::D5, ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE).getStringView(),
+            Square::E4, Square::D5, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE).getStringView(),
         std::string_view("exd5"));
 
     // en passant pawn capture
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/pp2pppp/8/2ppP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3",
-            Square::E5, Square::D6, ChessBoard::MoveTypeAndPromotion::EN_PASSANT).getStringView(),
+            Square::E5, Square::D6, MoveTypeAndPromotion::EN_PASSANT).getStringView(),
         std::string_view("exd6"));
 
     // non-capturing promotions
     EXPECT_EQ(
         posAndMoveToSan(
             "8/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::F8, ChessBoard::MoveTypeAndPromotion::PROMO_KNIGHT).getStringView(),
+            Square::F7, Square::F8, MoveTypeAndPromotion::PROMO_KNIGHT).getStringView(),
         std::string_view("f8=N"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "8/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::F8, ChessBoard::MoveTypeAndPromotion::PROMO_BISHOP).getStringView(),
+            Square::F7, Square::F8, MoveTypeAndPromotion::PROMO_BISHOP).getStringView(),
         std::string_view("f8=B"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "8/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::F8, ChessBoard::MoveTypeAndPromotion::PROMO_ROOK).getStringView(),
+            Square::F7, Square::F8, MoveTypeAndPromotion::PROMO_ROOK).getStringView(),
         std::string_view("f8=R"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "8/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::F8, ChessBoard::MoveTypeAndPromotion::PROMO_QUEEN).getStringView(),
+            Square::F7, Square::F8, MoveTypeAndPromotion::PROMO_QUEEN).getStringView(),
         std::string_view("f8=Q"));
 
     // capturing promotions
     EXPECT_EQ(
         posAndMoveToSan(
             "4q3/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::E8, ChessBoard::MoveTypeAndPromotion::PROMO_KNIGHT).getStringView(),
+            Square::F7, Square::E8, MoveTypeAndPromotion::PROMO_KNIGHT).getStringView(),
         std::string_view("fxe8=N"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "4q3/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::E8, ChessBoard::MoveTypeAndPromotion::PROMO_BISHOP).getStringView(),
+            Square::F7, Square::E8, MoveTypeAndPromotion::PROMO_BISHOP).getStringView(),
         std::string_view("fxe8=B"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "4q3/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::E8, ChessBoard::MoveTypeAndPromotion::PROMO_ROOK).getStringView(),
+            Square::F7, Square::E8, MoveTypeAndPromotion::PROMO_ROOK).getStringView(),
         std::string_view("fxe8=R"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "4q3/5P2/8/8/8/8/8/1k1K4 w - - 0 1",
-            Square::F7, Square::E8, ChessBoard::MoveTypeAndPromotion::PROMO_QUEEN).getStringView(),
+            Square::F7, Square::E8, MoveTypeAndPromotion::PROMO_QUEEN).getStringView(),
         std::string_view("fxe8=Q"));
 
     //// Piece moves
@@ -400,114 +400,114 @@ TEST(StringUtils, moveToSan)
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-            Square::G1, Square::F3, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::G1, Square::F3, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("Nf3"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/ppp1pppp/8/3p4/8/6P1/PPPPPP1P/RNBQKBNR w KQkq - 0 2",
-            Square::F1, Square::G2, ChessBoard::MoveTypeAndPromotion::REGULAR_BISHOP_MOVE).getStringView(),
+            Square::F1, Square::G2, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE).getStringView(),
         std::string_view("Bg2"));
 
 
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkb1r/pppppppp/5n2/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 2 2",
-            Square::H1, Square::G1, ChessBoard::MoveTypeAndPromotion::REGULAR_ROOK_MOVE).getStringView(),
+            Square::H1, Square::G1, MoveTypeAndPromotion::REGULAR_ROOK_MOVE).getStringView(),
         std::string_view("Rg1"));
 
 
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
-            Square::D1, Square::F3, ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
+            Square::D1, Square::F3, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
         std::string_view("Qf3"));
 
     EXPECT_EQ(
         posAndMoveToSan(
             "8/8/8/6n1/8/5N2/8/1k1K4 w - - 0 1",
-            Square::F3, Square::G5, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::F3, Square::G5, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("Nxg5"));
 
     // no disambiguation
     EXPECT_EQ(
         posAndMoveToSan(
             "8/3N4/8/8/8/3N1N2/8/1k1K4 w - - 0 1",
-            Square::F3, Square::D4, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::F3, Square::D4, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("Nd4"));
 
     // source column disambiguation
     EXPECT_EQ(
         posAndMoveToSan(
             "8/3N4/8/8/8/3N1N2/8/1k1K4 w - - 0 1",
-            Square::F3, Square::E1, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::F3, Square::E1, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("Nfe1"));
     EXPECT_EQ(
         posAndMoveToSan(
             "8/3N4/8/8/8/5N2/8/1k1K4 w - - 0 1",
-            Square::F3, Square::E5, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::F3, Square::E5, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("Nfe5"));
 
     // source row disambiguation
     EXPECT_EQ(
         posAndMoveToSan(
             "8/3N4/8/8/8/3N1N2/8/1k1K4 w - - 0 1",
-            Square::D3, Square::C5, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::D3, Square::C5, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("N3c5"));
 
     // source square disambiguation
     EXPECT_EQ(
         posAndMoveToSan(
             "8/3N4/8/8/8/3N1N2/8/1k1K4 w - - 0 1",
-            Square::D3, Square::E5, ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
+            Square::D3, Square::E5, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE).getStringView(),
         std::string_view("Nd3e5"));
 
     // King moves
     EXPECT_EQ(
         posAndMoveToSan(
             "1k6/8/8/8/3qK3/8/8/8 w - - 0 1",
-            Square::E4, Square::F5, ChessBoard::MoveTypeAndPromotion::REGULAR_KING_MOVE).getStringView(),
+            Square::E4, Square::F5, MoveTypeAndPromotion::REGULAR_KING_MOVE).getStringView(),
         std::string_view("Kf5"));
     EXPECT_EQ(
         posAndMoveToSan(
             "1k6/8/8/8/3qK3/8/8/8 w - - 0 1",
-            Square::E4, Square::D4, ChessBoard::MoveTypeAndPromotion::REGULAR_KING_MOVE).getStringView(),
+            Square::E4, Square::D4, MoveTypeAndPromotion::REGULAR_KING_MOVE).getStringView(),
         std::string_view("Kxd4"));
 
     // Castling
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqk2r/ppppppbp/5np1/8/8/5NP1/PPPPPPBP/RNBQK2R w KQkq - 2 4",
-            Square::E1, Square::H1, ChessBoard::MoveTypeAndPromotion::CASTLING_SHORT).getStringView(),
+            Square::E1, Square::H1, MoveTypeAndPromotion::CASTLING_SHORT).getStringView(),
         std::string_view("O-O"));
     EXPECT_EQ(
         posAndMoveToSan(
             "r3kbnr/pppqpppp/2n5/3p1b2/3P1B2/2N5/PPPQPPPP/R3KBNR w KQkq - 6 5",
-            Square::E1, Square::A1, ChessBoard::MoveTypeAndPromotion::CASTLING_LONG).getStringView(),
+            Square::E1, Square::A1, MoveTypeAndPromotion::CASTLING_LONG).getStringView(),
         std::string_view("O-O-O"));
 
     // Check/mate indicator
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
-            Square::D1, Square::H5, ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
+            Square::D1, Square::H5, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
         std::string_view("Qh5+"));
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/pppp1ppp/4p3/8/5PP1/8/PPPPP2P/RNBQKBNR b KQkq - 0 2",
-            Square::D8, Square::H4, ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
+            Square::D8, Square::H4, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
         std::string_view("Qh4#"));
 
     // Longest possible moves
     EXPECT_EQ(
         posAndMoveToSan(
             "3k4/Q2p3Q/8/8/Q2Q2Q1/8/8/3K4 w - - 0 1",
-            Square::A4, Square::D7, ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
+            Square::A4, Square::D7, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE).getStringView(),
         std::string_view("Qa4xd7#"));
     EXPECT_EQ(
         posAndMoveToSan(
             "2nk4/3P4/8/8/3K4/8/8/8 w - - 0 1",
-            Square::D7, Square::C8, ChessBoard::MoveTypeAndPromotion::PROMO_ROOK).getStringView(),
+            Square::D7, Square::C8, MoveTypeAndPromotion::PROMO_ROOK).getStringView(),
         std::string_view("dxc8=R+"));
 }
 
@@ -528,13 +528,13 @@ TEST(StringUtils, moveToSan_illegal)
     TEST_EXPECT_THROW_PGN_ERROR(
         posAndMoveToSan(
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-            Square::E2, Square::E5, ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_MOVE),
+            Square::E2, Square::E5, MoveTypeAndPromotion::REGULAR_PAWN_MOVE),
         PgnErrorCode::ILLEGAL_MOVE);
 
     EXPECT_THROW(
         posAndMoveToSan(
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-            Square::E2, Square::E5, ChessBoard::MoveTypeAndPromotion::ILLEGAL),
+            Square::E2, Square::E5, MoveTypeAndPromotion::ILLEGAL),
         std::logic_error);
 }
 

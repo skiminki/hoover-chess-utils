@@ -403,7 +403,7 @@ private:
 
     // moves of the game
     pgn_reader::ChessBoard m_initialBoard { };
-    std::vector<pgn_reader::ChessBoard::Move> m_moves { };
+    std::vector<pgn_reader::Move> m_moves { };
 
     // comments associated with moves. Note: these come just before the move
     std::vector<std::string> m_comments { };
@@ -718,7 +718,7 @@ public:
         checkOpening();
     }
 
-    void afterMove(pgn_reader::ChessBoard::Move m) override
+    void afterMove(pgn_reader::Move m) override
     {
         checkOpening();
 

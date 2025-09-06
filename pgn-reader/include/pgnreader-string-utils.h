@@ -478,29 +478,29 @@ public:
     ///
     /// <table>
     /// <tr>
-    ///   <th>Type (@coderef{ChessBoard::MoveTypeAndPromotion})</th>
+    ///   <th>Type (@coderef{MoveTypeAndPromotion})</th>
     ///   <th>Condition (first match)</th>
     ///   <th>Format</th>
     ///   <th>Example</th>
     /// </tr>
     /// <tr>
-    ///   <td>@coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_MOVE}</td>
+    ///   <td>@coderef{MoveTypeAndPromotion::REGULAR_PAWN_MOVE}</td>
     ///   <td>None</td>
     ///   <td><tt>&lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
     ///   <td><tt>e4</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td>@coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::EN_PASSANT}</td>
+    ///   <td>@coderef{MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE}<br>
+    ///       @coderef{MoveTypeAndPromotion::EN_PASSANT}</td>
     ///   <td>None</td>
     ///   <td><tt>&lt;src_file&gt; 'x' &lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
     ///   <td><tt>exc5</tt><br><tt>cxd6</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td rowspan="8">@coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_BISHOP_MOVE}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_ROOK_MOVE}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE}</td>
+    ///   <td rowspan="8">@coderef{MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE}<br>
+    ///       @coderef{MoveTypeAndPromotion::REGULAR_BISHOP_MOVE}<br>
+    ///       @coderef{MoveTypeAndPromotion::REGULAR_ROOK_MOVE}<br>
+    ///       @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE}</td>
     ///   <td rowspan="2">No disambiguation required</td>
     ///   <td><tt>&lt;piece&gt; &lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
     ///   <td><tt>Ne4</tt></td>
@@ -537,7 +537,7 @@ public:
     ///   <td><tt>Qc2xc5</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td rowspan="2">@coderef{ChessBoard::MoveTypeAndPromotion::REGULAR_KING_MOVE}</td>
+    ///   <td rowspan="2">@coderef{MoveTypeAndPromotion::REGULAR_KING_MOVE}</td>
     ///   <td>No capture</td>
     ///   <td><tt>'K' &lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
     ///   <td><tt>Kd2</tt></td>
@@ -548,22 +548,22 @@ public:
     ///   <td><tt>Kxf7</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td>@coderef{ChessBoard::MoveTypeAndPromotion::CASTLING_SHORT}</td>
+    ///   <td>@coderef{MoveTypeAndPromotion::CASTLING_SHORT}</td>
     ///   <td>None</td>
     ///   <td><tt>"O-O"</tt></td>
     ///   <td><tt>O-O</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td>@coderef{ChessBoard::MoveTypeAndPromotion::CASTLING_LONG}</td>
+    ///   <td>@coderef{MoveTypeAndPromotion::CASTLING_LONG}</td>
     ///   <td>None</td>
     ///   <td><tt>"O-O-O"</tt></td>
     ///   <td><tt>O-O-O</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td rowspan="2">@coderef{ChessBoard::MoveTypeAndPromotion::PROMO_KNIGHT}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::PROMO_BISHOP}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::PROMO_ROOK}<br>
-    ///       @coderef{ChessBoard::MoveTypeAndPromotion::PROMO_QUEEN}</td>
+    ///   <td rowspan="2">@coderef{MoveTypeAndPromotion::PROMO_KNIGHT}<br>
+    ///       @coderef{MoveTypeAndPromotion::PROMO_BISHOP}<br>
+    ///       @coderef{MoveTypeAndPromotion::PROMO_ROOK}<br>
+    ///       @coderef{MoveTypeAndPromotion::PROMO_QUEEN}</td>
     ///   <td>No capture</td>
     ///   <td><tt>&lt;dest_file&gt; &lt;dest_rank&gt; '=' &lt;piece&gt;</tt></td>
     ///   <td><tt>a8=Q</tt></td>
@@ -606,7 +606,7 @@ public:
     ///
     /// @remark The maximum length of the returned move is 7 characters.
     /// Example: @c "Na1xb3+"
-    static MiniString<7U> moveToSanAndPlay(ChessBoard &board, ChessBoard::Move move);
+    static MiniString<7U> moveToSanAndPlay(ChessBoard &board, Move move);
 
     /// @brief Generates minimal SAN for a move. The move is fully validated by
     /// this function.
@@ -622,7 +622,7 @@ public:
     /// separately.
     ///
     /// @sa @coderef{moveToSanAndPlay()} for full specification.
-    static MiniString<7U> moveToSan(const ChessBoard &board, ChessBoard::Move move)
+    static MiniString<7U> moveToSan(const ChessBoard &board, Move move)
     {
         ChessBoard tmpBoard { board };
         return moveToSanAndPlay(tmpBoard, move);
@@ -653,7 +653,7 @@ public:
     ///
     /// @param[in]  typeAndPromotion   Move type and promotion piece
     /// @return                        String matching the enum value label or @c "??"
-    static std::string_view moveTypeAndPromotionToString(ChessBoard::MoveTypeAndPromotion typeAndPromotion) noexcept;
+    static std::string_view moveTypeAndPromotionToString(MoveTypeAndPromotion typeAndPromotion) noexcept;
 
     /// @brief Builds a FEN string for the position on @c board
     ///
