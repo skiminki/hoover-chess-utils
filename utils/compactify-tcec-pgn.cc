@@ -66,7 +66,7 @@ private:
     std::string m_pgnResultTag { };
 
     // moves of the game
-    std::vector<pgn_reader::ChessBoard::Move> m_moves { };
+    std::vector<pgn_reader::Move> m_moves { };
     BookDetectionMode m_bookDetectionMode { BookDetectionMode::NORMAL };
     std::size_t m_lastBookPly { };
 
@@ -245,7 +245,7 @@ public:
         out.write('\n');
     }
 
-    void afterMove(pgn_reader::ChessBoard::Move m) override
+    void afterMove(pgn_reader::Move m) override
     {
         m_moves.push_back(m);
     }

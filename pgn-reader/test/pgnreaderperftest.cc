@@ -134,7 +134,7 @@ public:
         ++pgnTags;
     }
 
-    void afterMove(ChessBoard::Move) override
+    void afterMove(Move) override
     {
         ++moves;
     }
@@ -169,7 +169,7 @@ public:
         m_outputLength += str.size();
     }
 
-    void afterMove(ChessBoard::Move m) override
+    void afterMove(Move m) override
     {
             if (m_outputMoveNum)
             {

@@ -188,11 +188,11 @@ public:
     }
 
     void moveValidationError(
-        const ChessBoard::Move illegalMove, const Piece piece, const SquareSet srcMask, Square dst,
+        const Move illegalMove, const Piece piece, const SquareSet srcMask, Square dst,
         const Piece promo, const bool capture)
     {
         badMove(
-            illegalMove == ChessBoard::Move::illegalNoMove() ? PgnErrorCode::ILLEGAL_MOVE : PgnErrorCode::AMBIGUOUS_MOVE,
+            illegalMove == Move::illegalNoMove() ? PgnErrorCode::ILLEGAL_MOVE : PgnErrorCode::AMBIGUOUS_MOVE,
             m_board.getCurrentPlyNum(), piece, srcMask, dst, promo, capture);
     }
 
@@ -204,7 +204,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                const ChessBoard::Move m { m_board.generateSingleMoveForPawnAndDestNoCapture(srcMask, dst) };
+                const Move m { m_board.generateSingleMoveForPawnAndDestNoCapture(srcMask, dst) };
                 if (!m.isIllegal()) [[likely]]
                 {
                     m_board.doMove(m);
@@ -224,7 +224,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                const ChessBoard::Move m { m_board.generateSingleMoveForPawnAndDestCapture(srcMask, dst) };
+                const Move m { m_board.generateSingleMoveForPawnAndDestCapture(srcMask, dst) };
                 if (!m.isIllegal()) [[likely]]
                 {
                     m_board.doMove(m);
@@ -244,7 +244,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                const ChessBoard::Move m { m_board.generateSingleMoveForPawnAndDestPromoNoCapture(srcMask, dst, promo) };
+                const Move m { m_board.generateSingleMoveForPawnAndDestPromoNoCapture(srcMask, dst, promo) };
                 if (!m.isIllegal()) [[likely]]
                 {
                     m_board.doMove(m);
@@ -264,7 +264,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                const ChessBoard::Move m { m_board.generateSingleMoveForPawnAndDestPromoCapture(srcMask, dst, promo) };
+                const Move m { m_board.generateSingleMoveForPawnAndDestPromoCapture(srcMask, dst, promo) };
                 if (!m.isIllegal()) [[likely]]
                 {
                     m_board.doMove(m);
@@ -285,7 +285,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                ChessBoard::Move m;
+                Move m;
 
                 if constexpr (piece == Piece::KNIGHT)
                     m = m_board.generateSingleMoveForKnightAndDest(srcMask, dst);
@@ -351,7 +351,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                const ChessBoard::Move m { m_board.generateSingleMoveForShortCastling() };
+                const Move m { m_board.generateSingleMoveForShortCastling() };
 
                 if (!m.isIllegal()) [[likely]]
                 {
@@ -374,7 +374,7 @@ public:
             {
                 m_prevBoard = m_board;
 
-                const ChessBoard::Move m { m_board.generateSingleMoveForLongCastling() };
+                const Move m { m_board.generateSingleMoveForLongCastling() };
 
                 if (!m.isIllegal()) [[likely]]
                 {

@@ -27,8 +27,8 @@ namespace {
 // note: return is unspecified when numMoves == 0
 template <bool column, bool row>
 static constexpr bool disambiguationTest(
-    const pgn_reader::ChessBoard::Move m,
-    const pgn_reader::ChessBoard::ShortMoveList &moves,
+    const Move m,
+    const ShortMoveList &moves,
     std::size_t numMoves)
 {
     std::size_t numMatches { };
@@ -174,26 +174,26 @@ MiniString<2U> StringUtils::sourceMaskToString(SquareSet srcMask) noexcept
     return ret;
 }
 
-MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, ChessBoard::Move move)
+MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
 {
     MiniString<7U> ret { MiniString_Uninitialized() };
     std::size_t i { };
 
     const SquareSet srcBit { SquareSet::square(move.getSrc()) };
 
-    ChessBoard::ShortMoveList moves;
+    ShortMoveList moves;
     std::size_t numMoves { };
 
     switch (move.getTypeAndPromotion())
     {
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_MOVE:
+        case MoveTypeAndPromotion::REGULAR_PAWN_MOVE:
             numMoves = board.generateMovesForPawnAndDestNoCapture(moves, srcBit, move.getDst());
             ret[i++] = colChar(move.getDst());
             ret[i++] = rowChar(move.getDst());
             break;
 
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE:
-        case ChessBoard::MoveTypeAndPromotion::EN_PASSANT:
+        case MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE:
+        case MoveTypeAndPromotion::EN_PASSANT:
             ret[i++] = colChar(move.getSrc());
             ret[i++] = 'x';
             numMoves = board.generateMovesForPawnAndDestCapture(moves, srcBit, move.getDst());
@@ -201,22 +201,22 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, ChessBoard::Move
             ret[i++] = rowChar(move.getDst());
             break;
 
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE:
+        case MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE:
             ret[i++] = 'N';
             numMoves = board.generateMovesForKnightAndDest(moves, SquareSet::all(), move.getDst());
             goto disambiguation;
 
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_BISHOP_MOVE:
+        case MoveTypeAndPromotion::REGULAR_BISHOP_MOVE:
             ret[i++] = 'B';
             numMoves = board.generateMovesForBishopAndDest(moves, SquareSet::all(), move.getDst());
             goto disambiguation;
 
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_ROOK_MOVE:
+        case MoveTypeAndPromotion::REGULAR_ROOK_MOVE:
             ret[i++] = 'R';
             numMoves = board.generateMovesForRookAndDest(moves, SquareSet::all(), move.getDst());
             goto disambiguation;
 
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_QUEEN_MOVE:
+        case MoveTypeAndPromotion::REGULAR_QUEEN_MOVE:
             ret[i++] = 'Q';
             numMoves = board.generateMovesForQueenAndDest(moves, SquareSet::all(), move.getDst());
 
@@ -252,7 +252,7 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, ChessBoard::Move
             ret[i++] = rowChar(move.getDst());
             break;
 
-        case ChessBoard::MoveTypeAndPromotion::REGULAR_KING_MOVE:
+        case MoveTypeAndPromotion::REGULAR_KING_MOVE:
             ret[i++] = 'K';
             numMoves = board.generateMovesForKingAndDest(moves, srcBit, move.getDst());
 
@@ -266,14 +266,14 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, ChessBoard::Move
             ret[i++] = rowChar(move.getDst());
             break;
 
-        case ChessBoard::MoveTypeAndPromotion::CASTLING_SHORT:
+        case MoveTypeAndPromotion::CASTLING_SHORT:
             ret[i++] = 'O';
             ret[i++] = '-';
             ret[i++] = 'O';
             numMoves = board.generateMovesForShortCastling(moves);
             break;
 
-        case ChessBoard::MoveTypeAndPromotion::CASTLING_LONG:
+        case MoveTypeAndPromotion::CASTLING_LONG:
             ret[i++] = 'O';
             ret[i++] = '-';
             ret[i++] = 'O';
@@ -282,10 +282,10 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, ChessBoard::Move
             numMoves = board.generateMovesForLongCastling(moves);
             break;
 
-        case ChessBoard::MoveTypeAndPromotion::PROMO_KNIGHT:
-        case ChessBoard::MoveTypeAndPromotion::PROMO_BISHOP:
-        case ChessBoard::MoveTypeAndPromotion::PROMO_ROOK:
-        case ChessBoard::MoveTypeAndPromotion::PROMO_QUEEN:
+        case MoveTypeAndPromotion::PROMO_KNIGHT:
+        case MoveTypeAndPromotion::PROMO_BISHOP:
+        case MoveTypeAndPromotion::PROMO_ROOK:
+        case MoveTypeAndPromotion::PROMO_QUEEN:
         {
             // capture?
             if (columnOf(move.getSrc()) != columnOf(move.getDst()))
@@ -378,7 +378,7 @@ std::string_view StringUtils::squareToString(Square sq, std::string_view emptySq
     }
 }
 
-std::string_view StringUtils::moveTypeAndPromotionToString(ChessBoard::MoveTypeAndPromotion typeAndPromotion) noexcept
+std::string_view StringUtils::moveTypeAndPromotionToString(MoveTypeAndPromotion typeAndPromotion) noexcept
 {
     std::size_t i { static_cast<std::size_t>(typeAndPromotion) };
 

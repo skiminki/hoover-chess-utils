@@ -71,6 +71,357 @@ struct BitBoard
 };
 
 /// @ingroup PgnReaderAPI
+/// @brief Move type (4 bits, range: 0..15)
+///
+/// Unless otherwise stated, @coderef{Move::getSrc()} and @coderef{Move::getDst()}.
+/// specify the source and destination squares of the move.
+///
+/// @sa @coderef{Move::getTypeAndPromotion()}
+enum class MoveTypeAndPromotion : std::uint8_t
+{
+    /// @brief Regular non-capturing, non-promoting pawn move
+    REGULAR_PAWN_MOVE    = 0U,
+
+    /// @brief Pawn capture, except en passant
+    REGULAR_PAWN_CAPTURE = 1U,
+
+    /// @brief Knight move
+    REGULAR_KNIGHT_MOVE  = 2U,
+
+    /// @brief Bishop move
+    REGULAR_BISHOP_MOVE  = 3U,
+
+    /// @brief Rook move
+    REGULAR_ROOK_MOVE    = 4U,
+
+    /// @brief Queen move
+    REGULAR_QUEEN_MOVE   = 5U,
+
+    /// @brief King move (not castling)
+    REGULAR_KING_MOVE    = 6U,
+
+    /// @brief Pawn en-passant capture
+    ///
+    /// <dl>
+    ///   <dt>Pawn source square</dt>
+    ///   <dd>@coderef{Move::getSrc()}</dd>
+    ///
+    ///   <dt>Pawn destination square</dt>
+    ///   <dd>@coderef{Move::getDst()}</dd>
+    ///
+    ///   <dt>En passant square</dt>
+    ///   <dd><tt>@coderef{makeSquare}(@coderef{columnOf}(@coderef{Move::getDst()}), @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
+    /// </dl>
+    EN_PASSANT           = 7U,
+
+    /// @brief Short castling
+    ///
+    /// <dl>
+    ///   <dt>King source square</dt>
+    ///   <dd>@coderef{Move::getSrc()}</dd>
+    ///
+    ///   <dt>King destination square</dt>
+    ///   <dd><tt>@coderef{makeSquare}(6U, @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
+    ///
+    ///   <dt>Rook source square</dt>
+    ///   <dd>@coderef{Move::getDst()}</dd>
+    ///
+    ///   <dt>Rook destination square</dt>
+    ///   <dd><tt>@coderef{makeSquare}(5U, @coderef{rowOf}(@coderef{Move::getDst()}))</tt></dd>
+    /// </dl>
+    CASTLING_SHORT       = 8U,
+
+    /// @brief Long castling
+    ///
+    /// <dl>
+    ///   <dt>King source square</dt>
+    ///   <dd>@coderef{Move::getSrc()}</dd>
+    ///
+    ///   <dt>King destination square</dt>
+    ///   <dd><tt>@coderef{makeSquare}(2U, @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
+    ///
+    ///   <dt>Rook source square</dt>
+    ///   <dd>@coderef{Move::getDst()}</dd>
+    ///
+    ///   <dt>Rook destination square</dt>
+    ///   <dd><tt>@coderef{makeSquare}(3U, @coderef{rowOf}(@coderef{Move::getDst()}))</tt></dd>
+    /// </dl>
+    CASTLING_LONG        = 9U,
+
+    /// @brief Pawn promotion to knight
+    PROMO_KNIGHT         = 10U,
+
+    /// @brief Pawn promotion to bishop
+    PROMO_BISHOP         = 11U,
+
+    /// @brief Pawn promotion to rook
+    PROMO_ROOK           = 12U,
+
+    /// @brief Pawn promotion to queen
+    PROMO_QUEEN          = 13U,
+
+    /// @brief Illegal move type
+    ///
+    /// Represents an illegal move. Returned by single move generators in
+    /// case the generated move count is not 1.
+    ///
+    /// @note The destination square for illegal moves must be
+    /// @coderef{Square::H8} for fast implementation of
+    /// @coderef{Move::isIllegal()}.
+    ILLEGAL              = 15U
+};
+
+/// @ingroup PgnReaderAPI
+/// @brief A legal move. **Important: see the note!**
+///
+/// @note Always use one of the move generators to construct a legal
+/// move. @coderef{ChessBoard::doMove()} assumes that the move is legal and it does not
+/// perform any legality checks of its own.
+class Move
+{
+private:
+    /// @brief Encoded move
+    ///
+    /// <table>
+    /// <caption>Bitfield</caption>
+    /// <tr>
+    ///   <th>15</th><th>14</th><th>13</th><th>12</th><th>11</th><th>10</th><th>9</th><th>8</th>
+    ///   <th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th>
+    /// </tr>
+    /// <tr>
+    ///   <td colspan="6">Destination square</td>
+    ///   <td colspan="4">Move type and promotion</td>
+    ///   <td colspan="6">Source square</td>
+    /// </tr>
+    /// </table>
+    std::uint16_t m_encoded { };
+
+public:
+    /// @brief Default constructor (null move)
+    constexpr Move() noexcept = default;
+
+    /// @brief Constructor
+    ///
+    /// @param[in] src           Move source square. Must be a valid square.
+    /// @param[in] dst           Move destination square. Must be a valid square.
+    /// @param[in] typeAndPromo  Move type and promotion piece
+    ///
+    /// See @coderef{MoveTypeAndPromotion} on how @c src and @c dst are used for
+    /// en-passant and castling move types.
+    ///
+    /// @note See @coderef{MoveTypeAndPromotion::ILLEGAL} on constraints for
+    /// illegal moves.
+    constexpr Move(Square src, Square dst, MoveTypeAndPromotion typeAndPromo) noexcept :
+        m_encoded(
+            (static_cast<std::uint16_t>(src)) |
+            (static_cast<std::uint16_t>(typeAndPromo) << 6) |
+            (static_cast<std::uint16_t>(dst) << 10U)
+            )
+    {
+        assert(isValidSquare(src));
+        assert(isValidSquare(dst));
+        assert((typeAndPromo <= MoveTypeAndPromotion::PROMO_QUEEN) ||
+               (typeAndPromo == MoveTypeAndPromotion::ILLEGAL));
+    }
+
+    /// @brief Constructor (copy)
+    constexpr Move(const Move &) noexcept = default;
+
+    /// @brief Constructor (move)
+    constexpr Move(Move &&) noexcept = default;
+
+    /// @brief Assignment
+    Move &operator = (const Move &) noexcept = default;
+
+    /// @brief Move assignment
+    Move &operator = (Move &&) noexcept = default;
+
+    /// @brief Destructor
+    ~Move() noexcept = default;
+
+    /// @brief Returns move source square
+    ///
+    /// See @coderef{MoveTypeAndPromotion} on how @c src and @c dst are used for
+    /// en-passant and castling move types.
+    constexpr Square getSrc() const noexcept
+    {
+        return static_cast<Square>(m_encoded & 63U);
+    }
+
+    /// @brief Returns move destination square
+    ///
+    /// See @coderef{MoveTypeAndPromotion} on how @c src and @c dst are used for
+    /// en-passant and castling move types.
+    constexpr Square getDst() const noexcept
+    {
+        return static_cast<Square>(m_encoded >> 10U);
+    }
+
+    /// @brief Returns move type and promotion piece
+    constexpr MoveTypeAndPromotion getTypeAndPromotion() const noexcept
+    {
+        return static_cast<MoveTypeAndPromotion>((m_encoded >> 6U) & 0xFU);
+    }
+
+    /// @brief Checks whether a move type is regular
+    ///
+    /// @return Whether the move type is a regular pawn/piece move
+    ///
+    /// Regular move types are the following:
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_PAWN_MOVE}
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE}
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE}
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_BISHOP_MOVE}
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_ROOK_MOVE}
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE}
+    /// - @coderef{MoveTypeAndPromotion::REGULAR_KING_MOVE}
+    constexpr bool isRegularMove() const noexcept
+    {
+        return getTypeAndPromotion() <= MoveTypeAndPromotion::REGULAR_KING_MOVE;
+    }
+
+    /// @brief Checks whether a move type is en-passant pawn capture
+    ///
+    /// @return Whether the move type is en-passant pawn capture
+    ///
+    /// En-passant pawn capture move type is the following;
+    /// - @coderef{MoveTypeAndPromotion::EN_PASSANT}
+    constexpr bool isEnPassantMove() const noexcept
+    {
+        return getTypeAndPromotion() == MoveTypeAndPromotion::EN_PASSANT;
+    }
+
+    /// @brief Checks whether a move type is a pawn promotion
+    ///
+    /// @return Whether the move type is a pawn promotion move
+    ///
+    /// Pawn promotion move types are the following:
+    /// - @coderef{MoveTypeAndPromotion::PROMO_KNIGHT}
+    /// - @coderef{MoveTypeAndPromotion::PROMO_BISHOP}
+    /// - @coderef{MoveTypeAndPromotion::PROMO_ROOK}
+    /// - @coderef{MoveTypeAndPromotion::PROMO_QUEEN}
+    constexpr bool isPromotionMove() const noexcept
+    {
+        return
+            getTypeAndPromotion() >= MoveTypeAndPromotion::PROMO_KNIGHT &&
+            getTypeAndPromotion() <= MoveTypeAndPromotion::PROMO_QUEEN;
+    }
+
+    /// @brief Checks whether a move type is a castling move
+    ///
+    /// @return Whether the move type is a castling move
+    ///
+    /// Pawn promotion move types are the following:
+    /// - @coderef{MoveTypeAndPromotion::CASTLING_SHORT}
+    /// - @coderef{MoveTypeAndPromotion::CASTLING_LONG}
+    constexpr bool isCastlingMove() const noexcept
+    {
+        return
+            getTypeAndPromotion() >= MoveTypeAndPromotion::CASTLING_SHORT &&
+            getTypeAndPromotion() <= MoveTypeAndPromotion::CASTLING_LONG;
+    }
+
+    /// @brief Returns promotion piece of a promotion move
+    constexpr Piece getPromotionPiece() const noexcept
+    {
+        assert(isPromotionMove());
+
+        static_assert(
+            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_KNIGHT) & 0x7U) ==
+            static_cast<std::uint8_t>(Piece::KNIGHT));
+        static_assert(
+            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_BISHOP) & 0x7U) ==
+            static_cast<std::uint8_t>(Piece::BISHOP));
+        static_assert(
+            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_ROOK)   & 0x7U) ==
+            static_cast<std::uint8_t>(Piece::ROOK));
+        static_assert(
+            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_QUEEN)  & 0x7U) ==
+            static_cast<std::uint8_t>(Piece::QUEEN));
+
+        return Piece(static_cast<std::uint8_t>(getTypeAndPromotion()) & 0x7U);
+    }
+
+    /// @brief Checks whether the move type is illegal
+    ///
+    /// @return Whether move is one of the illegal moves
+    ///
+    /// @note See @coderef{MoveTypeAndPromotion::ILLEGAL} on constraints for
+    /// illegal moves.
+    constexpr bool isIllegal() const noexcept
+    {
+        // this is slightly faster than extracting and comparing the
+        // MoveTypeAndPromotion field
+        return m_encoded >= 0xFFC0U;
+    }
+
+    /// @brief Returns raw encoded value. Usually only used in debugging.
+    ///
+    /// @return Encoded value of move
+    constexpr std::uint16_t getEncodedValue() const noexcept
+    {
+        return m_encoded;
+    }
+
+    /// @brief Comparator (equality)
+    ///
+    /// @param[in] o     Another move
+    /// @return Comparison result
+    constexpr bool operator == (const Move &o) const noexcept
+    {
+        return m_encoded == o.m_encoded;
+    }
+
+    /// @brief Token for illegal move: no moves generated
+    ///
+    /// @return Illegal move token: no moves generated
+    static constexpr Move illegalNoMove() noexcept
+    {
+        return Move { Square::A1, Square::H8, MoveTypeAndPromotion::ILLEGAL };
+    }
+
+    /// @brief Token for illegal move: ambiguous move generation
+    ///
+    /// @return Illegal move token: ambiguous move generation
+    static constexpr Move illegalAmbiguousMove() noexcept
+    {
+        return Move { Square::A2, Square::H8, MoveTypeAndPromotion::ILLEGAL };
+    }
+};
+
+/// @ingroup PgnReaderAPI
+/// @brief Move list returned by @coderef{ChessBoard::generateMoves()}.
+///
+/// The move list is big enough all possible moves for any given position.
+using MoveList = std::array<Move, 256U>;
+
+/// @ingroup PgnReaderAPI
+/// @brief Short move list returned by move generators for writing a SAN
+/// move. That is, when the piece type and destination square are known, and
+/// moves need to be generated to resolve the required disambiguation.
+using ShortMoveList = std::array<Move, 8U>;
+
+/// @ingroup PgnReaderImpl
+/// @brief Move generator type
+enum class MoveGenType : std::uint8_t
+{
+    /// @brief Move generator for when the king is not in check. All moves
+    /// are considered.
+    NO_CHECK = 0U,
+
+    /// @brief Move generator for when the king is in check (single). King
+    /// moves are considered first, castling moves are not considered at
+    /// all, and regular piece moves must either capture the checker or
+    /// intercept the check.
+    CHECK,
+
+    /// @brief Move generator for when the king is in double check. Only
+    /// king moves are considered.
+    DOUBLE_CHECK,
+};
+
+
+/// @ingroup PgnReaderAPI
 /// @brief The chessboard
 ///
 /// The following move generator variants are provided:
@@ -125,333 +476,6 @@ struct BitBoard
 class ChessBoard
 {
 public:
-
-    /// @brief Move type (4 bits, range: 0..15)
-    ///
-    /// Unless otherwise stated, @coderef{Move::getSrc()} and @coderef{Move::getDst()}.
-    /// specify the source and destination squares of the move.
-    ///
-    /// @sa @coderef{Move::getTypeAndPromotion()}
-    enum class MoveTypeAndPromotion : std::uint8_t
-    {
-        /// @brief Regular non-capturing, non-promoting pawn move
-        REGULAR_PAWN_MOVE    = 0U,
-
-        /// @brief Pawn capture, except en passant
-        REGULAR_PAWN_CAPTURE = 1U,
-
-        /// @brief Knight move
-        REGULAR_KNIGHT_MOVE  = 2U,
-
-        /// @brief Bishop move
-        REGULAR_BISHOP_MOVE  = 3U,
-
-        /// @brief Rook move
-        REGULAR_ROOK_MOVE    = 4U,
-
-        /// @brief Queen move
-        REGULAR_QUEEN_MOVE   = 5U,
-
-        /// @brief King move (not castling)
-        REGULAR_KING_MOVE    = 6U,
-
-        /// @brief Pawn en-passant capture
-        ///
-        /// <dl>
-        ///   <dt>Pawn source square</dt>
-        ///   <dd>@coderef{Move::getSrc()}</dd>
-        ///
-        ///   <dt>Pawn destination square</dt>
-        ///   <dd>@coderef{Move::getDst()}</dd>
-        ///
-        ///   <dt>En passant square</dt>
-        ///   <dd><tt>@coderef{makeSquare}(@coderef{columnOf}(@coderef{Move::getDst()}), @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
-        /// </dl>
-        EN_PASSANT           = 7U,
-
-        /// @brief Short castling
-        ///
-        /// <dl>
-        ///   <dt>King source square</dt>
-        ///   <dd>@coderef{Move::getSrc()}</dd>
-        ///
-        ///   <dt>King destination square</dt>
-        ///   <dd><tt>@coderef{makeSquare}(6U, @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
-        ///
-        ///   <dt>Rook source square</dt>
-        ///   <dd>@coderef{Move::getDst()}</dd>
-        ///
-        ///   <dt>Rook destination square</dt>
-        ///   <dd><tt>@coderef{makeSquare}(5U, @coderef{rowOf}(@coderef{Move::getDst()}))</tt></dd>
-        /// </dl>
-        CASTLING_SHORT       = 8U,
-
-        /// @brief Long castling
-        ///
-        /// <dl>
-        ///   <dt>King source square</dt>
-        ///   <dd>@coderef{Move::getSrc()}</dd>
-        ///
-        ///   <dt>King destination square</dt>
-        ///   <dd><tt>@coderef{makeSquare}(2U, @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
-        ///
-        ///   <dt>Rook source square</dt>
-        ///   <dd>@coderef{Move::getDst()}</dd>
-        ///
-        ///   <dt>Rook destination square</dt>
-        ///   <dd><tt>@coderef{makeSquare}(3U, @coderef{rowOf}(@coderef{Move::getDst()}))</tt></dd>
-        /// </dl>
-        CASTLING_LONG        = 9U,
-
-        /// @brief Pawn promotion to knight
-        PROMO_KNIGHT         = 10U,
-
-        /// @brief Pawn promotion to bishop
-        PROMO_BISHOP         = 11U,
-
-        /// @brief Pawn promotion to rook
-        PROMO_ROOK           = 12U,
-
-        /// @brief Pawn promotion to queen
-        PROMO_QUEEN          = 13U,
-
-        /// @brief Illegal move type
-        ///
-        /// Represents an illegal move. Returned by single move generators in
-        /// case the generated move count is not 1.
-        ///
-        /// @note The destination square for illegal moves must be
-        /// @coderef{Square::H8} for fast implementation of
-        /// @coderef{Move::isIllegal()}.
-        ILLEGAL              = 15U
-    };
-
-    /// @brief A legal move. **Important: see the note!**
-    ///
-    /// @note Always use one of the move generators to construct a legal
-    /// move. @coderef{doMove()} assumes that the move is legal and it does not
-    /// perform any legality checks of its own.
-    class Move
-    {
-    private:
-        /// @brief Encoded move
-        ///
-        /// <table>
-        /// <caption>Bitfield</caption>
-        /// <tr>
-        ///   <th>15</th><th>14</th><th>13</th><th>12</th><th>11</th><th>10</th><th>9</th><th>8</th>
-        ///   <th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th>
-        /// </tr>
-        /// <tr>
-        ///   <td colspan="6">Destination square</td>
-        ///   <td colspan="4">Move type and promotion</td>
-        ///   <td colspan="6">Source square</td>
-        /// </tr>
-        /// </table>
-        std::uint16_t m_encoded { };
-
-    public:
-        /// @brief Default constructor (null move)
-        constexpr Move() noexcept = default;
-
-        /// @brief Constructor
-        ///
-        /// @param[in] src           Move source square. Must be a valid square.
-        /// @param[in] dst           Move destination square. Must be a valid square.
-        /// @param[in] typeAndPromo  Move type and promotion piece
-        ///
-        /// See @coderef{MoveTypeAndPromotion} on how @c src and @c dst are used for
-        /// en-passant and castling move types.
-        ///
-        /// @note See @coderef{MoveTypeAndPromotion::ILLEGAL} on constraints for
-        /// illegal moves.
-        constexpr Move(Square src, Square dst, MoveTypeAndPromotion typeAndPromo) noexcept :
-            m_encoded(
-                (static_cast<std::uint16_t>(src)) |
-                (static_cast<std::uint16_t>(typeAndPromo) << 6) |
-                (static_cast<std::uint16_t>(dst) << 10U)
-                )
-        {
-            assert(isValidSquare(src));
-            assert(isValidSquare(dst));
-            assert((typeAndPromo <= MoveTypeAndPromotion::PROMO_QUEEN) ||
-                   (typeAndPromo == MoveTypeAndPromotion::ILLEGAL));
-        }
-
-        /// @brief Constructor (copy)
-        constexpr Move(const Move &) noexcept = default;
-
-        /// @brief Constructor (move)
-        constexpr Move(Move &&) noexcept = default;
-
-        /// @brief Assignment
-        Move &operator = (const Move &) noexcept = default;
-
-        /// @brief Move assignment
-        Move &operator = (Move &&) noexcept = default;
-
-        /// @brief Destructor
-        ~Move() noexcept = default;
-
-        /// @brief Returns move source square
-        ///
-        /// See @coderef{MoveTypeAndPromotion} on how @c src and @c dst are used for
-        /// en-passant and castling move types.
-        constexpr Square getSrc() const noexcept
-        {
-            return static_cast<Square>(m_encoded & 63U);
-        }
-
-        /// @brief Returns move destination square
-        ///
-        /// See @coderef{MoveTypeAndPromotion} on how @c src and @c dst are used for
-        /// en-passant and castling move types.
-        constexpr Square getDst() const noexcept
-        {
-            return static_cast<Square>(m_encoded >> 10U);
-        }
-
-        /// @brief Returns move type and promotion piece
-        constexpr MoveTypeAndPromotion getTypeAndPromotion() const noexcept
-        {
-            return static_cast<MoveTypeAndPromotion>((m_encoded >> 6U) & 0xFU);
-        }
-
-        /// @brief Checks whether a move type is regular
-        ///
-        /// @return Whether the move type is a regular pawn/piece move
-        ///
-        /// Regular move types are the following:
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_PAWN_MOVE}
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE}
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE}
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_BISHOP_MOVE}
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_ROOK_MOVE}
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE}
-        /// - @coderef{MoveTypeAndPromotion::REGULAR_KING_MOVE}
-        constexpr bool isRegularMove() const noexcept
-        {
-            return getTypeAndPromotion() <= MoveTypeAndPromotion::REGULAR_KING_MOVE;
-        }
-
-        /// @brief Checks whether a move type is en-passant pawn capture
-        ///
-        /// @return Whether the move type is en-passant pawn capture
-        ///
-        /// En-passant pawn capture move type is the following;
-        /// - @coderef{MoveTypeAndPromotion::EN_PASSANT}
-        constexpr bool isEnPassantMove() const noexcept
-        {
-            return getTypeAndPromotion() == MoveTypeAndPromotion::EN_PASSANT;
-        }
-
-        /// @brief Checks whether a move type is a pawn promotion
-        ///
-        /// @return Whether the move type is a pawn promotion move
-        ///
-        /// Pawn promotion move types are the following:
-        /// - @coderef{MoveTypeAndPromotion::PROMO_KNIGHT}
-        /// - @coderef{MoveTypeAndPromotion::PROMO_BISHOP}
-        /// - @coderef{MoveTypeAndPromotion::PROMO_ROOK}
-        /// - @coderef{MoveTypeAndPromotion::PROMO_QUEEN}
-        constexpr bool isPromotionMove() const noexcept
-        {
-            return
-                getTypeAndPromotion() >= MoveTypeAndPromotion::PROMO_KNIGHT &&
-                getTypeAndPromotion() <= MoveTypeAndPromotion::PROMO_QUEEN;
-        }
-
-        /// @brief Checks whether a move type is a castling move
-        ///
-        /// @return Whether the move type is a castling move
-        ///
-        /// Pawn promotion move types are the following:
-        /// - @coderef{MoveTypeAndPromotion::CASTLING_SHORT}
-        /// - @coderef{MoveTypeAndPromotion::CASTLING_LONG}
-        constexpr bool isCastlingMove() const noexcept
-        {
-            return
-                getTypeAndPromotion() >= MoveTypeAndPromotion::CASTLING_SHORT &&
-                getTypeAndPromotion() <= MoveTypeAndPromotion::CASTLING_LONG;
-        }
-
-        /// @brief Returns promotion piece of a promotion move
-        constexpr Piece getPromotionPiece() const noexcept
-        {
-            assert(isPromotionMove());
-
-            static_assert(
-                (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_KNIGHT) & 0x7U) ==
-                static_cast<std::uint8_t>(Piece::KNIGHT));
-            static_assert(
-                (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_BISHOP) & 0x7U) ==
-                static_cast<std::uint8_t>(Piece::BISHOP));
-            static_assert(
-                (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_ROOK)   & 0x7U) ==
-                static_cast<std::uint8_t>(Piece::ROOK));
-            static_assert(
-                (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_QUEEN)  & 0x7U) ==
-                static_cast<std::uint8_t>(Piece::QUEEN));
-
-            return Piece(static_cast<std::uint8_t>(getTypeAndPromotion()) & 0x7U);
-        }
-
-        /// @brief Checks whether the move type is illegal
-        ///
-        /// @return Whether move is one of the illegal moves
-        ///
-        /// @note See @coderef{MoveTypeAndPromotion::ILLEGAL} on constraints for
-        /// illegal moves.
-        constexpr bool isIllegal() const noexcept
-        {
-            // this is slightly faster than extracting and comparing the
-            // MoveTypeAndPromotion field
-            return m_encoded >= 0xFFC0U;
-        }
-
-        /// @brief Returns raw encoded value. Usually only used in debugging.
-        ///
-        /// @return Encoded value of move
-        constexpr std::uint16_t getEncodedValue() const noexcept
-        {
-            return m_encoded;
-        }
-
-        /// @brief Comparator (equality)
-        ///
-        /// @param[in] o     Another move
-        /// @return Comparison result
-        constexpr bool operator == (const Move &o) const noexcept
-        {
-            return m_encoded == o.m_encoded;
-        }
-
-        /// @brief Token for illegal move: no moves generated
-        ///
-        /// @return Illegal move token: no moves generated
-        static constexpr Move illegalNoMove() noexcept
-        {
-            return Move { Square::A1, Square::H8, MoveTypeAndPromotion::ILLEGAL };
-        }
-
-        /// @brief Token for illegal move: ambiguous move generation
-        ///
-        /// @return Illegal move token: ambiguous move generation
-        static constexpr Move illegalAmbiguousMove() noexcept
-        {
-            return Move { Square::A2, Square::H8, MoveTypeAndPromotion::ILLEGAL };
-        }
-    };
-
-    /// @brief Move list returned by @coderef{generateMoves()}.
-    ///
-    /// The move list is big enough all possible moves for any given position.
-    using MoveList = std::array<Move, 256U>;
-
-    /// @brief Short move list returned by move generators for writing a SAN
-    /// move. That is, when the piece type and destination square are known, and
-    /// moves need to be generated to resolve the required disambiguation.
-    using ShortMoveList = std::array<Move, 8U>;
 
     /// @brief Constructor (default)
     ///
@@ -1291,25 +1315,6 @@ private:
 
     inline SquareSet blocksAllChecksMask(Square dst) const noexcept;
 
-    /// @brief Move generator type
-    enum class MoveGenType : std::uint8_t
-    {
-        /// @brief Move generator for when the king is not in check. All moves
-        /// are considered.
-        NO_CHECK = 0U,
-
-        /// @brief Move generator for when the king is in check (single). King
-        /// moves are considered first, castling moves are not considered at
-        /// all, and regular piece moves must either capture the checker or
-        /// intercept the check.
-        CHECK,
-
-        /// @brief Move generator for when the king is in double check. Only
-        /// king moves are considered.
-        DOUBLE_CHECK,
-    };
-
-
     // this is a constrain for the movegen
     template <MoveGenType type, typename ParamType>
     static constexpr inline SquareSet getLegalNonKingDestinations(ParamType legalDestinations) noexcept
@@ -1552,10 +1557,10 @@ private:
     void calculateMasks(const ArrayBoard &board) noexcept;
 };
 
-static_assert(ChessBoard::Move::illegalNoMove().isIllegal());
-static_assert(ChessBoard::Move::illegalNoMove().getTypeAndPromotion() == ChessBoard::MoveTypeAndPromotion::ILLEGAL);
-static_assert(ChessBoard::Move::illegalAmbiguousMove().isIllegal());
-static_assert(ChessBoard::Move::illegalAmbiguousMove().getTypeAndPromotion() == ChessBoard::MoveTypeAndPromotion::ILLEGAL);
+static_assert(Move::illegalNoMove().isIllegal());
+static_assert(Move::illegalNoMove().getTypeAndPromotion() == MoveTypeAndPromotion::ILLEGAL);
+static_assert(Move::illegalAmbiguousMove().isIllegal());
+static_assert(Move::illegalAmbiguousMove().getTypeAndPromotion() == MoveTypeAndPromotion::ILLEGAL);
 
 }
 

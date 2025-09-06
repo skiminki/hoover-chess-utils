@@ -61,7 +61,7 @@ SquareSet ChessBoard::blocksAllChecksMask(Square dst) const noexcept
 }
 
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, Color turn>
+template <typename IteratorType, MoveGenType type, typename ParamType, Color turn>
 auto ChessBoard::generateMovesForPawnsTempl(
     IteratorType i,
     ParamType legalDestinations) const noexcept -> IteratorType
@@ -303,7 +303,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType>
+template <typename IteratorType, MoveGenType type, typename ParamType>
 auto ChessBoard::generateMovesForPawns(
     IteratorType i,
     ParamType legalDestinations) const noexcept -> IteratorType
@@ -314,7 +314,7 @@ auto ChessBoard::generateMovesForPawns(
         return generateMovesForPawnsTempl<IteratorType, type, ParamType, Color::BLACK>(i, legalDestinations);
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType>
+template <typename IteratorType, MoveGenType type, typename ParamType>
 auto ChessBoard::generateMovesForKnight(
     IteratorType i,
     Square sq,
@@ -346,7 +346,7 @@ auto ChessBoard::generateMovesForKnight(
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, bool pinned>
+template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
 auto ChessBoard::generateMovesForBishop(
     IteratorType i,
     Square sq,
@@ -379,7 +379,7 @@ auto ChessBoard::generateMovesForBishop(
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType, bool pinned>
+template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
 auto ChessBoard::generateMovesForRook(
     IteratorType i,
     Square sq,
@@ -439,7 +439,7 @@ auto ChessBoard::generateMovesForKing(
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, bool shortCastling>
+template <typename IteratorType, MoveGenType type, bool shortCastling>
 auto ChessBoard::generateMovesForCastling(
     IteratorType i,
     SquareSet attackedSquares) const noexcept -> IteratorType
@@ -487,7 +487,7 @@ auto ChessBoard::generateMovesForCastling(
     return i;
 }
 
-template <typename IteratorType, ChessBoard::MoveGenType type, typename ParamType>
+template <typename IteratorType, MoveGenType type, typename ParamType>
 IteratorType ChessBoard::generateMovesTempl(
     IteratorType i,
     ParamType legalDestinations) const noexcept

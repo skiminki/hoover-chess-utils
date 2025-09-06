@@ -137,7 +137,7 @@ public:
         addPosition();
     }
 
-    void afterMove(pgn_reader::ChessBoard::Move) override
+    void afterMove(pgn_reader::Move) override
     {
         addPosition();
     }
@@ -214,7 +214,7 @@ public:
         addCurrentBoard();
     }
 
-    void afterMove(pgn_reader::ChessBoard::Move) override
+    void afterMove(pgn_reader::Move) override
     {
         addCurrentBoard();
     }

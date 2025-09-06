@@ -165,7 +165,7 @@ FenPerft fenPerfts[] = {
 
 };
 
-void printMove(ChessBoard::Move move)
+void printMove(Move move)
 {
     printf("%c%c%c%c",
            StringUtils::colChar(move.getSrc()),
@@ -175,17 +175,17 @@ void printMove(ChessBoard::Move move)
 
     switch (move.getTypeAndPromotion())
     {
-        case ChessBoard::MoveTypeAndPromotion::PROMO_KNIGHT: printf("N"); break;
-        case ChessBoard::MoveTypeAndPromotion::PROMO_BISHOP: printf("B"); break;
-        case ChessBoard::MoveTypeAndPromotion::PROMO_ROOK:   printf("R"); break;
-        case ChessBoard::MoveTypeAndPromotion::PROMO_QUEEN:  printf("Q"); break;
+        case MoveTypeAndPromotion::PROMO_KNIGHT: printf("N"); break;
+        case MoveTypeAndPromotion::PROMO_BISHOP: printf("B"); break;
+        case MoveTypeAndPromotion::PROMO_ROOK:   printf("R"); break;
+        case MoveTypeAndPromotion::PROMO_QUEEN:  printf("Q"); break;
         default:                                                          break;
     }
 }
 
 std::uint64_t perft(ChessBoard &board, std::uint8_t depth, bool print)
 {
-    ChessBoard::MoveList moves;
+    MoveList moves;
 
     const std::size_t numMoves { board.generateMoves(moves) };
     std::size_t numLeafMoves { };
