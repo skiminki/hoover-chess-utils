@@ -16,12 +16,19 @@
 
 #include "chessboard.h"
 
+#include "chessboard-movegen.h"
+
 #include <algorithm>
 #include <array>
 #include <string_view>
 
 namespace hoover_chess_utils::pgn_reader
 {
+
+ChessBoard::ChessBoard() noexcept :
+    m_moveGenFns { &MoveGenFunctionTables::getFunctions(MoveGenType::NO_CHECK) }
+{
+}
 
 bool ChessBoard::operator == (const ChessBoard &o) const noexcept
 {
@@ -53,9 +60,7 @@ bool ChessBoard::operator == (const ChessBoard &o) const noexcept
         return false;
 
     if (getEpSquare() != o.getEpSquare())
-    {
         return false;
-    }
 
     if (getCurrentPlyNum() != o.getCurrentPlyNum())
         return false;

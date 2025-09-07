@@ -29,12 +29,30 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cassert>
 #include <cinttypes>
 #include <utility>
 #include <tuple>
 
 namespace hoover_chess_utils::pgn_reader
 {
+
+class MoveGenFunctionTables
+{
+private:
+    static std::array<MoveGenFunctions, 3U> m_fns;
+
+public:
+    static inline const MoveGenFunctions &getFunctions(MoveGenType type) noexcept
+    {
+        const std::size_t index { static_cast<std::size_t>(type) };
+
+        assert(index < moveGenFunctions.size());
+        return m_fns[index];
+    }
+};
+
+
 
 template <bool shortCastling>
 struct CastlingSideSpecificsTempl;
@@ -53,13 +71,18 @@ struct CastlingSideSpecificsTempl<true>
     static constexpr std::uint8_t rookTargetColumn { 5U };
 };
 
-SquareSet ChessBoard::blocksAllChecksMask(Square dst) const noexcept
+template <MoveGenType type>
+SquareSet ChessBoard::blocksAllChecksMaskTempl(Square dst) const noexcept
 {
-    const SquareSet blockableChecksMask { m_checkers.popcount() <= 1U ? SquareSet::all() : SquareSet::none() };
-    return
-        (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny() & blockableChecksMask;
+    if constexpr (type == MoveGenType::NO_CHECK)
+        return SquareSet::all(); // no checks to block
+    else
+    {
+        static_assert(type == MoveGenType::CHECK);
+        return
+            (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
+    }
 }
-
 
 template <typename IteratorType, MoveGenType type, typename ParamType, Color turn>
 auto ChessBoard::generateMovesForPawnsTempl(
@@ -488,7 +511,7 @@ auto ChessBoard::generateMovesForCastling(
 }
 
 template <typename IteratorType, MoveGenType type, typename ParamType>
-IteratorType ChessBoard::generateMovesTempl(
+IteratorType ChessBoard::generateAllLegalMovesTempl(
     IteratorType i,
     ParamType legalDestinations) const noexcept
 {
@@ -625,33 +648,31 @@ IteratorType ChessBoard::generateMovesTempl(
     }
 }
 
-template <typename IteratorType>
-IteratorType ChessBoard::generateMovesIteratorTempl(
+template <MoveGenType type, typename IteratorType>
+IteratorType ChessBoard::generateMovesIterTempl(
     IteratorType i) const noexcept
 {
-    const std::uint8_t numCheckers { m_checkers.popcount() };
-    if (numCheckers == 0U) [[likely]]
+    if constexpr (type == MoveGenType::NO_CHECK)
     {
         // all destinations are ok as long as the move is ok
-        i = generateMovesTempl<IteratorType, MoveGenType::NO_CHECK, AllLegalDestinationType>(
+        i = generateAllLegalMovesTempl<IteratorType, MoveGenType::NO_CHECK, AllLegalDestinationType>(
             i, AllLegalDestinationType { });
     }
-    else [[unlikely]]
+    else if constexpr (type == MoveGenType::CHECK)
     {
-        if (numCheckers == 1U) [[likely]]
-        {
-            // must capture the checker or block the check
-            i = generateMovesTempl<IteratorType, MoveGenType::CHECK, ParametrizedLegalDestinationType>(
-                i,
-                ParametrizedLegalDestinationType {
-                    Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) });
-        }
-        else [[unlikely]]
-        {
-            // king moves only
-            i = generateMovesTempl<IteratorType, MoveGenType::DOUBLE_CHECK, NoLegalDestinationType>(
-                i, NoLegalDestinationType { });
-        }
+        // must capture the checker or block the check
+        i = generateAllLegalMovesTempl<IteratorType, MoveGenType::CHECK, ParametrizedLegalDestinationType>(
+            i,
+            ParametrizedLegalDestinationType {
+                Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) });
+    }
+    else
+    {
+        static_assert(type == MoveGenType::DOUBLE_CHECK);
+
+        // king moves only
+        i = generateAllLegalMovesTempl<IteratorType, MoveGenType::DOUBLE_CHECK, NoLegalDestinationType>(
+            i, NoLegalDestinationType { });
     }
 
     return i;
