@@ -24,9 +24,16 @@
 #include <array>
 #include <cassert>
 #include <cinttypes>
+#include <type_traits>
 
 namespace hoover_chess_utils::pgn_reader
 {
+
+// forward declarations
+class ChessBoard;
+struct MoveGenFunctions;
+class MoveGenFunctionTables;
+
 
 /// @ingroup PgnReaderAPI
 /// @brief Board representation using an array.
@@ -473,7 +480,7 @@ enum class MoveGenType : std::uint8_t
 ///        @coderef{generateSingleMoveForShortCastling()}</td>
 /// </tr>
 /// </table>
-class ChessBoard
+class ChessBoard final
 {
 public:
 
@@ -481,7 +488,7 @@ public:
     ///
     /// The default constructor sets the board to the standard starting
     /// position.
-    ChessBoard() noexcept = default;
+    ChessBoard() noexcept;
 
     /// @brief Constructor (copy)
     ChessBoard(const ChessBoard &) noexcept = default;
@@ -898,7 +905,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForPawnAndDestNoCapture(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForPawnAndDestNoCapture(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal non-promoting, capturing pawn move with a known
     /// destination square.
@@ -907,7 +914,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForPawnAndDestCapture(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForPawnAndDestCapture(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal promoting, non-capturing pawn move with a known
     /// destination square.
@@ -917,7 +924,7 @@ public:
     /// @param[in]  promo           Promotion piece
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForPawnAndDestPromoNoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
+    inline Move generateSingleMoveForPawnAndDestPromoNoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
 
     /// @brief Generates a legal promoting, capturing pawn move with a known
     /// destination square.
@@ -927,7 +934,7 @@ public:
     /// @param[in]  promo           Promotion piece
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForPawnAndDestPromoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
+    inline Move generateSingleMoveForPawnAndDestPromoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
 
     /// @brief Generates a legal knight move with a known destination square. May be
     /// capturing.
@@ -936,7 +943,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForKnightAndDest(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForKnightAndDest(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal bishop move with a known destination square. May be
     /// capturing.
@@ -945,7 +952,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForBishopAndDest(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForBishopAndDest(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal rook move with a known destination square. May be
     /// capturing.
@@ -954,7 +961,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForRookAndDest(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForRookAndDest(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal queen move with a known destination square. May be
     /// capturing.
@@ -963,7 +970,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForQueenAndDest(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForQueenAndDest(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal king move with a known destination square. May be
     /// capturing.
@@ -972,19 +979,19 @@ public:
     /// @param[in]  dst             Destination square
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForKingAndDest(SquareSet srcSqMask, Square dst) const noexcept;
+    inline Move generateSingleMoveForKingAndDest(SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a legal short castling move.
     ///
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForShortCastling() const noexcept;
+    inline Move generateSingleMoveForShortCastling() const noexcept;
 
     /// @brief Generates a legal long castling move.
     ///
     /// @return                     Move. In case a move was not found or it was
     ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
-    Move generateSingleMoveForLongCastling() const noexcept;
+    inline Move generateSingleMoveForLongCastling() const noexcept;
 
     /// @brief Generates a list of legal non-promoting, non-capturing pawn moves with a known
     /// destination square.
@@ -993,7 +1000,7 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForPawnAndDestNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForPawnAndDestNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a list of legal non-promoting, capturing pawn moves with a known
     /// destination square.
@@ -1002,7 +1009,7 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForPawnAndDestCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForPawnAndDestCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a list of legal promoting, non-capturing pawn moves with a known
     /// destination square.
@@ -1012,7 +1019,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @param[in]  promo           Promotion piece
     /// @return                     Number of returned moves
-    std::size_t generateMovesForPawnAndDestPromoNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
+    inline std::size_t generateMovesForPawnAndDestPromoNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
 
     /// @brief Generates a list of legal promoting, capturing pawn moves with a known
     /// destination square.
@@ -1022,7 +1029,7 @@ public:
     /// @param[in]  dst             Destination square
     /// @param[in]  promo           Promotion piece
     /// @return                     Number of returned moves
-    std::size_t generateMovesForPawnAndDestPromoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
+    inline std::size_t generateMovesForPawnAndDestPromoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
 
     /// @brief Generates a list of legal knight moves with a known destination
     /// square. May be capturing.
@@ -1031,7 +1038,7 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForKnightAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForKnightAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a list of legal bishop moves with a known destination
     /// square. May be capturing.
@@ -1040,7 +1047,7 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForBishopAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForBishopAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a list of legal rook moves with a known destination
     /// square. May be capturing.
@@ -1049,7 +1056,7 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForRookAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForRookAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a list of legal queen moves with a known destination
     /// square. May be capturing.
@@ -1058,7 +1065,7 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForQueenAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForQueenAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates a list of legal king moves with a known destination
     /// square. May be capturing.
@@ -1067,19 +1074,19 @@ public:
     /// @param[in]  srcSqMask       Allowed source squares
     /// @param[in]  dst             Destination square
     /// @return                     Number of returned moves
-    std::size_t generateMovesForKingAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
+    inline std::size_t generateMovesForKingAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept;
 
     /// @brief Generates the short castling move in a list, if legal.
     ///
     /// @param[out] moves           List of returned moves
     /// @return                     Number of returned moves
-    std::size_t generateMovesForShortCastling(ShortMoveList &moves) const noexcept;
+    inline std::size_t generateMovesForShortCastling(ShortMoveList &moves) const noexcept;
 
     /// @brief Generates the long castling move in a list, if legal.
     ///
     /// @param[out] moves           List of returned moves
     /// @return                     Number of returned moves
-    std::size_t generateMovesForLongCastling(ShortMoveList &moves) const noexcept;
+    inline std::size_t generateMovesForLongCastling(ShortMoveList &moves) const noexcept;
 
     /// @brief Validates en-passant capture
     ///
@@ -1097,7 +1104,7 @@ public:
     ///
     /// @param[in] moves  Caller-allocated move list
     /// @return           Number of moves added in the move list
-    std::size_t generateMoves(MoveList &moves) const noexcept;
+    inline std::size_t generateMoves(MoveList &moves) const noexcept;
 
     /// @brief Returns the number of legal moves for the current position. This
     /// function is mostly useful for calculating the moves in perft leaf
@@ -1106,7 +1113,7 @@ public:
     /// @return           Number of legal moves
     ///
     /// @sa https://www.chessprogramming.org/Perft
-    std::size_t getNumberOfLegalMoves() const noexcept;
+    inline std::size_t getNumberOfLegalMoves() const noexcept;
 
     /// @brief Applies a move on the current position. The move is assumed to be
     /// legal, and it must be from one of the generators. No legality checks are
@@ -1183,6 +1190,11 @@ private:
     ///
     /// @remark Set by @coderef{updateCheckersAndPins()}
     SquareSet m_pinnedPieces { };
+
+    /// @brief Move generator functions for this position
+    ///
+    /// @sa @coderef{MoveGenType}
+    const MoveGenFunctions *m_moveGenFns;
 
     /// @brief Current ply number
     ///
@@ -1313,7 +1325,8 @@ private:
         return ((srcNum - dstNum) & 15U) == 0U;
     }
 
-    inline SquareSet blocksAllChecksMask(Square dst) const noexcept;
+    template <MoveGenType type>
+    inline SquareSet blocksAllChecksMaskTempl(Square dst) const noexcept;
 
     // this is a constrain for the movegen
     template <MoveGenType type, typename ParamType>
@@ -1498,7 +1511,7 @@ private:
     ///
     /// @sa (@coderef{Attacks::determineAttackedSquares()})
     template <typename IteratorType, MoveGenType type, typename ParamType>
-    IteratorType generateMovesTempl(
+    inline IteratorType generateAllLegalMovesTempl(
         IteratorType i,
         ParamType legalDestinations) const noexcept;
 
@@ -1506,6 +1519,7 @@ private:
     /// the move generator based on whether the king is not in check, in check,
     /// or in double check.
     ///
+    /// @tparam     type               Move generator type
     /// @tparam     IteratorType       Move list iterator type
     /// @param[in]  i                  Move list iterator (begin of list)
     /// @return                        Move list iterator (end of generated moves)
@@ -1530,32 +1544,469 @@ private:
     ///   <td>Whether there are any legal moves</td>
     /// </tr>
     /// </table>
-    template <typename IteratorType>
-    IteratorType generateMovesIteratorTempl(
+    template <MoveGenType type, typename IteratorType>
+    inline IteratorType generateMovesIterTempl(
         IteratorType i) const noexcept;
 
-    template <typename IteratorType>
-    IteratorType generateMovesForPawnAndDestCaptureTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <MoveGenType type, typename IteratorType>
+    inline IteratorType generateMovesForPawnAndDestCaptureIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
 
-    template <typename IteratorType>
-    IteratorType generateMovesForPawnAndDestPromoCaptureTempl(IteratorType i, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
+    template <MoveGenType type, typename IteratorType>
+    inline IteratorType generateMovesForPawnAndDestPromoCaptureIterTempl(IteratorType i, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
 
-    template <typename IteratorType>
-    IteratorType generateMovesForKnightAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <MoveGenType type, typename IteratorType>
+    inline IteratorType generateMovesForKnightAndDestIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
 
-    template <typename IteratorType>
-    IteratorType generateMovesForBishopAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <MoveGenType type, MoveTypeAndPromotion moveType, typename IteratorType>
+    inline IteratorType generateMovesForSliderAndDestIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
 
-    template <typename IteratorType>
-    IteratorType generateMovesForRookAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <typename... Args>
+    static Move generateSingleIllegalNoMove(const ChessBoard &board, Args... args) noexcept;
 
-    template <typename IteratorType>
-    IteratorType generateMovesForQueenAndDestTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <MoveGenType type>
+    static Move generateSingleMoveForPawnAndDestNoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForPawnAndDestCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForPawnAndDestPromoNoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForPawnAndDestPromoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForKnightAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForBishopAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForRookAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForQueenAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+    template <MoveGenType type>
+    static Move generateSingleMoveForKingAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForShortCastlingTempl(const ChessBoard &board) noexcept;
+
+    template <MoveGenType type>
+    static Move generateSingleMoveForLongCastlingTempl(const ChessBoard &board) noexcept;
+
+
+    template <typename... Args>
+    static std::size_t generateNoMoves(const ChessBoard &board, ShortMoveList &move, Args... args) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForPawnAndDestNoCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForPawnAndDestCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForPawnAndDestPromoNoCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForPawnAndDestPromoCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForKnightAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForBishopAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForRookAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForQueenAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForKingAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForShortCastlingTempl(const ChessBoard &board, ShortMoveList &moves) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t generateMovesForLongCastlingTempl(const ChessBoard &board, ShortMoveList &moves) noexcept;
+
+
+    template <MoveGenType type>
+    static std::size_t generateMovesTempl(const ChessBoard &board, MoveList &moves) noexcept;
+
+    template <MoveGenType type>
+    static bool hasLegalMovesTempl(const ChessBoard &board) noexcept;
+
+    template <MoveGenType type>
+    static std::size_t getNumberOfLegalMovesTempl(const ChessBoard &board) noexcept;
 
     bool isLegalKingMove(Square src, Square dst, Color turn) const noexcept;
 
     void calculateMasks(const ArrayBoard &board) noexcept;
+
+    friend MoveGenFunctionTables;
 };
+
+/// @ingroup PgnReaderImpl
+/// @brief Move generator functions
+struct MoveGenFunctions
+{
+    /// @brief Generates a legal non-promoting, non-capturing pawn move with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForPawnAndDestNoCapture)(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a legal non-promoting, capturing pawn move with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForPawnAndDestCapture)(const ChessBoard &board, SquareSet srcSqMask, Square dst)noexcept;
+
+    /// @brief Generates a legal promoting, non-capturing pawn move with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @param[in]  promo           Promotion piece
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForPawnAndDestPromoNoCapture)(const ChessBoard &board, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    /// @brief Generates a legal promoting, capturing pawn move with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @param[in]  promo           Promotion piece
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForPawnAndDestPromoCapture)(const ChessBoard &board, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    /// @brief Generates a legal knight move with a known destination square. May be
+    /// capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForKnightAndDest)(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a legal bishop move with a known destination square. May be
+    /// capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForBishopAndDest)(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a legal rook move with a known destination square. May be
+    /// capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForRookAndDest)(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a legal queen move with a known destination square. May be
+    /// capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForQueenAndDest)(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a legal king move with a known destination square. May be
+    /// capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForKingAndDest)(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a legal short castling move.
+    ///
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForShortCastling)(const ChessBoard &board) noexcept;
+
+    /// @brief Generates a legal long castling move.
+    ///
+    /// @return                     Move. In case a move was not found or it was
+    ///                             ambiguous, @coderef{Move::isIllegal()} returns @true.
+    Move (*generateSingleMoveForLongCastling)(const ChessBoard &board) noexcept;
+
+    /// @brief Generates a list of legal non-promoting, non-capturing pawn moves with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForPawnAndDestNoCapture)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a list of legal non-promoting, capturing pawn moves with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForPawnAndDestCapture)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a list of legal promoting, non-capturing pawn moves with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @param[in]  promo           Promotion piece
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForPawnAndDestPromoNoCapture)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    /// @brief Generates a list of legal promoting, capturing pawn moves with a known
+    /// destination square.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @param[in]  promo           Promotion piece
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForPawnAndDestPromoCapture)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) noexcept;
+
+    /// @brief Generates a list of legal knight moves with a known destination
+    /// square. May be capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForKnightAndDest)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a list of legal bishop moves with a known destination
+    /// square. May be capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForBishopAndDest)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a list of legal rook moves with a known destination
+    /// square. May be capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForRookAndDest)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a list of legal queen moves with a known destination
+    /// square. May be capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForQueenAndDest)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates a list of legal king moves with a known destination
+    /// square. May be capturing.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @param[in]  srcSqMask       Allowed source squares
+    /// @param[in]  dst             Destination square
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForKingAndDest)(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept;
+
+    /// @brief Generates the short castling move in a list, if legal.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForShortCastling)(const ChessBoard &board, ShortMoveList &moves) noexcept;
+
+    /// @brief Generates the long castling move in a list, if legal.
+    ///
+    /// @param[in]  board           The chess board
+    /// @param[out] moves           List of returned moves
+    /// @return                     Number of returned moves
+    std::size_t (*generateMovesForLongCastling)(const ChessBoard &board, ShortMoveList &moves) noexcept;
+
+    /// @brief Generates a list of all legal moves for the current position
+    ///
+    /// @param[in] moves            Caller-allocated move list
+    /// @return                     Number of moves added in the move list
+    std::size_t (*generateMoves)(const ChessBoard &board, MoveList &moves) noexcept;
+
+    /// @brief Returns the number of legal moves for the current position. This
+    /// function is mostly useful for calculating the moves in perft leaf
+    /// positions.
+    ///
+    /// @param[in]  board           The chess board
+    /// @return                     Number of legal moves
+    ///
+    /// @sa https://www.chessprogramming.org/Perft
+    std::size_t (*getNumberOfLegalMoves)(const ChessBoard &board) noexcept;
+
+    /// @brief Determines whether there are any legal moves
+    /// function is mostly useful for calculating the moves in perft leaf
+    /// positions.
+    ///
+    /// @return                     Whether legal moves exist
+    bool (*hasLegalMoves)(const ChessBoard &board) noexcept;
+};
+
+Move ChessBoard::generateSingleMoveForPawnAndDestNoCapture(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForPawnAndDestNoCapture(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForPawnAndDestCapture(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForPawnAndDestCapture(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForPawnAndDestPromoNoCapture(*this, srcSqMask, dst, promo);
+}
+
+Move ChessBoard::generateSingleMoveForPawnAndDestPromoCapture(SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForPawnAndDestPromoCapture(*this, srcSqMask, dst, promo);
+}
+
+Move ChessBoard::generateSingleMoveForKnightAndDest(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForKnightAndDest(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForBishopAndDest(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForBishopAndDest(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForRookAndDest(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForRookAndDest(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForQueenAndDest(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForQueenAndDest(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForKingAndDest(SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForKingAndDest(*this, srcSqMask, dst);
+}
+
+Move ChessBoard::generateSingleMoveForShortCastling() const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForShortCastling(*this);
+}
+
+Move ChessBoard::generateSingleMoveForLongCastling() const noexcept
+{
+    return m_moveGenFns->generateSingleMoveForLongCastling(*this);
+}
+
+std::size_t ChessBoard::generateMovesForPawnAndDestNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForPawnAndDestNoCapture(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForPawnAndDestCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForPawnAndDestCapture(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForPawnAndDestPromoNoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+{
+    return m_moveGenFns->generateMovesForPawnAndDestPromoNoCapture(*this, moves, srcSqMask, dst, promo);
+}
+
+std::size_t ChessBoard::generateMovesForPawnAndDestPromoCapture(ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+{
+    return m_moveGenFns->generateMovesForPawnAndDestPromoCapture(*this, moves, srcSqMask, dst, promo);
+}
+
+std::size_t ChessBoard::generateMovesForKnightAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForKnightAndDest(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForBishopAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForBishopAndDest(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForRookAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForRookAndDest(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForQueenAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForQueenAndDest(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForKingAndDest(ShortMoveList &moves, SquareSet srcSqMask, Square dst) const noexcept
+{
+    return m_moveGenFns->generateMovesForKingAndDest(*this, moves, srcSqMask, dst);
+}
+
+std::size_t ChessBoard::generateMovesForShortCastling(ShortMoveList &moves) const noexcept
+{
+    return m_moveGenFns->generateMovesForShortCastling(*this, moves);
+}
+
+std::size_t ChessBoard::generateMovesForLongCastling(ShortMoveList &moves) const noexcept
+{
+    return m_moveGenFns->generateMovesForLongCastling(*this, moves);
+}
+
+std::size_t ChessBoard::generateMoves(MoveList &moves) const noexcept
+{
+    return m_moveGenFns->generateMoves(*this, moves);
+}
+
+std::size_t ChessBoard::getNumberOfLegalMoves() const noexcept
+{
+    return m_moveGenFns->getNumberOfLegalMoves(*this);
+}
+
 
 static_assert(Move::illegalNoMove().isIllegal());
 static_assert(Move::illegalNoMove().getTypeAndPromotion() == MoveTypeAndPromotion::ILLEGAL);

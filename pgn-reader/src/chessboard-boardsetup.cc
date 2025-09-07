@@ -352,10 +352,7 @@ void ChessBoard::validateBoard()
 
 PositionStatus ChessBoard::determineStatus() const noexcept
 {
-    const LegalMoveDetectorIterator legalMovesIterator {
-        generateMovesIteratorTempl(LegalMoveDetectorIterator { }) };
-
-    if (legalMovesIterator.hasLegalMoves())
+    if (m_moveGenFns->hasLegalMoves(*this))
         return m_checkers != SquareSet::none() ? PositionStatus::CHECK : PositionStatus::NORMAL;
     else
         return m_checkers != SquareSet::none() ? PositionStatus::MATE : PositionStatus::STALEMATE;

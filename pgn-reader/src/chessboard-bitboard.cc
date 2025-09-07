@@ -46,11 +46,6 @@ IntType saturatingIncrease(IntType v)
 
 }
 
-std::size_t ChessBoard::getNumberOfLegalMoves() const noexcept
-{
-    return generateMovesIteratorTempl(LegalMoveCounterIterator { }).getNumberOfLegalMoves();
-}
-
 void ChessBoard::updateCheckersAndPins() noexcept
 {
     // Pawn that can be EP-captured may be considered pinned
@@ -75,6 +70,11 @@ void ChessBoard::updateCheckersAndPins() noexcept
         m_checkers,
         m_pinnedPieces);
 
+    std::uint8_t numCheckers { m_checkers.popcount() };
+    if (numCheckers >= 2U)
+        numCheckers = 2U;
+
+    m_moveGenFns = &MoveGenFunctionTables::getFunctions(MoveGenType { numCheckers });
     // If EP pawn is pinned, it can never be captured. So, we'll reset it
     if ((m_pinnedPieces & epCapturable) != SquareSet::none())
         m_epSquare = Square::NONE;
