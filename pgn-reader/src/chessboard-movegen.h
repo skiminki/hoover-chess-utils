@@ -462,10 +462,10 @@ auto ChessBoard::generateMovesForKing(
     return i;
 }
 
-template <typename IteratorType, MoveGenType type, bool shortCastling>
-auto ChessBoard::generateMovesForCastling(
-    IteratorType i,
-    SquareSet attackedSquares) const noexcept -> IteratorType
+template <MoveGenType type, typename MoveStoreFn, bool shortCastling>
+void ChessBoard::generateMovesForCastlingStoreFnTempl(
+    SquareSet attackedSquares,
+    typename MoveStoreFn::Store &store) const noexcept
 {
     // When in check, castling is not legal. Since the caller is supposed to
     // classify the position before calling this function, we'll just ensure
@@ -482,7 +482,7 @@ auto ChessBoard::generateMovesForCastling(
 
     // do we have rights to castle?
     if (sqRook == Square::NONE)
-        return i;
+        return;
 
     const std::uint8_t targetRowAdd = (-static_cast<std::uint8_t>(turn)) & 63U;
     const Square sqKingTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::kingTargetColumn + targetRowAdd) };
@@ -499,15 +499,12 @@ auto ChessBoard::generateMovesForCastling(
          (SquareSet::square(sqRook) & m_pinnedPieces) | // castling rook not pinned?
          (kingPathHalfOpen & attackedSquares)           // king path is not attacked?
             ) != SquareSet::none())
-        return i;
+        return;
 
     if constexpr (shortCastling)
-        *i = Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_SHORT };
+        MoveStoreFn::storeMove(store, Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_SHORT });
     else
-        *i = Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_LONG };
-    ++i;
-
-    return i;
+        MoveStoreFn::storeMove(store, Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_LONG });
 }
 
 template <typename IteratorType, MoveGenType type, typename ParamType>
@@ -640,8 +637,10 @@ IteratorType ChessBoard::generateAllLegalMovesTempl(
                 if (i.hasLegalMoves())
                     return i;
 
-            i = generateMovesForCastling<IteratorType, type, false>(i, attackedSquares);
-            return generateMovesForCastling<IteratorType, type, true>(i, attackedSquares);
+            generateMovesForCastlingStoreFnTempl<type, IteratorStoreMoveFn<IteratorType>, false>(attackedSquares, i);
+            generateMovesForCastlingStoreFnTempl<type, IteratorStoreMoveFn<IteratorType>, true>(attackedSquares, i);
+
+            return i;
         }
         else
             return i;

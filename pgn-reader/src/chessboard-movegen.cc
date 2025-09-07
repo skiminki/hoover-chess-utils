@@ -66,8 +66,9 @@ std::size_t ChessBoard::generateNoMoves(const ChessBoard &board, ShortMoveList &
     return 0U;
 }
 
-template <MoveGenType type>
-Move ChessBoard::generateSingleMoveForPawnAndDestNoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
+template <MoveGenType type, typename MoveStoreFn>
+void ChessBoard::generateMovesForPawnAndDestNoCaptureStoreFnTempl(
+    SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept
 {
     static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
 
@@ -75,8 +76,8 @@ Move ChessBoard::generateSingleMoveForPawnAndDestNoCaptureTempl(const ChessBoard
     static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
-    const Color turn { board.getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) & ~board.m_occupancyMask & board.blocksAllChecksMaskTempl<type>(dst) };
+    const Color turn { getTurn() };
+    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMaskTempl<type>(dst) };
 
     const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
 
@@ -84,63 +85,42 @@ Move ChessBoard::generateSingleMoveForPawnAndDestNoCaptureTempl(const ChessBoard
         (PawnLookups::singleAdvanceNoPromoLegalDstMask(turn) & dstSqBit).rotr(pawnAdvanceShift) };
 
     const SquareSet doubleAdvancingPawnSquare {
-        (PawnLookups::rank3(turn) & singleAdvancingPawnSquare &~ board.m_occupancyMask).rotr(pawnAdvanceShift) };
+        (PawnLookups::rank3(turn) & singleAdvancingPawnSquare &~ m_occupancyMask).rotr(pawnAdvanceShift) };
 
     const SquareSet advancingPawn {
         (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
-        board.m_pawns & board.m_turnColorMask & srcSqMask };
+        m_pawns & m_turnColorMask & srcSqMask };
 
     if (advancingPawn != SquareSet::none()) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (Attacks::pinCheck(src, SquareSet::square(dst), board.m_kingSq, board.m_pinnedPieces)) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces)) [[likely]]
         {
-            return Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
+            MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
         }
     }
+}
 
-    return Move::illegalNoMove();
+template <MoveGenType type>
+Move ChessBoard::generateSingleMoveForPawnAndDestNoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
+{
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForPawnAndDestNoCaptureStoreFnTempl<type, SingleMoveStoreMoveNoDupCheckFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForPawnAndDestNoCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
-
-    // allowedDstSqMask optimization
-    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
-    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
-
-    const Color turn { board.getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) & ~board.m_occupancyMask & board.blocksAllChecksMaskTempl<type>(dst) };
-
-    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
-
-    const SquareSet singleAdvancingPawnSquare {
-        (PawnLookups::singleAdvanceNoPromoLegalDstMask(turn) & dstSqBit).rotr(pawnAdvanceShift) };
-
-    const SquareSet doubleAdvancingPawnSquare {
-        (PawnLookups::rank3(turn) & singleAdvancingPawnSquare &~ board.m_occupancyMask).rotr(pawnAdvanceShift) };
-
-    const SquareSet advancingPawn {
-        (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
-        board.m_pawns & board.m_turnColorMask & srcSqMask };
-
-    if (advancingPawn != SquareSet::none()) [[likely]]
-    {
-        Square src { advancingPawn.firstSquare() };
-        if (Attacks::pinCheck(src, SquareSet::square(dst), board.m_kingSq, board.m_pinnedPieces)) [[likely]]
-        {
-            moves[0U] = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
-            return 1U;
-        }
-    }
-
-    return 0U;
+    auto i = moves.begin();
+    board.generateMovesForPawnAndDestNoCaptureStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
+        srcSqMask, dst, i);
+    return i - moves.begin();
 }
 
-template <MoveGenType type, typename IteratorType>
-IteratorType ChessBoard::generateMovesForPawnAndDestCaptureIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
+template <MoveGenType type, typename MoveStoreFn>
+void ChessBoard::generateMovesForPawnAndDestCaptureStoreFnTempl(
+    SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept
 {
     static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
 
@@ -165,8 +145,7 @@ IteratorType ChessBoard::generateMovesForPawnAndDestCaptureIterTempl(IteratorTyp
             {
                 if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
                 {
-                    *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE };
-                    ++i;
+                    MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE });
                 }
             });
     }
@@ -178,106 +157,84 @@ IteratorType ChessBoard::generateMovesForPawnAndDestCaptureIterTempl(IteratorTyp
             {
                 if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
                 {
-                    *i = Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT };
-                    ++i;
+                    MoveStoreFn::storeMove(store, Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT });
                 }
             });
     }
-
-    return i;
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForPawnAndDestCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
 {
-    return board.generateMovesForPawnAndDestCaptureIterTempl<type>(SingleMoveIterator { }, srcSqMask, dst).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForPawnAndDestCaptureStoreFnTempl<type, SingleMoveStoreMoveFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForPawnAndDestCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { board.generateMovesForPawnAndDestCaptureIterTempl<type>(moves.begin(), srcSqMask, dst) };
-
+    auto i = moves.begin();
+    board.generateMovesForPawnAndDestCaptureStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
+        srcSqMask, dst, i);
     return i - moves.begin();
+}
+
+template <MoveGenType type, typename MoveStoreFn>
+void ChessBoard::generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl(
+    SquareSet srcSqMask, Square dst, Piece promo, typename MoveStoreFn::Store &store) const noexcept
+{
+    static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
+
+    // allowedDstSqMask optimization
+    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
+    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
+
+    const Color turn { getTurn() };
+    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMaskTempl<type>(dst) };
+
+    // 7th or 0th rank
+    const SquareSet allowedDstSqMask { PawnLookups::rank8(turn) };
+    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
+
+    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
+
+    const SquareSet advancingPawn {
+        singleAdvancingPawnSquare &
+        m_pawns & m_turnColorMask & srcSqMask };
+
+    if (advancingPawn != SquareSet::none()) [[likely]]
+    {
+        Square src { advancingPawn.firstSquare() };
+        if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces)) [[likely]]
+        {
+            MoveStoreFn::storeMove(store, Move { src, dst, pieceToTypeAndPromotion(promo) });
+        }
+    }
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForPawnAndDestPromoNoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst, Piece promo) noexcept
 {
-    static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
-
-    // allowedDstSqMask optimization
-    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
-    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
-
-    const Color turn { board.getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) & ~board.m_occupancyMask & board.blocksAllChecksMaskTempl<type>(dst) };
-
-    // 7th or 0th rank
-    const SquareSet allowedDstSqMask { PawnLookups::rank8(turn) };
-    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
-
-    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
-
-    const SquareSet advancingPawn {
-        singleAdvancingPawnSquare &
-        board.m_pawns & board.m_turnColorMask & srcSqMask };
-
-    if (advancingPawn != SquareSet::none()) [[likely]]
-    {
-        Square src { advancingPawn.firstSquare() };
-        if (Attacks::pinCheck(src, SquareSet::square(dst), board.m_kingSq, board.m_pinnedPieces)) [[likely]]
-        {
-            return Move { src, dst, pieceToTypeAndPromotion(promo) };
-        }
-    }
-
-    return Move::illegalNoMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl<type, SingleMoveStoreMoveNoDupCheckFn>(srcSqMask, dst, promo, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForPawnAndDestPromoNoCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) noexcept
 {
-    static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
-
-    // allowedDstSqMask optimization
-    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
-    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
-
-    const Color turn { board.getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) & ~board.m_occupancyMask & board.blocksAllChecksMaskTempl<type>(dst) };
-
-    // 7th or 0th rank
-    const SquareSet allowedDstSqMask { PawnLookups::rank8(turn) };
-    const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
-
-    const SquareSet singleAdvancingPawnSquare { (allowedDstSqMask & dstSqBit).rotr(pawnAdvanceShift) };
-
-    const SquareSet advancingPawn {
-        singleAdvancingPawnSquare &
-        board.m_pawns & board.m_turnColorMask & srcSqMask };
-
-    if (advancingPawn != SquareSet::none()) [[likely]]
-    {
-        Square src { advancingPawn.firstSquare() };
-        if (Attacks::pinCheck(src, SquareSet::square(dst), board.m_kingSq, board.m_pinnedPieces)) [[likely]]
-        {
-            moves[0U] = Move { src, dst, pieceToTypeAndPromotion(promo) };
-            return 1U;
-        }
-    }
-
-    return 0U;
+    auto i = moves.begin();
+    board.generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
+        srcSqMask, dst, promo, i);
+    return i - moves.begin();
 }
 
-template <MoveGenType type, typename IteratorType>
-IteratorType ChessBoard::generateMovesForPawnAndDestPromoCaptureIterTempl(IteratorType i, SquareSet srcSqMask, Square dst, Piece promo) const noexcept
+template <MoveGenType type, typename MoveStoreFn>
+void ChessBoard::generateMovesForPawnAndDestPromoCaptureStoreFnTempl(
+    SquareSet srcSqMask, Square dst, Piece promo, typename MoveStoreFn::Store &store) const noexcept
 {
     static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
-
-    // ctPawnAttackerMasks, retractOneAdd optimization
-    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
-    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
     const Color turn { getTurn() };
 
@@ -294,29 +251,31 @@ IteratorType ChessBoard::generateMovesForPawnAndDestPromoCaptureIterTempl(Iterat
         {
             if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
             {
-                *i = Move { src, dst, pieceToTypeAndPromotion(promo) };
-                ++i;
+                MoveStoreFn::storeMove(store, Move { src, dst, pieceToTypeAndPromotion(promo) });
             }
         });
-
-    return i;
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForPawnAndDestPromoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst, Piece promo) noexcept
 {
-    return board.generateMovesForPawnAndDestPromoCaptureIterTempl<type>(SingleMoveIterator { }, srcSqMask, dst, promo).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForPawnAndDestPromoCaptureStoreFnTempl<type, SingleMoveStoreMoveFn>(srcSqMask, dst, promo, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForPawnAndDestPromoCaptureTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst, Piece promo) noexcept
 {
-    MoveList::iterator i { board.generateMovesForPawnAndDestPromoCaptureIterTempl<type>(moves.begin(), srcSqMask, dst, promo) };
+    auto i = moves.begin();
+    board.generateMovesForPawnAndDestPromoCaptureStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
+        srcSqMask, dst, promo, i);
     return i - moves.begin();
 }
 
-template <MoveGenType type, typename IteratorType>
-IteratorType ChessBoard::generateMovesForKnightAndDestIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
+template <MoveGenType type, typename MoveStoreFn>
+void ChessBoard::generateMovesForKnightAndDestStoreFnTempl(
+    SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept
 {
     static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
 
@@ -326,28 +285,30 @@ IteratorType ChessBoard::generateMovesForKnightAndDestIterTempl(IteratorType i, 
         ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
          & m_turnColorMask & m_knights & srcSqMask & Attacks::getKnightAttackMask(dst) &~ m_pinnedPieces),
         {
-            *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE };
-            ++i;
+            MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE });
         });
-
-    return i;
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForKnightAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
 {
-    return board.generateMovesForKnightAndDestIterTempl<type>(SingleMoveIterator { }, srcSqMask, dst).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForKnightAndDestStoreFnTempl<type, SingleMoveStoreMoveFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForKnightAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { board.generateMovesForKnightAndDestIterTempl<type>(moves.begin(), srcSqMask, dst) };
+    MoveList::iterator i { moves.begin() };
+    board.generateMovesForKnightAndDestStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
+        srcSqMask, dst, i);
     return i - moves.begin();
 }
 
-template <MoveGenType type, MoveTypeAndPromotion moveType, typename IteratorType>
-IteratorType ChessBoard::generateMovesForSliderAndDestIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept
+template <MoveGenType type, MoveTypeAndPromotion moveType, typename MoveStoreFn>
+void ChessBoard::generateMovesForSliderAndDestStoreFnTempl(
+    SquareSet srcSqMask, Square dst, MoveStoreFn::Store &store) const noexcept
 {
     static_assert(type == MoveGenType::NO_CHECK || type == MoveGenType::CHECK);
 
@@ -385,89 +346,93 @@ IteratorType ChessBoard::generateMovesForSliderAndDestIterTempl(IteratorType i, 
         {
             if (Attacks::pinCheck(src, SquareSet::square(dst), m_kingSq, m_pinnedPieces))
             {
-                *i = Move { src, dst, moveType };
-                ++i;
+                MoveStoreFn::storeMove(store, Move { src, dst, moveType });
             }
         });
-
-    return i;
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForBishopAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
 {
-    return board.generateMovesForSliderAndDestIterTempl<type, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE>(
-        SingleMoveIterator { }, srcSqMask, dst).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForSliderAndDestStoreFnTempl<
+        type, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE, SingleMoveStoreMoveFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForBishopAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { board.generateMovesForSliderAndDestIterTempl<type, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE>(
-            moves.begin(), srcSqMask, dst) };
+    MoveList::iterator i { moves.begin() };
+    board.generateMovesForSliderAndDestStoreFnTempl<
+        type, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE, IteratorStoreMoveFn<ShortMoveList::iterator> >(srcSqMask, dst, i);
     return i - moves.begin();
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForRookAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
 {
-    return board.generateMovesForSliderAndDestIterTempl<type, MoveTypeAndPromotion::REGULAR_ROOK_MOVE>(
-        SingleMoveIterator { }, srcSqMask, dst).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForSliderAndDestStoreFnTempl<
+        type, MoveTypeAndPromotion::REGULAR_ROOK_MOVE, SingleMoveStoreMoveFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForRookAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { board.generateMovesForSliderAndDestIterTempl<type, MoveTypeAndPromotion::REGULAR_ROOK_MOVE>(
-            moves.begin(), srcSqMask, dst) };
+    MoveList::iterator i { moves.begin() };
+    board.generateMovesForSliderAndDestStoreFnTempl<
+        type, MoveTypeAndPromotion::REGULAR_ROOK_MOVE, IteratorStoreMoveFn<ShortMoveList::iterator> >(srcSqMask, dst, i);
     return i - moves.begin();
 }
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForQueenAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
 {
-    return board.generateMovesForSliderAndDestIterTempl<type, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE>(
-        SingleMoveIterator { }, srcSqMask, dst).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForSliderAndDestStoreFnTempl<
+        type, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE, SingleMoveStoreMoveFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForQueenAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { board.generateMovesForSliderAndDestIterTempl<type, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE>(
-            moves.begin(), srcSqMask, dst) };
+    MoveList::iterator i { moves.begin() };
+    board.generateMovesForSliderAndDestStoreFnTempl<
+        type, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE, IteratorStoreMoveFn<ShortMoveList::iterator> >(srcSqMask, dst, i);
     return i - moves.begin();
 }
 
+template <MoveGenType type, typename MoveStoreFn>
+void ChessBoard::generateMovesForKingAndDestStoreFnTempl(
+    SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept
+{
+    const SquareSet dstSqBit { SquareSet::square(dst) };
+
+    if (((m_turnColorMask & dstSqBit).allIfNone() &
+         srcSqMask & SquareSet::square(m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none() &&
+        isLegalKingMove(m_kingSq, dst, getTurn()))
+    {
+        MoveStoreFn::storeMove(store, Move { m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE });
+    }
+}
 
 template <MoveGenType type>
 Move ChessBoard::generateSingleMoveForKingAndDestTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
-
-    if (((board.m_turnColorMask & dstSqBit) == SquareSet::none()) &&
-        (srcSqMask & SquareSet::square(board.m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none() &&
-        board.isLegalKingMove(board.m_kingSq, dst, board.getTurn()))
-    {
-        return Move { board.m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
-    }
-
-    return Move::illegalNoMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForKingAndDestStoreFnTempl<type, SingleMoveStoreMoveFn>(srcSqMask, dst, ret);
+    return ret;
 }
 
 template <MoveGenType type>
 std::size_t ChessBoard::generateMovesForKingAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
-
-    if (((board.m_turnColorMask & dstSqBit).allIfNone() &
-         srcSqMask & SquareSet::square(board.m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none() &&
-        board.isLegalKingMove(board.m_kingSq, dst, board.getTurn()))
-    {
-        moves[0] = Move { board.m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
-        return 1U;
-    }
-
-    return 0U;
+    MoveList::iterator i { moves.begin() };
+    board.generateMovesForKingAndDestStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(srcSqMask, dst, i);
+    return i - moves.begin();
 }
 
 template <MoveGenType type>
@@ -485,7 +450,10 @@ Move ChessBoard::generateSingleMoveForLongCastlingTempl(const ChessBoard &board)
             board.m_oppKingSq,
             board.getTurn()) };
 
-    return board.generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, false>(SingleMoveIterator { }, attackedSquares).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, SingleMoveStoreMoveNoDupCheckFn, false>(
+        attackedSquares, ret);
+    return ret;
 }
 
 template <MoveGenType type>
@@ -506,7 +474,8 @@ std::size_t ChessBoard::generateMovesForLongCastlingTempl(const ChessBoard &boar
             board.m_oppKingSq,
             board.getTurn()) };
 
-    i = board.generateMovesForCastling<ShortMoveList::iterator, MoveGenType::NO_CHECK, false>(i, attackedSquares);
+    board.generateMovesForCastlingStoreFnTempl<
+        MoveGenType::NO_CHECK, IteratorStoreMoveFn<ShortMoveList::iterator>, false>(attackedSquares, i);
 
     return i - moves.begin();
 }
@@ -516,7 +485,6 @@ Move ChessBoard::generateSingleMoveForShortCastlingTempl(const ChessBoard &board
 {
     static_assert(type == MoveGenType::NO_CHECK);
 
-    // long castling requested
     const SquareSet attackedSquares {
         Attacks::determineAttackedSquares(
             board.m_occupancyMask &~ (board.m_kings & board.m_turnColorMask), // remove potentially attacked king
@@ -527,7 +495,10 @@ Move ChessBoard::generateSingleMoveForShortCastlingTempl(const ChessBoard &board
             board.m_oppKingSq,
             board.getTurn()) };
 
-    return board.generateMovesForCastling<SingleMoveIterator, MoveGenType::NO_CHECK, true>(SingleMoveIterator { }, attackedSquares).getMove();
+    Move ret { Move::illegalNoMove() };
+    board.generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, SingleMoveStoreMoveNoDupCheckFn, true>(
+        attackedSquares, ret);
+    return ret;
 }
 
 template <MoveGenType type>
@@ -535,7 +506,7 @@ std::size_t ChessBoard::generateMovesForShortCastlingTempl(const ChessBoard &boa
 {
     static_assert(type == MoveGenType::NO_CHECK);
 
-    // short castling requested
+    // long castling requested
     ShortMoveList::iterator i { moves.begin() };
 
     const SquareSet attackedSquares {
@@ -548,7 +519,8 @@ std::size_t ChessBoard::generateMovesForShortCastlingTempl(const ChessBoard &boa
             board.m_oppKingSq,
             board.getTurn()) };
 
-    i = board.generateMovesForCastling<ShortMoveList::iterator, MoveGenType::NO_CHECK, true>(i, attackedSquares);
+    board.generateMovesForCastlingStoreFnTempl<
+        MoveGenType::NO_CHECK, IteratorStoreMoveFn<ShortMoveList::iterator>, true>(attackedSquares, i);
 
     return i - moves.begin();
 }

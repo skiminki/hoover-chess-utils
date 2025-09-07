@@ -227,13 +227,6 @@ TEST(MoveGenIteratorTraits, basics)
         using IteratorType = LegalMoveDetectorIterator;
         STATIC_ASSERT_AND_TEST(!MoveGenIteratorTraits<IteratorType>::storesMoves());
     }
-
-    // SingleMoveIterator: no early completion for ambiguous move detection (unlikely);
-    // stores the single move
-    {
-        using IteratorType = SingleMoveIterator;
-        STATIC_ASSERT_AND_TEST(MoveGenIteratorTraits<IteratorType>::storesMoves());
-    }
 }
 
 }
