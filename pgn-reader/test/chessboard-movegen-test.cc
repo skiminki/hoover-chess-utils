@@ -389,6 +389,22 @@ TEST(MoveGen, illegalMoves)
     board.loadFEN("rnbqkbnr/ppppp1pp/8/5p1Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2");
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestNoCapture, SquareSet::all(), Square::H6);
 
+    // pawn promo double advance
+    board.loadFEN("5k2/8/P7/8/8/8/8/2K5 w - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestPromoNoCapture, SquareSet::all(), Square::A8, Piece::KNIGHT);
+
+    // pawn advance to 8th rank without promo
+    board.loadFEN("5k2/P7/8/8/8/8/8/2K5 w - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestNoCapture, SquareSet::all(), Square::A8);
+
+    // pawn capture to 8th rank without promo
+    board.loadFEN("1r3k2/P7/8/8/8/8/8/2K5 w - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::B8);
+
+    // pawn promo but in check
+    board.loadFEN("5k2/P7/8/2r5/8/8/8/2K5 w - - 0 1");
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestPromoNoCapture, SquareSet::all(), Square::A8, Piece::KNIGHT);
+
     // Pawn double advance but wrong starting rank
     board.loadFEN("rnbqkbnr/ppp1pppp/3p4/8/8/4P3/PPPP1PPP/RNBQKBNR w KQkq - 0 2");
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestNoCapture, SquareSet::all(), Square::E5);
