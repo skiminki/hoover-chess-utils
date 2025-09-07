@@ -33,22 +33,6 @@
 namespace hoover_chess_utils::pgn_reader
 {
 
-bool ChessBoard::isLegalKingMove(const Square src, const Square dst, const Color turn) const noexcept
-{
-    const SquareSet kingSqBit { SquareSet::square(src) };
-
-    return Attacks::determineAttackers(
-        m_occupancyMask & ~kingSqBit,
-        m_turnColorMask & ~kingSqBit,
-        m_pawns,
-        m_knights,
-        m_bishops,
-        m_rooks,
-        m_kings & ~kingSqBit,
-        dst,
-        turn) == SquareSet::none();
-}
-
 template <typename... Args>
 Move ChessBoard::generateSingleIllegalNoMove(const ChessBoard &board, [[maybe_unused]] Args... args) noexcept
 {
@@ -410,10 +394,24 @@ void ChessBoard::generateMovesForKingAndDestStoreFnTempl(
     SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept
 {
     const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet srcSqBit { SquareSet::square(m_kingSq) };
+
+    const SquareSet kingAttackers {
+        Attacks::determineAttackers(
+            m_occupancyMask & ~srcSqBit,
+            m_turnColorMask & ~srcSqBit,
+            m_pawns,
+            m_knights,
+            m_bishops,
+            m_rooks,
+            m_kings & ~srcSqBit,
+            dst,
+            getTurn()) };
+
 
     if (((m_turnColorMask & dstSqBit).allIfNone() &
-         srcSqMask & SquareSet::square(m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none() &&
-        isLegalKingMove(m_kingSq, dst, getTurn()))
+         kingAttackers.allIfNone() &
+         srcSqMask & SquareSet::square(m_kingSq) & Attacks::getKingAttackMask(dst)) != SquareSet::none())
     {
         MoveStoreFn::storeMove(store, Move { m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE });
     }

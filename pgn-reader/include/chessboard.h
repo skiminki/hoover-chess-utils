@@ -399,7 +399,7 @@ public:
 /// @ingroup PgnReaderAPI
 /// @brief Move list returned by @coderef{ChessBoard::generateMoves()}.
 ///
-/// The move list is big enough all possible moves for any given position.
+/// The move list is big enough to store all possible moves for any given position.
 using MoveList = std::array<Move, 256U>;
 
 /// @ingroup PgnReaderAPI
@@ -1656,8 +1656,6 @@ private:
 
     template <MoveGenType type>
     static std::size_t getNumberOfLegalMovesTempl(const ChessBoard &board) noexcept;
-
-    bool isLegalKingMove(Square src, Square dst, Color turn) const noexcept;
 
     void calculateMasks(const ArrayBoard &board) noexcept;
 
