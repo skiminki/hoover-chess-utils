@@ -516,7 +516,7 @@ public:
     }
 
     /// @brief Checks whether a valid square is in the set
-    constexpr inline bool isMember(Square sq) noexcept
+    constexpr inline bool isMember(Square sq) const noexcept
     {
         assert(static_cast<std::uint8_t>(sq) <= 63U);
         [[assume(static_cast<std::uint8_t>(sq) <= 63U)]];
@@ -525,13 +525,13 @@ public:
     }
 
     /// @brief Conditional
-    constexpr inline SquareSet allIfNone() noexcept
+    constexpr inline SquareSet allIfNone() const noexcept
     {
         return SquareSet { m_bitmask ? SquareSet::none() : SquareSet::all() };
     }
 
     /// @brief Conditional
-    constexpr inline SquareSet allIfAny() noexcept
+    constexpr inline SquareSet allIfAny() const noexcept
     {
         return SquareSet { m_bitmask ? SquareSet::all() : SquareSet::none() };
     }
