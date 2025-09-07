@@ -47,7 +47,7 @@ public:
     {
         const std::size_t index { static_cast<std::size_t>(type) };
 
-        assert(index < moveGenFunctions.size());
+        assert(index < m_fns.size());
         return m_fns[index];
     }
 };
