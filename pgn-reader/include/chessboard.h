@@ -1484,21 +1484,18 @@ private:
         IteratorType i,
         SquareSet attackedSquares) const noexcept;
 
-    /// @brief Generates the legal castling move, if any. The king must not be
-    /// in check (caller-checked).
+    /// @brief Generates the legal castling move, if any.
     ///
-    /// @tparam     IteratorType       Move list iterator type
     /// @tparam     type               Move generator type. Must be
     ///                                @coderef{MoveGenType::NO_CHECK}.
+    /// @tparam     MoveStoreFn        Move store function
     /// @tparam     shortCastling      Whether the move is short castling
-    /// @param[in]  i                  Move list iterator (begin of list)
     /// @param[in]  attackedSquares    Attacked squares
-    /// @return                        Move list iterator (end of generated moves)
+    /// @param[in]  store              Move store target
     ///
     /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <typename IteratorType, MoveGenType type, bool shortCastling>
-    IteratorType generateMovesForCastling(
-        IteratorType i, SquareSet attackedSquares) const noexcept;
+    template <MoveGenType type, typename MoveStoreFn, bool shortCastling>
+    void generateMovesForCastlingStoreFnTempl(SquareSet attackedSquares, MoveStoreFn::Store &store) const noexcept;
 
     /// @brief Generates all legal moves
     ///
@@ -1548,17 +1545,35 @@ private:
     inline IteratorType generateMovesIterTempl(
         IteratorType i) const noexcept;
 
-    template <MoveGenType type, typename IteratorType>
-    inline IteratorType generateMovesForPawnAndDestCaptureIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
 
-    template <MoveGenType type, typename IteratorType>
-    inline IteratorType generateMovesForPawnAndDestPromoCaptureIterTempl(IteratorType i, SquareSet srcSqMask, Square dst, Piece promo) const noexcept;
+    template <MoveGenType type, typename MoveStoreFn>
+    inline void generateMovesForPawnAndDestNoCaptureStoreFnTempl(
+        SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
 
-    template <MoveGenType type, typename IteratorType>
-    inline IteratorType generateMovesForKnightAndDestIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <MoveGenType type, typename MoveStoreFn>
+    inline void generateMovesForPawnAndDestCaptureStoreFnTempl(
+        SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
 
-    template <MoveGenType type, MoveTypeAndPromotion moveType, typename IteratorType>
-    inline IteratorType generateMovesForSliderAndDestIterTempl(IteratorType i, SquareSet srcSqMask, Square dst) const noexcept;
+    template <MoveGenType type, typename MoveStoreFn>
+    inline void generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl(
+        SquareSet srcSqMask, Square dst, Piece promo, typename MoveStoreFn::Store &store) const noexcept;
+
+    template <MoveGenType type, typename MoveStoreFn>
+    inline void generateMovesForPawnAndDestPromoCaptureStoreFnTempl(
+        SquareSet srcSqMask, Square dst, Piece promo, typename MoveStoreFn::Store &store) const noexcept;
+
+    template <MoveGenType type, typename MoveStoreFn>
+    inline void generateMovesForKnightAndDestStoreFnTempl(
+        SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
+
+    template <MoveGenType type, MoveTypeAndPromotion moveType, typename MoveStoreFn>
+    inline void generateMovesForSliderAndDestStoreFnTempl(
+        SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
+
+    template <MoveGenType type, typename MoveStoreFn>
+    inline void generateMovesForKingAndDestStoreFnTempl(
+        SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
+
 
     template <typename... Args>
     static Move generateSingleIllegalNoMove(const ChessBoard &board, Args... args) noexcept;

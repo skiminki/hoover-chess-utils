@@ -90,35 +90,41 @@ public:
     }
 };
 
-struct SingleMoveIterator
+template <typename IteratorType>
+struct IteratorStoreMoveFn
 {
-private:
-    Move m;
-    std::uint8_t numMoves;
-    [[maybe_unused]] std::uint8_t reserved;
+    using Store = IteratorType;
 
-public:
-    inline SingleMoveIterator &operator ++() noexcept
+    inline static void storeMove(IteratorType &i, Move m) noexcept
     {
-        ++numMoves;
-        return *this;
-    }
-
-    Move &operator *() noexcept
-    {
-        return m;
-    }
-
-    Move getMove() noexcept
-    {
-        if (numMoves == 1U) [[likely]]
-            return m;
-        else [[unlikely]] if (numMoves == 0U)
-            return Move::illegalNoMove();
-        else
-            return Move::illegalAmbiguousMove();
+        *i = m;
+        ++i;
     }
 };
+
+struct SingleMoveStoreMoveFn
+{
+    using Store = Move;
+
+    inline static void storeMove(Move &ret, Move m) noexcept
+    {
+        if (ret == Move::illegalNoMove()) [[likely]]
+            ret = m;
+        else
+            ret = Move::illegalAmbiguousMove();
+    }
+};
+
+struct SingleMoveStoreMoveNoDupCheckFn
+{
+    using Store = Move;
+
+    inline static void storeMove(Move &ret, Move m) noexcept
+    {
+        ret = m;
+    }
+};
+
 
 template <typename IteratorType>
 struct MoveGenIteratorTraits
@@ -174,19 +180,6 @@ struct MoveGenIteratorTraits<LegalMoveDetectorIterator>
     static constexpr bool storesMoves() noexcept
     {
         return false;
-    }
-};
-
-template <>
-struct MoveGenIteratorTraits<SingleMoveIterator>
-{
-    using Iterator = SingleMoveIterator;
-
-    static constexpr bool canCompleteEarly { false };
-
-    static constexpr inline bool storesMoves() noexcept
-    {
-        return true;
     }
 };
 
