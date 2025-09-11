@@ -18,45 +18,49 @@
 #include "pgnreader-error.h"
 
 #include <format>
+#include <tuple>
 
 namespace hoover_chess_utils::pgn_reader
 {
 
 namespace {
 
-// note: return is unspecified when numMoves == 0
-template <bool column, bool row>
-static constexpr bool disambiguationTest(
+// returns:
+// - column disambiguation required
+// - row disambiguation required
+constexpr std::tuple<bool, bool> disambiguationTest(
     const Move m,
     const ShortMoveList &moves,
     std::size_t numMoves)
 {
-    std::size_t numMatches { };
+    if (numMoves <= 1U)
+        return std::make_tuple(false, false);
+
+    std::size_t numMatchesCol { };
+    std::size_t numMatchesRow { };
 
     for (size_t i { }; i < numMoves; ++i)
     {
         const auto &moveCand = moves[i];
 
         // disambiguation by column
-        if constexpr(column)
-        {
-            if (pgn_reader::columnOf(m.getSrc()) != pgn_reader::columnOf(moveCand.getSrc()))
-                continue;
-        }
-
-        // disambiguation by row
-        if constexpr(row)
-        {
-            if (pgn_reader::rowOf(m.getSrc()) != pgn_reader::rowOf(moveCand.getSrc()))
-                continue;
-        }
-
-        ++numMatches;
+        numMatchesCol += (pgn_reader::columnOf(m.getSrc()) == pgn_reader::columnOf(moveCand.getSrc()));
+        numMatchesRow += (pgn_reader::rowOf(m.getSrc()) == pgn_reader::rowOf(moveCand.getSrc()));
     }
 
-    // note: we'll get 0 if numMoves == 0. This is an error which will be
-    // detected by the caller.
-    return numMatches <= 1U;
+    const bool multiColMatch { numMatchesCol != 1U };
+    const bool multiRowMatch { numMatchesRow != 1U };
+
+    // multiColMatch  multiRowMatch  result          Notes
+    // -----------------------------------------------------------------
+    // false          false          (true,  false)  In case there's a single col match, column always disambiguates
+    // false          true           (true,  false)  Same as above
+    // true           false          (false, true )  In case there's single row match and multiple col matches, row disambiguator is used
+    // true           true           (true,  true )  In case of multiple col/row matches, both row/col are needed
+
+    return std::make_tuple(
+        !multiColMatch  || multiRowMatch,
+        multiColMatch);
 }
 
 consteval auto initializePieceAndColorNames() noexcept
@@ -221,23 +225,19 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
             numMoves = board.generateMovesForQueenAndDest(moves, SquareSet::all(), move.getDst());
 
         disambiguation:
-            if (numMoves > 1U)
             {
+                const auto [ needCol, needRow ] = disambiguationTest(move, moves, numMoves);
+
                 // disambiguation needed
-                if (disambiguationTest<true, false>(move, moves, numMoves))
+                if (needCol)
                 {
                     // next: column is a disambiguator
                     ret[i++] = colChar(move.getSrc());
                 }
-                else if (disambiguationTest<false, true>(move, moves, numMoves))
+
+                if (needRow)
                 {
                     // next: row is a disambiguator
-                    ret[i++] = rowChar(move.getSrc());
-                }
-                else
-                {
-                    // need both
-                    ret[i++] = colChar(move.getSrc());
                     ret[i++] = rowChar(move.getSrc());
                 }
             }
