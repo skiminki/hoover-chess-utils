@@ -350,12 +350,4 @@ void ChessBoard::validateBoard()
     }
 }
 
-PositionStatus ChessBoard::determineStatus() const noexcept
-{
-    if (m_moveGenFns->hasLegalMoves(*this))
-        return m_checkers != SquareSet::none() ? PositionStatus::CHECK : PositionStatus::NORMAL;
-    else
-        return m_checkers != SquareSet::none() ? PositionStatus::MATE : PositionStatus::STALEMATE;
-}
-
 }

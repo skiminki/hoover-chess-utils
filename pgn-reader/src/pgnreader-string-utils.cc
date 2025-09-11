@@ -307,7 +307,7 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
             break;
         }
 
-        default:
+        default: [[unlikely]]
             throw std::logic_error(
                 std::format(
                     "Bad move type and promotion: {}",
@@ -315,13 +315,7 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
     }
 
     // move legality check
-    bool found { };
-    for (std::size_t i { }; (!found) && i < numMoves; ++i)
-    {
-        found = (moves[i] == move);
-    }
-
-    if (!found)
+    if (numMoves < 1U) [[unlikely]]
     {
         throw PgnError(
             PgnErrorCode::ILLEGAL_MOVE,
@@ -340,10 +334,10 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
     if (board.isInCheck())
     {
         // ok, full status resolution needed. Are we also in mate?
-        if (board.determineStatus() == PositionStatus::MATE)
-            *i++ = '#';
-        else
+        if (board.hasLegalMoves())
             *i++ = '+';
+        else
+            *i++ = '#';
     }
 
     // finally, set length
