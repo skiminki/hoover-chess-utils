@@ -397,21 +397,21 @@ constexpr std::array<char, 16U> ctBitPlanesToFenChar {
 };
 
 template <bool shortCastling, bool black>
-char getCastlingRightsChar(Square rookSq, SquareSet castlingRookCandidates)
+constexpr char getCastlingRightsChar(Square rookSq, SquareSet castlingRookCandidates)
 {
-    constexpr char caseFlipBit { static_cast<char>(black) * 32 };
+    constexpr char caseBit { static_cast<char>(black) * 32 };
     if constexpr (shortCastling)
     {
         if (castlingRookCandidates.lastSquare() == rookSq)
-            return 'K' ^ caseFlipBit;
+            return 'K' | caseBit;
     }
     else
     {
         if (castlingRookCandidates.firstSquare() == rookSq)
-            return 'Q' ^ caseFlipBit;
+            return 'Q' | caseBit;
     }
 
-    return columnOf(rookSq) + ('A' ^ caseFlipBit);
+    return columnOf(rookSq) + ('A' | caseBit);
 }
 
 }
