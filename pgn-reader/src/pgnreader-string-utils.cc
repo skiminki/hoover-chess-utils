@@ -181,7 +181,7 @@ MiniString<2U> StringUtils::sourceMaskToString(SquareSet srcMask) noexcept
 MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
 {
     MiniString<7U> ret { MiniString_Uninitialized() };
-    std::size_t i { };
+    char *i { ret.data() };
 
     const SquareSet srcBit { SquareSet::square(move.getSrc()) };
 
@@ -192,36 +192,36 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
     {
         case MoveTypeAndPromotion::REGULAR_PAWN_MOVE:
             numMoves = board.generateMovesForPawnAndDestNoCapture(moves, srcBit, move.getDst());
-            ret[i++] = colChar(move.getDst());
-            ret[i++] = rowChar(move.getDst());
+            *i++ = colChar(move.getDst());
+            *i++ = rowChar(move.getDst());
             break;
 
         case MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE:
         case MoveTypeAndPromotion::EN_PASSANT:
-            ret[i++] = colChar(move.getSrc());
-            ret[i++] = 'x';
+            *i++ = colChar(move.getSrc());
+            *i++ = 'x';
             numMoves = board.generateMovesForPawnAndDestCapture(moves, srcBit, move.getDst());
-            ret[i++] = colChar(move.getDst());
-            ret[i++] = rowChar(move.getDst());
+            *i++ = colChar(move.getDst());
+            *i++ = rowChar(move.getDst());
             break;
 
         case MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE:
-            ret[i++] = 'N';
+            *i++ = 'N';
             numMoves = board.generateMovesForKnightAndDest(moves, SquareSet::all(), move.getDst());
             goto disambiguation;
 
         case MoveTypeAndPromotion::REGULAR_BISHOP_MOVE:
-            ret[i++] = 'B';
+            *i++ = 'B';
             numMoves = board.generateMovesForBishopAndDest(moves, SquareSet::all(), move.getDst());
             goto disambiguation;
 
         case MoveTypeAndPromotion::REGULAR_ROOK_MOVE:
-            ret[i++] = 'R';
+            *i++ = 'R';
             numMoves = board.generateMovesForRookAndDest(moves, SquareSet::all(), move.getDst());
             goto disambiguation;
 
         case MoveTypeAndPromotion::REGULAR_QUEEN_MOVE:
-            ret[i++] = 'Q';
+            *i++ = 'Q';
             numMoves = board.generateMovesForQueenAndDest(moves, SquareSet::all(), move.getDst());
 
         disambiguation:
@@ -232,53 +232,53 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
                 if (needCol)
                 {
                     // next: column is a disambiguator
-                    ret[i++] = colChar(move.getSrc());
+                    *i++ = colChar(move.getSrc());
                 }
 
                 if (needRow)
                 {
                     // next: row is a disambiguator
-                    ret[i++] = rowChar(move.getSrc());
+                    *i++ = rowChar(move.getSrc());
                 }
             }
 
             // capture?
             if ((SquareSet::square(move.getDst()) & board.getOccupancyMask()) != SquareSet::none())
             {
-                ret[i++] = 'x';
+                *i++ = 'x';
             }
 
-            ret[i++] = colChar(move.getDst());
-            ret[i++] = rowChar(move.getDst());
+            *i++ = colChar(move.getDst());
+            *i++ = rowChar(move.getDst());
             break;
 
         case MoveTypeAndPromotion::REGULAR_KING_MOVE:
-            ret[i++] = 'K';
+            *i++ = 'K';
             numMoves = board.generateMovesForKingAndDest(moves, srcBit, move.getDst());
 
             // capture?
             if ((SquareSet::square(move.getDst()) & board.getOccupancyMask()) != SquareSet::none())
             {
-                ret[i++] = 'x';
+                *i++ = 'x';
             }
 
-            ret[i++] = colChar(move.getDst());
-            ret[i++] = rowChar(move.getDst());
+            *i++ = colChar(move.getDst());
+            *i++ = rowChar(move.getDst());
             break;
 
         case MoveTypeAndPromotion::CASTLING_SHORT:
-            ret[i++] = 'O';
-            ret[i++] = '-';
-            ret[i++] = 'O';
+            *i++ = 'O';
+            *i++ = '-';
+            *i++ = 'O';
             numMoves = board.generateMovesForShortCastling(moves);
             break;
 
         case MoveTypeAndPromotion::CASTLING_LONG:
-            ret[i++] = 'O';
-            ret[i++] = '-';
-            ret[i++] = 'O';
-            ret[i++] = '-';
-            ret[i++] = 'O';
+            *i++ = 'O';
+            *i++ = '-';
+            *i++ = 'O';
+            *i++ = '-';
+            *i++ = 'O';
             numMoves = board.generateMovesForLongCastling(moves);
             break;
 
@@ -290,8 +290,8 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
             // capture?
             if (columnOf(move.getSrc()) != columnOf(move.getDst()))
             {
-                ret[i++] = colChar(move.getSrc());
-                ret[i++] = 'x';
+                *i++ = colChar(move.getSrc());
+                *i++ = 'x';
                 numMoves = board.generateMovesForPawnAndDestPromoCapture(moves, srcBit, move.getDst(), move.getPromotionPiece());
             }
             else
@@ -299,10 +299,10 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
                 numMoves = board.generateMovesForPawnAndDestPromoNoCapture(moves, srcBit, move.getDst(), move.getPromotionPiece());
             }
 
-            ret[i++] = colChar(move.getDst());
-            ret[i++] = rowChar(move.getDst());
-            ret[i++] = '=';
-            ret[i++] = promoPieceChar(move.getPromotionPiece());
+            *i++ = colChar(move.getDst());
+            *i++ = rowChar(move.getDst());
+            *i++ = '=';
+            *i++ = promoPieceChar(move.getPromotionPiece());
 
             break;
         }
@@ -341,13 +341,13 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
     {
         // ok, full status resolution needed. Are we also in mate?
         if (board.determineStatus() == PositionStatus::MATE)
-            ret[i++] = '#';
+            *i++ = '#';
         else
-            ret[i++] = '+';
+            *i++ = '+';
     }
 
     // finally, set length
-    ret.setLength(i);
+    ret.setLength(i - ret.data());
 
     return ret;
 }
