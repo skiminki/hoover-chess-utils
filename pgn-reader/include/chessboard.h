@@ -648,7 +648,7 @@ public:
     ///   <td>@coderef{PositionStatus::MATE}</td>
     /// </tr>
     /// </table>
-    PositionStatus determineStatus() const noexcept;
+    inline PositionStatus determineStatus() const noexcept;
 
     /// @brief Loads the starting position
     ///
@@ -1114,6 +1114,12 @@ public:
     ///
     /// @sa https://www.chessprogramming.org/Perft
     inline std::size_t getNumberOfLegalMoves() const noexcept;
+
+    /// @brief Determines whether any legal moves as available in the current
+    /// position.
+    ///
+    /// @return           Legal moves available.
+    inline bool hasLegalMoves() const noexcept;
 
     /// @brief Applies a move on the current position. The move is assumed to be
     /// legal, and it must be from one of the generators. No legality checks are
@@ -2018,6 +2024,24 @@ std::size_t ChessBoard::generateMoves(MoveList &moves) const noexcept
 std::size_t ChessBoard::getNumberOfLegalMoves() const noexcept
 {
     return m_moveGenFns->getNumberOfLegalMoves(*this);
+}
+
+bool ChessBoard::hasLegalMoves() const noexcept
+{
+    return m_moveGenFns->hasLegalMoves(*this);
+}
+
+PositionStatus ChessBoard::determineStatus() const noexcept
+{
+    static_assert(PositionStatus::NORMAL    == PositionStatus { 0U });
+    static_assert(PositionStatus::CHECK     == PositionStatus { 1U });
+    static_assert(PositionStatus::STALEMATE == PositionStatus { 2U });
+    static_assert(PositionStatus::MATE      == PositionStatus { 3U });
+
+    const bool noLegalMoves { !m_moveGenFns->hasLegalMoves(*this) };
+    const bool inCheck { m_checkers != SquareSet::none() };
+
+    return PositionStatus { static_cast<std::uint8_t>(noLegalMoves * 2U + inCheck) };
 }
 
 
