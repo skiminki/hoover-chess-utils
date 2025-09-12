@@ -1334,66 +1334,6 @@ private:
     template <MoveGenType type>
     inline SquareSet blocksAllChecksMaskTempl(Square dst) const noexcept;
 
-    // this is a constrain for the movegen
-    template <MoveGenType type, typename ParamType>
-    static constexpr inline SquareSet getLegalNonKingDestinations(ParamType legalDestinations) noexcept
-    {
-        if constexpr (type == MoveGenType::NO_CHECK)
-            return SquareSet::all();
-        else if constexpr (type == MoveGenType::CHECK)
-        {
-            static_assert(std::is_same_v<ParamType, SquareSet>);
-            return legalDestinations;
-        }
-        else
-            return SquareSet::none();
-    }
-
-
-    // Note about legal destinations during generateMoves().
-    //
-    // Legal destinations for a non-king move. Rules:
-    // - No checkers:
-    //   - any destination is legal (as long as the move is otherwise legal)
-    // - One checker:
-    //   - Checker must be captured; OR
-    //   - Check must be intercepted (ray attacks only)
-    // - Two checkers or more: (>= 3 cannot be reached legally)
-    //   - No legal destinations (king move is forced when in double-check)
-
-    struct AllLegalDestinationType
-    {
-        constexpr SquareSet operator () () const noexcept
-        {
-            return SquareSet::all();
-        }
-    };
-
-    struct ParametrizedLegalDestinationType
-    {
-        SquareSet m_legalDestinations;
-
-        constexpr ParametrizedLegalDestinationType(SquareSet legalDestinations) noexcept :
-            m_legalDestinations(legalDestinations)
-        {
-        }
-
-        ParametrizedLegalDestinationType(const ParametrizedLegalDestinationType &) = default;
-        ParametrizedLegalDestinationType(ParametrizedLegalDestinationType &&) = default;
-        ParametrizedLegalDestinationType &operator = (const ParametrizedLegalDestinationType &) & = default;
-        ParametrizedLegalDestinationType &operator = (ParametrizedLegalDestinationType &&) & = default;
-        ~ParametrizedLegalDestinationType() = default;
-
-        constexpr SquareSet operator () () const noexcept
-        {
-            return m_legalDestinations;
-        }
-    };
-
-    struct NoLegalDestinationType
-    {
-    };
-
     /// @brief Generates legal pawn moves, the actual implementation.
     ///
     /// @tparam     IteratorType       Move list iterator type

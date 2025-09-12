@@ -84,6 +84,48 @@ SquareSet ChessBoard::blocksAllChecksMaskTempl(Square dst) const noexcept
     }
 }
 
+    // Note about legal destinations during generateMoves().
+    //
+    // Legal destinations for a non-king move. Rules:
+    // - No checkers:
+    //   - any destination is legal (as long as the move is otherwise legal)
+    // - One checker:
+    //   - Checker must be captured; OR
+    //   - Check must be intercepted (ray attacks only)
+    // - Two checkers or more: (>= 3 cannot be reached legally)
+    //   - No legal destinations (king move is forced when in double-check)
+
+    struct AllLegalDestinationType
+    {
+        constexpr SquareSet operator () () const noexcept
+        {
+            return SquareSet::all();
+        }
+    };
+
+    struct ParametrizedLegalDestinationType
+    {
+        SquareSet m_legalDestinations;
+
+        constexpr ParametrizedLegalDestinationType(SquareSet legalDestinations) noexcept :
+            m_legalDestinations(legalDestinations)
+        {
+        }
+
+        ParametrizedLegalDestinationType(const ParametrizedLegalDestinationType &) = default;
+        ParametrizedLegalDestinationType(ParametrizedLegalDestinationType &&) = default;
+        ParametrizedLegalDestinationType &operator = (const ParametrizedLegalDestinationType &) & = default;
+        ParametrizedLegalDestinationType &operator = (ParametrizedLegalDestinationType &&) & = default;
+        ~ParametrizedLegalDestinationType() = default;
+
+        constexpr SquareSet operator () () const noexcept
+        {
+            return m_legalDestinations;
+        }
+    };
+
+
+
 template <typename IteratorType, MoveGenType type, typename ParamType, Color turn>
 auto ChessBoard::generateMovesForPawnsTempl(
     IteratorType i,
