@@ -585,7 +585,7 @@ IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_bishops & m_turnColorMask & m_pinnedPieces,
+        m_bishops & m_pinnedPieces,
         {
             const MoveTypeAndPromotion typeAndPromo {
                 (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
@@ -613,7 +613,7 @@ IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_rooks & m_turnColorMask & m_pinnedPieces,
+        m_rooks & m_pinnedPieces,
         {
             const MoveTypeAndPromotion typeAndPromo {
                 (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
