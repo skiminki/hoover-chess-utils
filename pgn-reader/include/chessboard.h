@@ -1503,20 +1503,38 @@ private:
     template <MoveGenType type, typename MoveStoreFn, bool shortCastling>
     void generateMovesForCastlingStoreFnTempl(SquareSet attackedSquares, MoveStoreFn::Store &store) const noexcept;
 
-    /// @brief Generates all legal moves
+    /// @brief Generates all legal moves when not in check
     ///
     /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @tparam     legalDestinations  Parameter type for legal destinations
     /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  legalDestinations  Legal destinations
     /// @return                        Move list iterator (end of generated moves)
     ///
     /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <typename IteratorType, MoveGenType type, typename ParamType>
-    inline IteratorType generateAllLegalMovesTempl(
-        IteratorType i,
-        ParamType legalDestinations) const noexcept;
+    template <typename IteratorType>
+    inline IteratorType generateAllLegalMovesTemplNoCheck(
+        IteratorType i) const noexcept;
+
+    /// @brief Generates all legal moves when in check (but not in double check)
+    ///
+    /// @tparam     IteratorType       Move list iterator type
+    /// @param[in]  i                  Move list iterator (begin of list)
+    /// @return                        Move list iterator (end of generated moves)
+    ///
+    /// @sa (@coderef{Attacks::determineAttackedSquares()})
+    template <typename IteratorType>
+    inline IteratorType generateAllLegalMovesTemplInCheck(
+        IteratorType i) const noexcept;
+
+    /// @brief Generates all legal moves when in double check
+    ///
+    /// @tparam     IteratorType       Move list iterator type
+    /// @param[in]  i                  Move list iterator (begin of list)
+    /// @return                        Move list iterator (end of generated moves)
+    ///
+    /// @sa (@coderef{Attacks::determineAttackedSquares()})
+    template <typename IteratorType>
+    inline IteratorType generateAllLegalMovesTemplInDoubleCheck(
+        IteratorType i) const noexcept;
 
     /// @brief Generates all legal moves for a specific iterator type. Selects
     /// the move generator based on whether the king is not in check, in check,
