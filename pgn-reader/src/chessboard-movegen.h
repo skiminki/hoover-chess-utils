@@ -507,13 +507,118 @@ void ChessBoard::generateMovesForCastlingStoreFnTempl(
         MoveStoreFn::storeMove(store, Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_LONG });
 }
 
-template <typename IteratorType, MoveGenType type, typename ParamType>
-IteratorType ChessBoard::generateAllLegalMovesTempl(
-    IteratorType i,
-    ParamType legalDestinations) const noexcept
+template <typename IteratorType>
+IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
+    IteratorType i) const noexcept
 {
+    using ParamType = AllLegalDestinationType;
+    constexpr ParamType legalDestinations { };
+
+    i = generateMovesForPawns<IteratorType, MoveGenType::NO_CHECK>(i, legalDestinations);
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_knights & m_turnColorMask & ~m_pinnedPieces,
+        i = generateMovesForKnight<IteratorType, MoveGenType::NO_CHECK>(i, sq, legalDestinations));
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_bishops & m_turnColorMask & ~m_pinnedPieces,
+        {
+            const MoveTypeAndPromotion typeAndPromo {
+                (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
+            };
+            i = generateMovesForBishop<IteratorType, MoveGenType::NO_CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+        });
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_bishops & m_turnColorMask & m_pinnedPieces,
+        {
+            const MoveTypeAndPromotion typeAndPromo {
+                (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
+            };
+            i = generateMovesForBishop<IteratorType, MoveGenType::NO_CHECK, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
+        });
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_rooks & m_turnColorMask & ~m_pinnedPieces,
+        {
+            const MoveTypeAndPromotion typeAndPromo {
+                (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                MoveTypeAndPromotion::REGULAR_ROOK_MOVE
+            };
+            i = generateMovesForRook<IteratorType, MoveGenType::NO_CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+        });
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_rooks & m_turnColorMask & m_pinnedPieces,
+        {
+            const MoveTypeAndPromotion typeAndPromo {
+                (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                MoveTypeAndPromotion::REGULAR_ROOK_MOVE
+            };
+            i = generateMovesForRook<IteratorType, MoveGenType::NO_CHECK, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
+        });
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    // In no check, we'll do the king and castling moves last. This helps the
+    // LegalMoveDetectorIterator with early exit, since these are a bit more
+    // expensive than the other moves,
+    const SquareSet attackedSquares {
+        Attacks::determineAttackedSquares(
+            m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+            m_pawns &~ m_turnColorMask,
+            m_knights &~ m_turnColorMask,
+            m_bishops &~ m_turnColorMask,
+            m_rooks &~ m_turnColorMask,
+            m_oppKingSq,
+            getTurn()) };
+
+    i = generateMovesForKing<IteratorType>(i, attackedSquares);
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, IteratorStoreMoveFn<IteratorType>, false>(attackedSquares, i);
+    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, IteratorStoreMoveFn<IteratorType>, true>(attackedSquares, i);
+
+    return i;
+}
+
+template <typename IteratorType>
+IteratorType ChessBoard::generateAllLegalMovesTemplInCheck(
+    IteratorType i) const noexcept
+{
+    using ParamType = ParametrizedLegalDestinationType;
+    ParamType legalDestinations {
+        Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) };
+
     // if we're in check, we'll try the king moves first
-    if constexpr (type != MoveGenType::NO_CHECK)
     {
         const SquareSet attackedSquares {
             Attacks::determineAttackedSquares(
@@ -531,120 +636,78 @@ IteratorType ChessBoard::generateAllLegalMovesTempl(
                 return i;
     }
 
-    // in double-check, king moves are the only viable moves, so return here
-    if constexpr (type == MoveGenType::DOUBLE_CHECK)
-        return i;
-    else
-    {
+    i = generateMovesForPawns<IteratorType, MoveGenType::CHECK, ParamType>(i, legalDestinations);
 
-        i = generateMovesForPawns<IteratorType, type, ParamType>(i, legalDestinations);
-
-        if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
-            if (i.hasLegalMoves())
-                return i;
-
-        SQUARESET_ENUMERATE(
-            sq,
-            m_knights & m_turnColorMask & ~m_pinnedPieces,
-            i = generateMovesForKnight<IteratorType, type, ParamType>(i, sq, legalDestinations));
-
-        if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
-            if (i.hasLegalMoves())
-                return i;
-
-        SQUARESET_ENUMERATE(
-            sq,
-            m_bishops & m_turnColorMask & ~m_pinnedPieces,
-            {
-                const MoveTypeAndPromotion typeAndPromo {
-                    (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
-                    MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
-                    MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
-                };
-                i = generateMovesForBishop<IteratorType, type, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
-            });
-
-        // pinned pieces cannot resolve checks
-        if constexpr (type == MoveGenType::NO_CHECK)
-        {
-            SQUARESET_ENUMERATE(
-                sq,
-                m_bishops & m_turnColorMask & m_pinnedPieces,
-                {
-                    const MoveTypeAndPromotion typeAndPromo {
-                        (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
-                        MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
-                        MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
-                    };
-                    i = generateMovesForBishop<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
-                });
-        }
-
-        if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
-            if (i.hasLegalMoves())
-                return i;
-
-        SQUARESET_ENUMERATE(
-            sq,
-            m_rooks & m_turnColorMask & ~m_pinnedPieces,
-            {
-                const MoveTypeAndPromotion typeAndPromo {
-                    (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
-                    MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
-                    MoveTypeAndPromotion::REGULAR_ROOK_MOVE
-                };
-                i = generateMovesForRook<IteratorType, type, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
-            });
-
-        // pinned pieces cannot resolve checks
-        if constexpr (type == MoveGenType::NO_CHECK)
-        {
-            SQUARESET_ENUMERATE(
-                sq,
-                m_rooks & m_turnColorMask & m_pinnedPieces,
-                {
-                    const MoveTypeAndPromotion typeAndPromo {
-                        (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
-                        MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
-                        MoveTypeAndPromotion::REGULAR_ROOK_MOVE
-                    };
-                    i = generateMovesForRook<IteratorType, type, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
-                });
-        }
-
-        if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
-            if (i.hasLegalMoves())
-                return i;
-
-        // In no check, we'll do the king and castling moves last. This helps the
-        // LegalMoveDetectorIterator with early exit, since these are a bit more
-        // expensive than the other moves,
-        if constexpr (type == MoveGenType::NO_CHECK)
-        {
-            const SquareSet attackedSquares {
-                Attacks::determineAttackedSquares(
-                    m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
-                    m_pawns &~ m_turnColorMask,
-                    m_knights &~ m_turnColorMask,
-                    m_bishops &~ m_turnColorMask,
-                    m_rooks &~ m_turnColorMask,
-                    m_oppKingSq,
-                    getTurn()) };
-
-            i = generateMovesForKing<IteratorType>(i, attackedSquares);
-
-            if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
-                if (i.hasLegalMoves())
-                    return i;
-
-            generateMovesForCastlingStoreFnTempl<type, IteratorStoreMoveFn<IteratorType>, false>(attackedSquares, i);
-            generateMovesForCastlingStoreFnTempl<type, IteratorStoreMoveFn<IteratorType>, true>(attackedSquares, i);
-
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
             return i;
-        }
-        else
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_knights & m_turnColorMask & ~m_pinnedPieces,
+        i = generateMovesForKnight<IteratorType, MoveGenType::CHECK, ParamType>(i, sq, legalDestinations));
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
             return i;
-    }
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_bishops & m_turnColorMask & ~m_pinnedPieces,
+        {
+            const MoveTypeAndPromotion typeAndPromo {
+                (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
+            };
+            i = generateMovesForBishop<IteratorType, MoveGenType::CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+        });
+
+    // Note: pinned pieces cannot resolve checks
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    SQUARESET_ENUMERATE(
+        sq,
+        m_rooks & m_turnColorMask & ~m_pinnedPieces,
+        {
+            const MoveTypeAndPromotion typeAndPromo {
+                (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
+                MoveTypeAndPromotion::REGULAR_ROOK_MOVE
+            };
+            i = generateMovesForRook<IteratorType, MoveGenType::CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+        });
+
+    // Note: pinned pieces cannot resolve checks
+
+    if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
+        if (i.hasLegalMoves())
+            return i;
+
+    return i;
+}
+
+template <typename IteratorType>
+IteratorType ChessBoard::generateAllLegalMovesTemplInDoubleCheck(
+    IteratorType i) const noexcept
+{
+    // in double-check, king moves are the only legal moves
+    const SquareSet attackedSquares {
+        Attacks::determineAttackedSquares(
+            m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
+            m_pawns &~ m_turnColorMask,
+            m_knights &~ m_turnColorMask,
+            m_bishops &~ m_turnColorMask,
+            m_rooks &~ m_turnColorMask,
+            m_oppKingSq,
+            getTurn()) };
+
+    i = generateMovesForKing<IteratorType>(i, attackedSquares);
+
+    return i;
 }
 
 template <MoveGenType type, typename IteratorType>
@@ -654,24 +717,19 @@ IteratorType ChessBoard::generateMovesIterTempl(
     if constexpr (type == MoveGenType::NO_CHECK)
     {
         // all destinations are ok as long as the move is ok
-        i = generateAllLegalMovesTempl<IteratorType, MoveGenType::NO_CHECK, AllLegalDestinationType>(
-            i, AllLegalDestinationType { });
+        i = generateAllLegalMovesTemplNoCheck<IteratorType>(i);
     }
     else if constexpr (type == MoveGenType::CHECK)
     {
         // must capture the checker or block the check
-        i = generateAllLegalMovesTempl<IteratorType, MoveGenType::CHECK, ParametrizedLegalDestinationType>(
-            i,
-            ParametrizedLegalDestinationType {
-                Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) });
+        i = generateAllLegalMovesTemplInCheck<IteratorType>(i);
     }
     else
     {
         static_assert(type == MoveGenType::DOUBLE_CHECK);
 
         // king moves only
-        i = generateAllLegalMovesTempl<IteratorType, MoveGenType::DOUBLE_CHECK, NoLegalDestinationType>(
-            i, NoLegalDestinationType { });
+        i = generateAllLegalMovesTemplInDoubleCheck<IteratorType>(i);
     }
 
     return i;
