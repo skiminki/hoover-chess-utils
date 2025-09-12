@@ -117,11 +117,16 @@ void ChessBoard::doMove(const Move m) noexcept
         switch (m.getTypeAndPromotion())
         {
             case MoveTypeAndPromotion::REGULAR_PAWN_MOVE:
+            {
                 m_pawns   &= ~srcSqBit;
                 m_pawns   |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
                 m_halfMoveClock = 0U;
 
-                if (isPawnDoubleSquareMove(m.getSrc(), m.getDst()))
+                const unsigned int srcNum { static_cast<unsigned int>(m.getSrc()) };
+                const unsigned int dstNum { static_cast<unsigned int>(m.getDst()) };
+
+                // double square advance?
+                if ((srcNum ^ dstNum) == 16U) [[unlikely]]
                 {
                     // we'll lit m_epSquare only if there are adjacent opponent pawns to capture it
                     const SquareSet adjacentPawns {
@@ -130,9 +135,10 @@ void ChessBoard::doMove(const Move m) noexcept
                         & dstSqBit };
 
                     if (adjacentPawns != SquareSet::none())
-                        m_epSquare = static_cast<Square>((getIndexOfSquare(m.getSrc()) + getIndexOfSquare(m.getDst())) / 2U);
+                        m_epSquare = static_cast<Square>((srcNum + dstNum) / 2U);
                 }
-                break;
+            }
+            break;
 
             case MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE:
                 m_pawns   &= ~srcSqBit;

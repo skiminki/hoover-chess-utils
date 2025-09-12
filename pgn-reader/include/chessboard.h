@@ -1322,15 +1322,6 @@ private:
         return 5U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 2U;
     }
 
-    // note: assumes that the move is legal
-    static constexpr inline bool isPawnDoubleSquareMove(Square src, Square dst) noexcept
-    {
-        const std::uint8_t srcNum { static_cast<std::uint8_t>(src) };
-        const std::uint8_t dstNum { static_cast<std::uint8_t>(dst) };
-
-        return ((srcNum - dstNum) & 15U) == 0U;
-    }
-
     template <MoveGenType type>
     inline SquareSet blocksAllChecksMaskTempl(Square dst) const noexcept;
 
