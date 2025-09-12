@@ -92,7 +92,100 @@ void ChessBoard::doMove(const Move m) noexcept
         const SquareSet srcSqBit { SquareSet::square(m.getSrc()) };
         const SquareSet dstSqBit { SquareSet::square(m.getDst()) };
 
-        const SquareSet captureBit { dstSqBit & m_occupancyMask };
+        // capture?
+        if ((dstSqBit & m_occupancyMask) != SquareSet::none()) [[unlikely]]
+        {
+            m_halfMoveClock = 0U;
+
+            // clear the destination square. Note: kings cannot be captured
+            m_pawns   &= ~dstSqBit;
+            m_knights &= ~dstSqBit;
+            m_bishops &= ~dstSqBit;
+            m_rooks   &= ~dstSqBit;
+
+            Square &oppLongCastlingRook { getCastlingRookRef(oppositeColor(turn), false) };
+            if (m.getDst() == oppLongCastlingRook)
+                oppLongCastlingRook = Square::NONE;
+
+            Square &oppShortCastlingRook { getCastlingRookRef(oppositeColor(turn), true) };
+            if (m.getDst() == oppShortCastlingRook)
+                oppShortCastlingRook = Square::NONE;
+        }
+        else
+            m_halfMoveClock = saturatingIncrease(m_halfMoveClock);
+
+        switch (m.getTypeAndPromotion())
+        {
+            case MoveTypeAndPromotion::REGULAR_PAWN_MOVE:
+                m_pawns   &= ~srcSqBit;
+                m_pawns   |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+                m_halfMoveClock = 0U;
+
+                if (isPawnDoubleSquareMove(m.getSrc(), m.getDst()))
+                {
+                    // we'll lit m_epSquare only if there are adjacent opponent pawns to capture it
+                    const SquareSet adjacentPawns {
+                        ((((m_pawns & ~m_turnColorMask) & ~SquareSet::column(0U)) >> 1U) |
+                         (((m_pawns & ~m_turnColorMask) & ~SquareSet::column(7U)) << 1U))
+                        & dstSqBit };
+
+                    if (adjacentPawns != SquareSet::none())
+                        m_epSquare = static_cast<Square>((getIndexOfSquare(m.getSrc()) + getIndexOfSquare(m.getDst())) / 2U);
+                }
+                break;
+
+            case MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE:
+                m_pawns   &= ~srcSqBit;
+                m_pawns   |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+                m_halfMoveClock = 0U;
+                break;
+
+            case MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE:
+                m_knights &= ~srcSqBit;
+                m_knights |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+                break;
+
+            case MoveTypeAndPromotion::REGULAR_BISHOP_MOVE:
+                m_bishops &= ~srcSqBit;
+                m_bishops |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+                break;
+
+            case MoveTypeAndPromotion::REGULAR_ROOK_MOVE:
+                m_rooks &= ~srcSqBit;
+                m_rooks |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+
+                {
+                    Square &longCastlingRook { getCastlingRookRef(turn, false) };
+                    if (m.getSrc() == longCastlingRook)
+                        longCastlingRook = Square::NONE;
+
+                    Square &shortCastlingRook { getCastlingRookRef(turn, true) };
+                    if (m.getSrc() == shortCastlingRook)
+                        shortCastlingRook = Square::NONE;
+                }
+                break;
+
+            case MoveTypeAndPromotion::REGULAR_QUEEN_MOVE:
+                m_bishops &= ~srcSqBit;
+                m_bishops |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+                m_rooks &= ~srcSqBit;
+                m_rooks |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+                break;
+
+            default:
+                assert(m.getTypeAndPromotion() == MoveTypeAndPromotion::REGULAR_KING_MOVE);
+
+                // king move
+                m_kings   &= ~srcSqBit;
+                m_kings   |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
+
+                // reset castling rights
+                setCastlingRook(turn, false, Square::NONE);
+                setCastlingRook(turn, true, Square::NONE);
+                m_kingSq = m.getDst();
+                break;
+
+        }
 
         // update occupancy mask
         m_occupancyMask ^= srcSqBit;
@@ -100,64 +193,6 @@ void ChessBoard::doMove(const Move m) noexcept
 
         // update turn color mask
         m_turnColorMask |= dstSqBit;
-
-        // the moving piece
-        SquareSet pawnBit   { (m_pawns   & srcSqBit) };
-        SquareSet knightBit { (m_knights & srcSqBit) };
-        SquareSet bishopBit { (m_bishops & srcSqBit) };
-        SquareSet rookBit   { (m_rooks   & srcSqBit) };
-        SquareSet kingBit   { (m_kings   & srcSqBit) };
-
-        // move pieces
-        m_pawns   &= ~srcSqBit;  m_pawns   &= ~dstSqBit;  m_pawns   |= pawnBit   >> getIndexOfSquare(m.getSrc()) << getIndexOfSquare(m.getDst());
-        m_knights &= ~srcSqBit;  m_knights &= ~dstSqBit;  m_knights |= knightBit >> getIndexOfSquare(m.getSrc()) << getIndexOfSquare(m.getDst());
-        m_bishops &= ~srcSqBit;  m_bishops &= ~dstSqBit;  m_bishops |= bishopBit >> getIndexOfSquare(m.getSrc()) << getIndexOfSquare(m.getDst());
-        m_rooks   &= ~srcSqBit;  m_rooks   &= ~dstSqBit;  m_rooks   |= rookBit   >> getIndexOfSquare(m.getSrc()) << getIndexOfSquare(m.getDst());
-        m_kings   &= ~srcSqBit;  m_kings   &= ~dstSqBit;  m_kings   |= kingBit   >> getIndexOfSquare(m.getSrc()) << getIndexOfSquare(m.getDst());
-
-        if ((captureBit | pawnBit) != SquareSet::none())
-            m_halfMoveClock = 0U;
-        else
-            m_halfMoveClock = saturatingIncrease(m_halfMoveClock);
-
-        if ((pawnBit != SquareSet::none()) && isPawnDoubleSquareMove(m.getSrc(), m.getDst()))
-        {
-            // we'll lit m_epSquare only if there are adjacent opponent pawns to capture it
-            const SquareSet adjacentPawns {
-                ((((m_pawns & ~m_turnColorMask) & ~SquareSet::column(0U)) >> 1U) |
-                 (((m_pawns & ~m_turnColorMask) & ~SquareSet::column(7U)) << 1U))
-                & dstSqBit };
-
-            if (adjacentPawns != SquareSet::none())
-                m_epSquare = static_cast<Square>((getIndexOfSquare(m.getSrc()) + getIndexOfSquare(m.getDst())) / 2U);
-        }
-
-        // reset castling rights
-        if (kingBit != SquareSet::none())
-        {
-            // king move
-            setCastlingRook(turn, false, Square::NONE);
-            setCastlingRook(turn, true, Square::NONE);
-            m_kingSq = m.getDst();
-        }
-        else
-        {
-            Square &longCastlingRook { getCastlingRookRef(turn, false) };
-            if (m.getSrc() == longCastlingRook)
-                longCastlingRook = Square::NONE;
-
-            Square &shortCastlingRook { getCastlingRookRef(turn, true) };
-            if (m.getSrc() == shortCastlingRook)
-                shortCastlingRook = Square::NONE;
-        }
-
-        Square &oppLongCastlingRook { getCastlingRookRef(oppositeColor(turn), false) };
-        if (m.getDst() == oppLongCastlingRook)
-            oppLongCastlingRook = Square::NONE;
-
-        Square &oppShortCastlingRook { getCastlingRookRef(oppositeColor(turn), true) };
-        if (m.getDst() == oppShortCastlingRook)
-            oppShortCastlingRook = Square::NONE;
     }
     else if (m.isCastlingMove())
     {
@@ -218,6 +253,8 @@ void ChessBoard::doMove(const Move m) noexcept
     else
     {
         // promotion move
+        assert(m.isPromotionMove());
+
         const SquareSet srcSqBit { SquareSet::square(m.getSrc()) };
         const SquareSet dstSqBit { SquareSet::square(m.getDst()) };
 

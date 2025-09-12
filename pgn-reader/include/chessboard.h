@@ -287,7 +287,7 @@ public:
         return getTypeAndPromotion() <= MoveTypeAndPromotion::REGULAR_KING_MOVE;
     }
 
-    /// @brief Checks whether a move type is en-passant pawn capture
+    /// @brief Checks whether the move type is en-passant pawn capture
     ///
     /// @return Whether the move type is en-passant pawn capture
     ///
@@ -298,7 +298,7 @@ public:
         return getTypeAndPromotion() == MoveTypeAndPromotion::EN_PASSANT;
     }
 
-    /// @brief Checks whether a move type is a pawn promotion
+    /// @brief Checks whether the move type is a pawn promotion
     ///
     /// @return Whether the move type is a pawn promotion move
     ///
