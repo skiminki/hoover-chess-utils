@@ -82,8 +82,6 @@ void ChessBoard::updateCheckersAndPins() noexcept
 
 void ChessBoard::doMove(const Move m) noexcept
 {
-    Color turn { getTurn() };
-
     m_epSquare = Square::NONE;
 
     if (m.isRegularMove()) [[likely]]
@@ -102,6 +100,8 @@ void ChessBoard::doMove(const Move m) noexcept
             m_knights &= ~dstSqBit;
             m_bishops &= ~dstSqBit;
             m_rooks   &= ~dstSqBit;
+
+            Color turn { getTurn() };
 
             Square &oppLongCastlingRook { getCastlingRookRef(oppositeColor(turn), false) };
             if (m.getDst() == oppLongCastlingRook)
@@ -155,6 +155,8 @@ void ChessBoard::doMove(const Move m) noexcept
                 m_rooks |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
 
                 {
+                    Color turn { getTurn() };
+
                     Square &longCastlingRook { getCastlingRookRef(turn, false) };
                     if (m.getSrc() == longCastlingRook)
                         longCastlingRook = Square::NONE;
@@ -180,6 +182,7 @@ void ChessBoard::doMove(const Move m) noexcept
                 m_kings   |= SquareSet { 1U } << getIndexOfSquare(m.getDst());
 
                 // reset castling rights
+                Color turn { getTurn() };
                 setCastlingRook(turn, false, Square::NONE);
                 setCastlingRook(turn, true, Square::NONE);
                 m_kingSq = m.getDst();
@@ -221,6 +224,7 @@ void ChessBoard::doMove(const Move m) noexcept
         m_halfMoveClock = saturatingIncrease(m_halfMoveClock);
 
         // reset castling rights
+        Color turn { getTurn() };
         setCastlingRook(turn, false, Square::NONE);
         setCastlingRook(turn, true, Square::NONE);
 
@@ -295,6 +299,7 @@ void ChessBoard::doMove(const Move m) noexcept
         m_halfMoveClock = 0U;
 
         // reset castling rights
+        Color turn { getTurn() };
         Square &oppLongCastlingRook { getCastlingRookRef(oppositeColor(turn), false) };
         if (m.getDst() == oppLongCastlingRook)
             oppLongCastlingRook = Square::NONE;
