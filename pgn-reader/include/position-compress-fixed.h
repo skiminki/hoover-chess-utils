@@ -233,7 +233,8 @@ public:
     /// @param[in]  moveNum                 Move number
     /// @param[out] out_board               @coderef{ChessBoard} to be set with
     ///                                     position represented by @p compressedPosition
-    /// @throws PgnError  Illegal position
+    /// @throws std::out_of_range           Bad compressed format
+    /// @throws PgnError                    Illegal position
     ///
     /// See @coderef{CompressedPosition_FixedLength} for the specication of
     /// position encoding.
