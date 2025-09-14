@@ -440,6 +440,7 @@ public:
 
     void endOfPGN()
     {
+        m_actions.endOfPGN();
     }
 
     void nag(std::uint8_t nagNum)

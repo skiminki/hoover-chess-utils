@@ -401,12 +401,19 @@ private:
     std::string m_previousProcessedEventName { };
     std::uint32_t m_subEventNumber { };
 
+    // previous game pending? This triggers printing out the moves and starting
+    // a new game on pgnTag(), moveTextSection(), or endOfPGN()
+    bool m_gamePending { };
+
     // moves of the game
     pgn_reader::ChessBoard m_initialBoard { };
     std::vector<pgn_reader::Move> m_moves { };
 
     // comments associated with moves. Note: these come just before the move
     std::vector<std::string> m_comments { };
+
+    // result of the game
+    pgn_reader::PgnResult m_result { };
 
     const OpeningInfo *m_openingInfo { };
 
@@ -454,6 +461,34 @@ private:
         else
         {
             return std::string { eventName };
+        }
+    }
+
+    void flushPreviousGameAndStartNew()
+    {
+        if (m_gamePending)
+        {
+            printTags();
+            printMoves();
+            m_gamePending = false;
+        }
+
+        m_moves.clear();
+        m_moves.reserve(512U);
+        m_comments.clear();
+        m_comments.reserve(513U);
+        m_openingInfo = nullptr;
+
+        // clear all known tags
+        for (auto &v : m_knownTagValues)
+            v.clear();
+
+        // clear all additional tags
+        m_additionalPgnTags.clear();
+
+        if constexpr(debugMode)
+        {
+            std::fputs(std::format("-- game {}\n", m_gameNo).c_str(), stderr);
         }
     }
 
@@ -517,6 +552,12 @@ private:
             }
             else
             {
+                // map braces to parens, since braces can't appear in block comments
+                if (c == '{')
+                    c = '(';
+                if (c == '}')
+                    c = ')';
+
                 out.write(c);
                 eatWhiteSpace = false;
             }
@@ -525,7 +566,7 @@ private:
         out.write(ctLiteralBlockCommentEnd);
     }
 
-    void printMoves(pgn_reader::PgnResult result)
+    void printMoves()
     {
         bool spaceBeforeNextToken { };
         bool moveNumBeforeNextMove { true };
@@ -578,7 +619,7 @@ private:
         if (spaceBeforeNextToken)
             out.write(' ');
 
-        switch (result)
+        switch (m_result)
         {
             case pgn_reader::PgnResult::WHITE_WIN:
                 out.write(ctLiteralResultWhiteWin);
@@ -597,7 +638,7 @@ private:
                 break;
 
             default:
-                throw std::logic_error(std::format("Internal error: unknown result tag {}", static_cast<std::uint8_t>(result)));
+                throw std::logic_error(std::format("Internal error: unknown result tag {}", static_cast<std::uint8_t>(m_result)));
         }
 
         out.write(ctLiteralDoubleNewLine);
@@ -645,27 +686,13 @@ public:
     void gameStart() override
     {
         ++m_gameNo;
-        m_moves.clear();
-        m_moves.reserve(512U);
-        m_comments.clear();
-        m_comments.reserve(513U);
-        m_openingInfo = nullptr;
-
-        // clear all known tags
-        for (auto &v : m_knownTagValues)
-            v.clear();
-
-        // clear all additional tags
-        m_additionalPgnTags.clear();
-
-        if constexpr(debugMode)
-        {
-            std::fputs(std::format("-- game {}\n", m_gameNo).c_str(), stderr);
-        }
     }
 
     void pgnTag(std::string_view key, std::string_view value) override
     {
+        if (m_gamePending)
+            flushPreviousGameAndStartNew();
+
         // we don't store these, since we're classifying openings ourselves
         if (key != "Opening" && key != "ECO" && key != "Variation" && key != "Site")
         {
@@ -714,6 +741,9 @@ public:
 
     void moveTextSection() override
     {
+        if (m_gamePending)
+            flushPreviousGameAndStartNew();
+
         m_initialBoard = *m_board;
         checkOpening();
     }
@@ -823,9 +853,14 @@ public:
                 getValueRefForKnownPgnTag(KnownPgnTags::Variation) = m_openingInfo->variation;
         }
 
-        printTags();
+        m_result = result;
+        m_gamePending = true;
+    }
 
-        printMoves(result);
+    void endOfPGN() override
+    {
+        if (m_gamePending)
+            flushPreviousGameAndStartNew();
     }
 };
 
