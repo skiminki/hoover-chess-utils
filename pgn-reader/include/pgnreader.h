@@ -168,6 +168,11 @@ public:
     {
     }
 
+    /// @brief End of PGN
+    virtual void endOfPGN()
+    {
+    }
+
     /// @brief Error handler for recoverable errors
     ///
     /// @param[in]  error             Error object
