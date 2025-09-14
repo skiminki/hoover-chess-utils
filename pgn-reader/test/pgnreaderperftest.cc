@@ -17,6 +17,7 @@
 #include "pgnreader.h"
 #include "pgnreader-string-utils.h"
 #include "chessboard.h"
+#include "position-compress-fixed.h"
 
 #include "../src/pgnscanner.h"
 #include "../src/pgnparser.h"
@@ -184,6 +185,66 @@ public:
     }
 };
 
+template <bool decompress>
+class PositionCompressDecompressActions : public PgnReaderActions
+{
+private:
+    CompressedPosition_FixedLength compressedPosition { };
+
+public:
+    const ChessBoard *m_curBoard { };
+
+    void setBoardReferences(
+        const ChessBoard &curBoard,
+        const ChessBoard &prevBoard) override
+    {
+        static_cast<void>(prevBoard);
+        m_curBoard = &curBoard;
+    }
+
+    void moveTextSection() override
+    {
+        compressDecompressCycle();
+    }
+
+    void afterMove(Move m) override
+    {
+        static_cast<void>(m);
+
+        compressDecompressCycle();
+    }
+
+private:
+    void compressDecompressCycle()
+    {
+        PositionCompressor_FixedLength::compress(*m_curBoard, compressedPosition);
+
+        if constexpr(decompress)
+        {
+            ChessBoard tmpBoard { };
+
+            PositionCompressor_FixedLength::decompress(
+                compressedPosition,
+                m_curBoard->getHalfMoveClock(),
+                moveNumOfPly(m_curBoard->getCurrentPlyNum()),
+                tmpBoard);
+
+            if (*m_curBoard != tmpBoard)
+            {
+                std::cout << "Reference board:" << std::endl;
+                m_curBoard->printBoard();
+                std::cout << std::endl;
+                std::cout << "Board after compress/decompress cycle:" << std::endl;
+                tmpBoard.printBoard();
+
+                throw std::logic_error("Compress/decompress mismatch");
+            }
+        }
+    }
+
+
+};
+
 std::uint64_t pgnScannerPerfTest(std::string_view pgn)
 {
     std::uint64_t tokens { };
@@ -220,6 +281,7 @@ int main(int argc, char **argv)
     using hoover_chess_utils::pgn_reader::perf_test_suite::MemoryMappedFile;
     using hoover_chess_utils::pgn_reader::perf_test_suite::TestPgnReaderActions;
     using hoover_chess_utils::pgn_reader::perf_test_suite::TestPgnMoveWriterActions;
+    using hoover_chess_utils::pgn_reader::perf_test_suite::PositionCompressDecompressActions;
     using hoover_chess_utils::pgn_reader::perf_test_suite::pgnScannerPerfTest;
     using hoover_chess_utils::pgn_reader::perf_test_suite::pgnParserPerfTest;
 
@@ -241,6 +303,8 @@ int main(int argc, char **argv)
         {
             TestPgnReaderActions actions { };
             TestPgnMoveWriterActions moveWriterActions { };
+            PositionCompressDecompressActions<false> positionCompressActions { };
+            PositionCompressDecompressActions<true> positionCompressDecompressActions { };
 
             const auto startPgnTokenScan { std::chrono::steady_clock::now() };
             const std::uint64_t tokens { pgnScannerPerfTest(mmfile.getStringView()) };
@@ -265,33 +329,50 @@ int main(int argc, char **argv)
                 mmfile.getStringView(), moveWriterActions, PgnReaderActionFilter { PgnReaderActionClass::Move });
             const auto endPgnWriteMoves = std::chrono::steady_clock::now();
 
+            const auto &startCompressPositions { endPgnWriteMoves };
+            PgnReader::readFromMemory(
+                mmfile.getStringView(), positionCompressActions, PgnReaderActionFilter { PgnReaderActionClass::Move });
+            const auto endCompressPositions = std::chrono::steady_clock::now();
+
+            const auto &startCompressDecompressPositions { endCompressPositions };
+            PgnReader::readFromMemory(
+                mmfile.getStringView(), positionCompressDecompressActions, PgnReaderActionFilter { PgnReaderActionClass::Move });
+            const auto endCompressDecompressPositions = std::chrono::steady_clock::now();
+
             const std::chrono::duration<double> pgnTokenScanDuration = endPgnTokenScan - startPgnTokenScan;
             const std::chrono::duration<double> pgnParserDuration = endPgnParser - startPgnParser;
             const std::chrono::duration<double> pgnReadMovesDuration = endPgnReadMoves - startPgnReadMoves;
             const std::chrono::duration<double> pgnReadTagsDuration = endPgnReadTags - startPgnReadTags;
             const std::chrono::duration<double> pgnMoveWriterDuration = endPgnWriteMoves - startPgnWriteMoves;
+            const std::chrono::duration<double> pgnCompressPositionsDuration = endCompressPositions - startCompressPositions;
+            const std::chrono::duration<double> pgnCompressDecompressPositionsDuration = endCompressDecompressPositions - startCompressDecompressPositions;
 
             std::cout << "Iteration " << (i + 1) << ": "
                       << (actions.games / 2U) << " games, "
                       << actions.pgnTags << " pgn tags, "
                       << actions.moves << " moves, "
                       << tokens << " tokens" << std::endl
-                      << "- tokenizer pass:        "
+                      << "- tokenizer pass:             "
                       << pgnTokenScanDuration.count() << " secs, "
                       << (fileSize / (1000000U * pgnTokenScanDuration.count())) << " MB/s" << std::endl
-                      << "- tokenizer+parser pass: "
+                      << "- tokenizer+parser pass:      "
                       << pgnParserDuration.count() << " secs, "
                       << (fileSize / (1000000U * pgnParserDuration.count())) << " MB/s" << std::endl
-                      << "- tag reader pass:       "
+                      << "- tag reader pass:            "
                       << pgnReadTagsDuration.count() << " secs, "
                       << (fileSize / (1000000U * pgnReadTagsDuration.count())) << " MB/s" << std::endl
-                      << "- move reader pass:      "
+                      << "- move reader pass:           "
                       << pgnReadMovesDuration.count() << " secs, "
                       << (fileSize / (1000000U * pgnReadMovesDuration.count())) << " MB/s" << std::endl
-                      << "- SAN move writer pass:  "
+                      << "- SAN move writer pass:       "
                       << pgnMoveWriterDuration.count() << " secs, "
                       << (fileSize / (1000000U * pgnMoveWriterDuration.count())) << " MB/s" << std::endl
-                      << std::endl;
+                      << "- Position compress pass:     "
+                      << pgnCompressPositionsDuration.count() << " secs, "
+                      << (fileSize / (1000000U * pgnCompressPositionsDuration.count())) << " MB/s" << std::endl
+                      << "- Position comp/decomp pass:  "
+                      << pgnCompressDecompressPositionsDuration.count() << " secs, "
+                      << (fileSize / (1000000U * pgnCompressDecompressPositionsDuration.count())) << " MB/s" << std::endl;
         }
         catch (const PgnError &pgnError)
         {

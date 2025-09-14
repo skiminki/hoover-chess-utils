@@ -18,7 +18,6 @@
 project(HooverChessUtils_CliUtilities VERSION ${HOOVER_CHESS_UTILS_VERSION})
 
 add_executable(hoover-tdb-query
-  compressed-position.cc
   memory-mapped-file.cc
   tdb-query.cc)
 
@@ -49,7 +48,6 @@ target_link_libraries(hoover-compactify-tcec-pgn
 
 add_executable(hoover-process-full-tcec-pgn
   process-full-tcec-pgn.cc
-  compressed-position.cc
   memory-mapped-file.cc
   output-buffer.cc)
 
