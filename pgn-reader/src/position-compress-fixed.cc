@@ -20,6 +20,7 @@
 #include "chessboard-types-squareset.h"
 
 #include <bit>
+#include <format>
 #include <iostream>
 #include <stdexcept>
 
@@ -44,7 +45,15 @@ void PositionCompressor_FixedLength::compress(const pgn_reader::ChessBoard &boar
         (static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_ROOK_CANNOT_CASTLE) | 4U) ==
         static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_ROOK_CAN_CASTLE));
 
-    out_compressedPosition.occupancy = static_cast<std::uint64_t>(board.getOccupancyMask());
+    // 32 pieces or less? More cannot be compressed
+    const SquareSet occupancyMask { board.getOccupancyMask() };
+    if (occupancyMask.popcount() > 32U)
+        throw std::out_of_range(
+            std::format(
+                "PositionCompressor_FixedLength::compress(): Cannot compress a position with more than 32 pieces (has {})",
+                std::uint32_t { occupancyMask.popcount() }));
+
+    out_compressedPosition.occupancy = static_cast<std::uint64_t>(occupancyMask);
 
     // specials
     SquareSet rooksCanCastle { };
@@ -78,187 +87,118 @@ void PositionCompressor_FixedLength::compress(const pgn_reader::ChessBoard &boar
 
     SquareSet nonEpPawns { board.getPawns() & ~epPawns };
 
+    // non-compressed data planes
     std::array<SquareSet, 4U> planes { };
     planes[0] = board.getBishopsAndQueens() | nonEpPawns | whiteKingInTurnAndBlackKing;
     planes[1] = board.getRooksAndQueens()                | whiteKingInTurnAndBlackKing;
     planes[2] = board.getKnights()          | nonEpPawns | whiteKingInTurnAndBlackKing | rooksCanCastle;
     planes[3] = board.getBlackPieces()      | epPawns;
 
-    out_compressedPosition.dataPlanes[0] = static_cast<std::uint64_t>(planes[0].parallelExtract(board.getOccupancyMask()));
-    out_compressedPosition.dataPlanes[1] = static_cast<std::uint64_t>(planes[1].parallelExtract(board.getOccupancyMask()));
-    out_compressedPosition.dataPlanes[2] = static_cast<std::uint64_t>(planes[2].parallelExtract(board.getOccupancyMask()));
-    out_compressedPosition.dataPlanes[3] = static_cast<std::uint64_t>(planes[3].parallelExtract(board.getOccupancyMask()));
+    // compress them by occupancy mask
+    out_compressedPosition.dataPlanes[0] = static_cast<std::uint64_t>(planes[0].parallelExtract(occupancyMask));
+    out_compressedPosition.dataPlanes[1] = static_cast<std::uint64_t>(planes[1].parallelExtract(occupancyMask));
+    out_compressedPosition.dataPlanes[2] = static_cast<std::uint64_t>(planes[2].parallelExtract(occupancyMask));
+    out_compressedPosition.dataPlanes[3] = static_cast<std::uint64_t>(planes[3].parallelExtract(occupancyMask));
 }
 
 void PositionCompressor_FixedLength::decompress(
     const CompressedPosition_FixedLength &compressedPosition, std::uint8_t halfMoveClock, std::uint32_t moveNum,
     pgn_reader::ChessBoard &out_board)
 {
-    std::array<PieceAndColor, 64U> pieces { };
-    Color turn { Color::WHITE };
-
     std::array<SquareSet, 4U> planes;
-    planes[0] = SquareSet { compressedPosition.dataPlanes[0] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
-    planes[1] = SquareSet { compressedPosition.dataPlanes[1] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
-    planes[2] = SquareSet { compressedPosition.dataPlanes[2] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
-    planes[3] = SquareSet { compressedPosition.dataPlanes[3] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
+    const SquareSet occupancyMask { compressedPosition.occupancy };
 
-    std::array<CompressedPosition_PieceEncoding, 64U> cpe;
-    std::array<Square, 2U> whiteCastlingRooks { Square::NONE, Square::NONE };
-    std::array<Square, 2U> blackCastlingRooks { Square::NONE, Square::NONE };
-    Square whiteKing { Square::NONE };
-    Square blackKing { Square::NONE };
-    Square epPawn { Square::NONE };
+    if (occupancyMask.popcount() > 32U)
+        throw std::out_of_range(
+            std::format(
+                "PositionCompressor_FixedLength::decompress(): Cannot decompress a position with more than 32 pieces (has {})",
+                std::uint32_t { occupancyMask.popcount() }));
 
-    for (std::uint8_t i { }; i < cpe.size(); ++i)
-    {
-        std::uint8_t value { };
-        value  =        static_cast<std::uint64_t>((planes[0] >> i) & SquareSet { 1U });
-        value |= 2U *   static_cast<std::uint64_t>((planes[1] >> i) & SquareSet { 1U });
-        value |= 4U *   static_cast<std::uint64_t>((planes[2] >> i) & SquareSet { 1U });
-        value |= 8U *   static_cast<std::uint64_t>((planes[3] >> i) & SquareSet { 1U });
-        value |= 255U * (1U ^ ((compressedPosition.occupancy >> i) & 1U));
+    planes[0] = SquareSet { compressedPosition.dataPlanes[0] }.parallelDeposit(occupancyMask);
+    planes[1] = SquareSet { compressedPosition.dataPlanes[1] }.parallelDeposit(occupancyMask);
+    planes[2] = SquareSet { compressedPosition.dataPlanes[2] }.parallelDeposit(occupancyMask);
+    planes[3] = SquareSet { compressedPosition.dataPlanes[3] }.parallelDeposit(occupancyMask);
 
-        switch (CompressedPosition_PieceEncoding { value })
-        {
-            case CompressedPosition_PieceEncoding::WHITE_KING_NOT_IN_TURN:
-                pieces[i] = PieceAndColor::WHITE_KING;
-                turn = Color::BLACK;
-                whiteKing = Square { i };
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_BISHOP:
-                pieces[i] = PieceAndColor::WHITE_BISHOP;
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_ROOK_CANNOT_CASTLE:
-                pieces[i] = PieceAndColor::WHITE_ROOK;
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_QUEEN:
-                pieces[i] = PieceAndColor::WHITE_QUEEN;
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_KNIGHT:
-                pieces[i] = PieceAndColor::WHITE_KNIGHT;
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_PAWN:
-                pieces[i] = PieceAndColor::WHITE_PAWN;
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_ROOK_CAN_CASTLE:
-                pieces[i] = PieceAndColor::WHITE_ROOK;
-                if (whiteCastlingRooks[0] == Square::NONE)
-                    whiteCastlingRooks[0] = Square { i };
-                else
-                    whiteCastlingRooks[1] = Square { i };
-                break;
-
-            case CompressedPosition_PieceEncoding::WHITE_KING_IN_TURN:
-                pieces[i] = PieceAndColor::WHITE_KING;
-                whiteKing = Square { i };
-                break;
-
-            case CompressedPosition_PieceEncoding::EP_PAWN:
-                epPawn = Square { i };
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_BISHOP:
-                pieces[i] = PieceAndColor::BLACK_BISHOP;
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_ROOK_CANNOT_CASTLE:
-                pieces[i] = PieceAndColor::BLACK_ROOK;
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_QUEEN:
-                pieces[i] = PieceAndColor::BLACK_QUEEN;
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_KNIGHT:
-                pieces[i] = PieceAndColor::BLACK_KNIGHT;
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_PAWN:
-                pieces[i] = PieceAndColor::BLACK_PAWN;
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_ROOK_CAN_CASTLE:
-                pieces[i] = PieceAndColor::BLACK_ROOK;
-                if (blackCastlingRooks[0] == Square::NONE)
-                    blackCastlingRooks[0] = Square { i };
-                else
-                    blackCastlingRooks[1] = Square { i };
-                break;
-
-            case CompressedPosition_PieceEncoding::BLACK_KING:
-                pieces[i] = PieceAndColor::BLACK_KING;
-                blackKing = Square { i };
-                break;
-
-            default:
-                break;
-        }
-    }
-
+    // position description
+    BitBoard bb { };
+    std::array<Square, 2U> whiteCastlingRooks { Square::NONE, Square::NONE }; // long, short
+    std::array<Square, 2U> blackCastlingRooks { Square::NONE, Square::NONE }; // long, short
     Square epSquare { Square::NONE };
-    if (turn == Color::WHITE)
-    {
-        if (epPawn != Square::NONE)
-        {
-            pieces[static_cast<std::uint8_t>(epPawn)] = PieceAndColor::BLACK_PAWN;
-            epSquare = addToSquareNoOverflowCheck(epPawn, +8);
-        }
-    }
-    else
-    {
-        if (epPawn != Square::NONE)
-        {
-            pieces[static_cast<std::uint8_t>(epPawn)] = PieceAndColor::WHITE_PAWN;
-            epSquare = addToSquareNoOverflowCheck(epPawn, -8);
-        }
-    }
 
-    Square whiteLongCastleRook { Square::NONE };
-    Square whiteShortCastleRook { Square::NONE };
-    Square blackLongCastleRook { Square::NONE };
-    Square blackShortCastleRook { Square::NONE };
+    // specials
+    SquareSet whiteKingNotInTurnOrEp { ~planes[0] & ~planes[1] & ~planes[2] & occupancyMask };
+    SquareSet blackPieces { planes[3U] };
+    SquareSet whiteKingNotInTurn { whiteKingNotInTurnOrEp & ~planes[3U] };
+    SquareSet rooksCanCastle { ~planes[0U] & planes[1U] & planes[2U] };
 
-    if (whiteCastlingRooks[0] != Square::NONE)
+    Color turn { whiteKingNotInTurn == SquareSet::none() ? Color::WHITE : Color::BLACK };
+
+    SquareSet epPawn { whiteKingNotInTurnOrEp & planes[3U] };
+
+    if (epPawn != SquareSet::none())
     {
-        if (whiteCastlingRooks[0] < whiteKing)
-            whiteLongCastleRook = whiteCastlingRooks[0];
-        else
-            whiteShortCastleRook = whiteCastlingRooks[0];
+        epSquare = epPawn.firstSquare();
+        epSquare = addToSquareNoOverflowCheck(epSquare, 8);
 
-        if (whiteCastlingRooks[1] != Square::NONE)
+        if (turn == Color::BLACK)
         {
-            if (whiteCastlingRooks[1] < whiteKing)
-                whiteLongCastleRook = whiteCastlingRooks[1];
-            else
-                whiteShortCastleRook = whiteCastlingRooks[1];
+            blackPieces &=~ epPawn;
+            epSquare = addToSquareNoOverflowCheck(epSquare, -16);
         }
+
     }
 
-    if (blackCastlingRooks[0] != Square::NONE)
-    {
-        if (blackCastlingRooks[0] < blackKing)
-            blackLongCastleRook = blackCastlingRooks[0];
-        else
-            blackShortCastleRook = blackCastlingRooks[0];
+    bb.pawns   =  planes[0] & ~planes[1] &  planes[2];  // 5
+    bb.pawns  |=  epPawn;
 
-        if (blackCastlingRooks[1] != Square::NONE)
+    bb.knights = ~planes[0] & ~planes[1] &  planes[2];  // 4
+    bb.bishops =  planes[0] & ~planes[1] & ~planes[2];  // 1
+    bb.rooks   = ~planes[0] &  planes[1];               // 2 or 6
+    bb.queens  =  planes[0] &  planes[1] & ~planes[2];  // 3
+
+    bb.kings   =  planes[0] &  planes[1] &  planes[2];  // 7
+    bb.kings  |=  whiteKingNotInTurn;
+
+    bb.whitePieces = occupancyMask &~ blackPieces;
+
+    SquareSet whiteRooksCanCastle { rooksCanCastle & bb.whitePieces };
+    Square whiteKing { (bb.kings & bb.whitePieces).firstSquare() };
+    SQUARESET_ENUMERATE(
+        whiteCastlingRook,
+        whiteRooksCanCastle,
         {
-            if (blackCastlingRooks[1] < blackKing)
-                blackLongCastleRook = blackCastlingRooks[1];
-            else
-                blackShortCastleRook = blackCastlingRooks[1];
-        }
-    }
+            std::size_t i { whiteCastlingRook > whiteKing };
+            if (whiteCastlingRooks[i] != Square::NONE)
+                throw std::out_of_range(
+                    std::format(
+                        "PositionCompressor_FixedLength::decompress(): Two white {} castling rooks",
+                        i == 0U ? "long" : "short"));
+
+            whiteCastlingRooks[i] = whiteCastlingRook;
+        });
+
+    SquareSet blackRooksCanCastle { rooksCanCastle &~ bb.whitePieces };
+    Square blackKing { (bb.kings &~ bb.whitePieces).firstSquare() };
+    SQUARESET_ENUMERATE(
+        blackCastlingRook,
+        blackRooksCanCastle,
+        {
+            std::size_t i { blackCastlingRook > blackKing };
+            if (blackCastlingRooks[i] != Square::NONE)
+                throw std::out_of_range(
+                    std::format(
+                        "PositionCompressor_FixedLength::decompress(): Two black {} castling rooks",
+                        i == 0U ? "long" : "short"));
+
+            blackCastlingRooks[i] = blackCastlingRook;
+        });
+
 
     out_board.setBoard(
-        pieces, whiteLongCastleRook, whiteShortCastleRook, blackLongCastleRook, blackShortCastleRook, epSquare,
+        bb,
+        whiteCastlingRooks[0U], whiteCastlingRooks[1U],
+        blackCastlingRooks[0U], blackCastlingRooks[1U],
+        epSquare,
         halfMoveClock, makePlyNum(moveNum, turn));
 }
 
