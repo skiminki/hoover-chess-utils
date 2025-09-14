@@ -121,6 +121,7 @@ add_executable(hoover-pgn-reader-tests
   test/pgnreader-error-recovery-test.cc
   test/pgnreader-test.cc
   test/pgnreader-string-utils-test.cc
+  test/position-compress-fixed-test.cc
   test/stringbuilder-test.cc
   test/version-test.cc
   gen-scannertest-1.cc
