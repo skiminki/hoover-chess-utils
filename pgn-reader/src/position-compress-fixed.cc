@@ -14,45 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "compressed-position.h"
+#include "position-compress-fixed.h"
 
 #include "chessboard.h"
+#include "chessboard-types-squareset.h"
 
 #include <bit>
 #include <iostream>
 #include <stdexcept>
 
-namespace hoover_chess_utils::utils
+namespace hoover_chess_utils::pgn_reader
 {
 
-namespace {
-constexpr bool debugMode { false };
-}
-
-void PositionCompressor::compress(const pgn_reader::ChessBoard &board, CompressedPosition &out_compressedPosition)
+void PositionCompressor_FixedLength::compress(const pgn_reader::ChessBoard &board, CompressedPosition_FixedLength &out_compressedPosition)
 {
-    using pgn_reader::Color;
-    using pgn_reader::Square;
-    using pgn_reader::SquareSet;
-
-    static_cast<void>(board);
-    static_cast<void>(out_compressedPosition);
-
     // needed for fast queen encoding
     static_assert(
-        static_cast<std::uint8_t>(CompressedPieceEncoding::WHITE_QUEEN) ==
-        (static_cast<std::uint8_t>(CompressedPieceEncoding::WHITE_BISHOP) | static_cast<std::uint8_t>(CompressedPieceEncoding::WHITE_ROOK_CANNOT_CASTLE)));
+        static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::WHITE_QUEEN) ==
+        (static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::WHITE_BISHOP) | static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::WHITE_ROOK_CANNOT_CASTLE)));
     static_assert(
-        static_cast<std::uint8_t>(CompressedPieceEncoding::BLACK_QUEEN) ==
-        (static_cast<std::uint8_t>(CompressedPieceEncoding::BLACK_BISHOP) | static_cast<std::uint8_t>(CompressedPieceEncoding::BLACK_ROOK_CANNOT_CASTLE)));
+        static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_QUEEN) ==
+        (static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_BISHOP) | static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_ROOK_CANNOT_CASTLE)));
 
     // fast rook no/yes castling encoding
     static_assert(
-        (static_cast<std::uint8_t>(CompressedPieceEncoding::WHITE_ROOK_CANNOT_CASTLE) | 4U) ==
-        static_cast<std::uint8_t>(CompressedPieceEncoding::WHITE_ROOK_CAN_CASTLE));
+        (static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::WHITE_ROOK_CANNOT_CASTLE) | 4U) ==
+        static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::WHITE_ROOK_CAN_CASTLE));
     static_assert(
-        (static_cast<std::uint8_t>(CompressedPieceEncoding::BLACK_ROOK_CANNOT_CASTLE) | 4U) ==
-        static_cast<std::uint8_t>(CompressedPieceEncoding::BLACK_ROOK_CAN_CASTLE));
+        (static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_ROOK_CANNOT_CASTLE) | 4U) ==
+        static_cast<std::uint8_t>(CompressedPosition_PieceEncoding::BLACK_ROOK_CAN_CASTLE));
 
     out_compressedPosition.occupancy = static_cast<std::uint64_t>(board.getOccupancyMask());
 
@@ -94,49 +84,26 @@ void PositionCompressor::compress(const pgn_reader::ChessBoard &board, Compresse
     planes[2] = board.getKnights()          | nonEpPawns | whiteKingInTurnAndBlackKing | rooksCanCastle;
     planes[3] = board.getBlackPieces()      | epPawns;
 
-    out_compressedPosition.bitPlanes[0] = static_cast<std::uint64_t>(planes[0].parallelExtract(board.getOccupancyMask()));
-    out_compressedPosition.bitPlanes[1] = static_cast<std::uint64_t>(planes[1].parallelExtract(board.getOccupancyMask()));
-    out_compressedPosition.bitPlanes[2] = static_cast<std::uint64_t>(planes[2].parallelExtract(board.getOccupancyMask()));
-    out_compressedPosition.bitPlanes[3] = static_cast<std::uint64_t>(planes[3].parallelExtract(board.getOccupancyMask()));
-
-    if constexpr (debugMode) {
-        pgn_reader::ChessBoard b1 { };
-
-        decompress(
-            out_compressedPosition,
-            board.getHalfMoveClock(), pgn_reader::moveNumOfPly(board.getCurrentPlyNum()),
-            b1);
-
-        if (b1 != board)
-        {
-            std::cout << "MISMATCH!!!" << std::endl;
-            board.printBoard();
-            b1.printBoard();
-            throw std::logic_error("Compress-decompress lost information");
-        }
-    }
+    out_compressedPosition.dataPlanes[0] = static_cast<std::uint64_t>(planes[0].parallelExtract(board.getOccupancyMask()));
+    out_compressedPosition.dataPlanes[1] = static_cast<std::uint64_t>(planes[1].parallelExtract(board.getOccupancyMask()));
+    out_compressedPosition.dataPlanes[2] = static_cast<std::uint64_t>(planes[2].parallelExtract(board.getOccupancyMask()));
+    out_compressedPosition.dataPlanes[3] = static_cast<std::uint64_t>(planes[3].parallelExtract(board.getOccupancyMask()));
 }
 
-void PositionCompressor::decompress(
-    const CompressedPosition &compressedPosition, std::uint8_t halfMoveClock, std::uint32_t moveNum,
+void PositionCompressor_FixedLength::decompress(
+    const CompressedPosition_FixedLength &compressedPosition, std::uint8_t halfMoveClock, std::uint32_t moveNum,
     pgn_reader::ChessBoard &out_board)
 {
-    using pgn_reader::Color;
-    using pgn_reader::PieceAndColor;
-    using pgn_reader::Square;
-    using pgn_reader::SquareSet;
-    using pgn_reader::makePlyNum;
-
     std::array<PieceAndColor, 64U> pieces { };
     Color turn { Color::WHITE };
 
     std::array<SquareSet, 4U> planes;
-    planes[0] = SquareSet { compressedPosition.bitPlanes[0] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
-    planes[1] = SquareSet { compressedPosition.bitPlanes[1] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
-    planes[2] = SquareSet { compressedPosition.bitPlanes[2] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
-    planes[3] = SquareSet { compressedPosition.bitPlanes[3] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
+    planes[0] = SquareSet { compressedPosition.dataPlanes[0] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
+    planes[1] = SquareSet { compressedPosition.dataPlanes[1] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
+    planes[2] = SquareSet { compressedPosition.dataPlanes[2] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
+    planes[3] = SquareSet { compressedPosition.dataPlanes[3] }.parallelDeposit(SquareSet { compressedPosition.occupancy });
 
-    std::array<CompressedPieceEncoding, 64U> cpe;
+    std::array<CompressedPosition_PieceEncoding, 64U> cpe;
     std::array<Square, 2U> whiteCastlingRooks { Square::NONE, Square::NONE };
     std::array<Square, 2U> blackCastlingRooks { Square::NONE, Square::NONE };
     Square whiteKing { Square::NONE };
@@ -152,35 +119,35 @@ void PositionCompressor::decompress(
         value |= 8U *   static_cast<std::uint64_t>((planes[3] >> i) & SquareSet { 1U });
         value |= 255U * (1U ^ ((compressedPosition.occupancy >> i) & 1U));
 
-        switch (CompressedPieceEncoding { value })
+        switch (CompressedPosition_PieceEncoding { value })
         {
-            case CompressedPieceEncoding::WHITE_KING_NOT_IN_TURN:
+            case CompressedPosition_PieceEncoding::WHITE_KING_NOT_IN_TURN:
                 pieces[i] = PieceAndColor::WHITE_KING;
                 turn = Color::BLACK;
                 whiteKing = Square { i };
                 break;
 
-            case CompressedPieceEncoding::WHITE_BISHOP:
+            case CompressedPosition_PieceEncoding::WHITE_BISHOP:
                 pieces[i] = PieceAndColor::WHITE_BISHOP;
                 break;
 
-            case CompressedPieceEncoding::WHITE_ROOK_CANNOT_CASTLE:
+            case CompressedPosition_PieceEncoding::WHITE_ROOK_CANNOT_CASTLE:
                 pieces[i] = PieceAndColor::WHITE_ROOK;
                 break;
 
-            case CompressedPieceEncoding::WHITE_QUEEN:
+            case CompressedPosition_PieceEncoding::WHITE_QUEEN:
                 pieces[i] = PieceAndColor::WHITE_QUEEN;
                 break;
 
-            case CompressedPieceEncoding::WHITE_KNIGHT:
+            case CompressedPosition_PieceEncoding::WHITE_KNIGHT:
                 pieces[i] = PieceAndColor::WHITE_KNIGHT;
                 break;
 
-            case CompressedPieceEncoding::WHITE_PAWN:
+            case CompressedPosition_PieceEncoding::WHITE_PAWN:
                 pieces[i] = PieceAndColor::WHITE_PAWN;
                 break;
 
-            case CompressedPieceEncoding::WHITE_ROOK_CAN_CASTLE:
+            case CompressedPosition_PieceEncoding::WHITE_ROOK_CAN_CASTLE:
                 pieces[i] = PieceAndColor::WHITE_ROOK;
                 if (whiteCastlingRooks[0] == Square::NONE)
                     whiteCastlingRooks[0] = Square { i };
@@ -188,36 +155,36 @@ void PositionCompressor::decompress(
                     whiteCastlingRooks[1] = Square { i };
                 break;
 
-            case CompressedPieceEncoding::WHITE_KING_IN_TURN:
+            case CompressedPosition_PieceEncoding::WHITE_KING_IN_TURN:
                 pieces[i] = PieceAndColor::WHITE_KING;
                 whiteKing = Square { i };
                 break;
 
-            case CompressedPieceEncoding::EP_PAWN:
+            case CompressedPosition_PieceEncoding::EP_PAWN:
                 epPawn = Square { i };
                 break;
 
-            case CompressedPieceEncoding::BLACK_BISHOP:
+            case CompressedPosition_PieceEncoding::BLACK_BISHOP:
                 pieces[i] = PieceAndColor::BLACK_BISHOP;
                 break;
 
-            case CompressedPieceEncoding::BLACK_ROOK_CANNOT_CASTLE:
+            case CompressedPosition_PieceEncoding::BLACK_ROOK_CANNOT_CASTLE:
                 pieces[i] = PieceAndColor::BLACK_ROOK;
                 break;
 
-            case CompressedPieceEncoding::BLACK_QUEEN:
+            case CompressedPosition_PieceEncoding::BLACK_QUEEN:
                 pieces[i] = PieceAndColor::BLACK_QUEEN;
                 break;
 
-            case CompressedPieceEncoding::BLACK_KNIGHT:
+            case CompressedPosition_PieceEncoding::BLACK_KNIGHT:
                 pieces[i] = PieceAndColor::BLACK_KNIGHT;
                 break;
 
-            case CompressedPieceEncoding::BLACK_PAWN:
+            case CompressedPosition_PieceEncoding::BLACK_PAWN:
                 pieces[i] = PieceAndColor::BLACK_PAWN;
                 break;
 
-            case CompressedPieceEncoding::BLACK_ROOK_CAN_CASTLE:
+            case CompressedPosition_PieceEncoding::BLACK_ROOK_CAN_CASTLE:
                 pieces[i] = PieceAndColor::BLACK_ROOK;
                 if (blackCastlingRooks[0] == Square::NONE)
                     blackCastlingRooks[0] = Square { i };
@@ -225,7 +192,7 @@ void PositionCompressor::decompress(
                     blackCastlingRooks[1] = Square { i };
                 break;
 
-            case CompressedPieceEncoding::BLACK_KING:
+            case CompressedPosition_PieceEncoding::BLACK_KING:
                 pieces[i] = PieceAndColor::BLACK_KING;
                 blackKing = Square { i };
                 break;

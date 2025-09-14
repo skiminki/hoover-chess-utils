@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "compressed-position.h"
 #include "memory-mapped-file.h"
 
 #include "pgnreader.h"
 #include "pgnreader-string-utils.h"
 #include "chessboard.h"
+#include "position-compress-fixed.h"
 #include "version.h"
 
 #include <algorithm>
@@ -95,14 +95,14 @@ class CollectQueryFilePositionsActions : public pgn_reader::PgnReaderActions
 {
 private:
     // position to ply num
-    std::map<CompressedPosition, std::uint32_t> m_positions;
+    std::map<pgn_reader::CompressedPosition_FixedLength, std::uint32_t> m_positions;
 
     const hoover_chess_utils::pgn_reader::ChessBoard *board { };
 
     void addPosition()
     {
-        CompressedPosition cp { };
-        PositionCompressor::compress(*board, cp);
+        pgn_reader::CompressedPosition_FixedLength cp { };
+        pgn_reader::PositionCompressor_FixedLength::compress(*board, cp);
 
         m_positions[cp] = board->getCurrentPlyNum();
 
@@ -146,7 +146,7 @@ public:
 class CollectStatisticsActions : public pgn_reader::PgnReaderActions
 {
 private:
-    const std::vector<CompressedPosition> &m_inputPositions;
+    const std::vector<pgn_reader::CompressedPosition_FixedLength> &m_inputPositions;
     std::vector<PositionStats> &m_inputPositionStats;
 
     // current database game
@@ -158,7 +158,7 @@ private:
     // helper used to check which input positions have been seen
     std::vector<PositionClassification> m_inputPositionsSeen;
 
-    std::array<CompressedPosition, 1024U> m_currentGamePositions { };
+    std::array<pgn_reader::CompressedPosition_FixedLength, 1024U> m_currentGamePositions { };
     std::size_t m_numPositions { };
     std::size_t m_bookEnd { }; // index of first position where players are free to move (i.e., last book position)
 
@@ -166,14 +166,14 @@ private:
     {
         if (m_numPositions < m_currentGamePositions.size())
         {
-            PositionCompressor::compress(*m_board, m_currentGamePositions.at(m_numPositions));
+            pgn_reader::PositionCompressor_FixedLength::compress(*m_board, m_currentGamePositions.at(m_numPositions));
             m_numPositions++;
         }
     }
 
 public:
     CollectStatisticsActions(
-        const std::vector<CompressedPosition> &inputPositions,
+        const std::vector<pgn_reader::CompressedPosition_FixedLength> &inputPositions,
         std::vector<PositionStats> &inputPositionStats) noexcept :
         m_inputPositions { inputPositions },
         m_inputPositionStats { inputPositionStats }
@@ -242,7 +242,7 @@ public:
         // replay positions and mark results
         for (std::size_t i { }; i < m_numPositions; ++i)
         {
-            const CompressedPosition &cp { m_currentGamePositions[i] };
+            const pgn_reader::CompressedPosition_FixedLength &cp { m_currentGamePositions[i] };
 
             // find the position in input
             const auto j { std::lower_bound(m_inputPositions.begin(), m_inputPositions.end(), cp) };
@@ -331,7 +331,7 @@ std::string_view::iterator findNextGameStart(std::string_view fullPgn, std::size
 }
 
 void collectStatisticsThreadMain(
-    const std::vector<CompressedPosition> &positions,
+    const std::vector<pgn_reader::CompressedPosition_FixedLength> &positions,
     std::string_view databasePgn,
     std::size_t segmentNo,
     std::size_t numSegments,
@@ -365,7 +365,7 @@ void collectStatisticsThreadMain(
 }
 
 std::vector<PositionStats> collectStatistics(
-    const std::vector<CompressedPosition> &positions,
+    const std::vector<pgn_reader::CompressedPosition_FixedLength> &positions,
     const std::string &dbFileName,
     std::size_t numThreads)
 {
@@ -436,7 +436,7 @@ std::vector<PositionStats> collectStatistics(
     return threadResults.at(0);
 }
 
-std::pair<std::vector<CompressedPosition>, std::vector<std::uint32_t> > collectQueryFilePositions(const std::string &fileName)
+std::pair<std::vector<pgn_reader::CompressedPosition_FixedLength>, std::vector<std::uint32_t> > collectQueryFilePositions(const std::string &fileName)
 {
     using pgn_reader::PgnReader;
     using pgn_reader::PgnReaderActionClass;
@@ -470,7 +470,7 @@ std::pair<std::vector<CompressedPosition>, std::vector<std::uint32_t> > collectQ
         PgnReaderActionFilter { PgnReaderActionClass::Move });
 
     // linearize the collected positions
-    std::vector<CompressedPosition> positions { };
+    std::vector<pgn_reader::CompressedPosition_FixedLength> positions { };
     std::vector<std::uint32_t> positionPlyNums { };
 
     const auto &collectedPositions { actions.getPositions() };
@@ -518,7 +518,7 @@ const char *positionClassificationToString(PositionClassification pc) noexcept
 }
 
 void printStats(
-    const std::vector<CompressedPosition> &positions,
+    const std::vector<pgn_reader::CompressedPosition_FixedLength> &positions,
     const std::vector<PositionStats> &stats,
     const std::vector<std::uint32_t> &positionPlyNums)
 {
@@ -543,7 +543,7 @@ void printStats(
             const auto &cp { positions.at(i) };
 
             std::cout << "Checking position " << i << ", ply " << thisPlyNum << std::endl;
-            PositionCompressor::decompress(cp, 0U, 0U, board);
+            pgn_reader::PositionCompressor_FixedLength::decompress(cp, 0U, 0U, board);
             board.printBoard();
         }
 
@@ -589,7 +589,7 @@ void printStats(
         {
             const auto &cp { positions.at(highestPlyNumPositionIndex) };
             pgn_reader::ChessBoard board { };
-            PositionCompressor::decompress(cp, 0U, 0U, board);
+            pgn_reader::PositionCompressor_FixedLength::decompress(cp, 0U, 0U, board);
 
             board.printBoard();
         }
@@ -677,7 +677,7 @@ int tdbQueryMain(int argc, char **argv) noexcept
             threads = std::clamp(threads, std::size_t { 1U }, std::size_t { 256U });
         }
 
-        std::vector<CompressedPosition> positions;
+        std::vector<pgn_reader::CompressedPosition_FixedLength> positions;
         std::vector<std::uint32_t> positionPlyNums;
 
         std::tie(positions, positionPlyNums) = collectQueryFilePositions(pgnQueryFile);

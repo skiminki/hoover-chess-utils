@@ -55,23 +55,24 @@ endif()
 add_library(
   hoover-pgn-reader STATIC
   ${FLEX_PgnScanner_OUTPUTS}
-  src/chessboard.cc
+  src/bitboard-attacks.cc
+  src/bitboard-intercepts.cc
   src/chessboard-bitboard.cc
   src/chessboard-boardsetup.cc
   src/chessboard-loadfen.cc
   src/chessboard-movegen.cc
   src/chessboard-printboard.cc
   src/chessboard-types-squareset.cc
+  src/chessboard.cc
   src/pawn-lookups.cc
-  src/pgnreader.cc
-  src/pgnreader-error.cc
   src/pgnparser.cc
+  src/pgnreader-error.cc
   src/pgnreader-string-utils.cc
-  src/stringbuilder.cc
-  src/bitboard-attacks.cc
+  src/pgnreader.cc
+  src/position-compress-fixed.cc
   src/slider-attacks-generic.cc
   $<IF:$<BOOL:${HAVE_PDEP_PEXT}>,src/slider-attacks-pext-pdep.cc,>
-  src/bitboard-intercepts.cc
+  src/stringbuilder.cc
   )
 
 target_include_directories(hoover-pgn-reader PUBLIC

@@ -16,9 +16,9 @@
 
 #include "pgnreader.h"
 #include "pgnreader-string-utils.h"
+#include "position-compress-fixed.h"
 #include "version.h"
 
-#include "compressed-position.h"
 #include "memory-mapped-file.h"
 #include "output-buffer.h"
 
@@ -285,7 +285,7 @@ class EcoPgnReaderActions : public pgn_reader::PgnReaderActions
 {
 private:
     const pgn_reader::ChessBoard *m_board { };
-    std::map<CompressedPosition, OpeningInfo> m_openings { };
+    std::map<pgn_reader::CompressedPosition_FixedLength, OpeningInfo> m_openings { };
 
 
     std::string m_eco { };
@@ -321,8 +321,8 @@ public:
 
     void gameTerminated(pgn_reader::PgnResult) override
     {
-        CompressedPosition pos;
-        PositionCompressor::compress(*m_board, pos);
+        pgn_reader::CompressedPosition_FixedLength pos;
+        pgn_reader::PositionCompressor_FixedLength::compress(*m_board, pos);
 
         if constexpr (debugMode)
         {
@@ -335,8 +335,8 @@ public:
 
     const OpeningInfo *getOpeningForPosition(const pgn_reader::ChessBoard &board) const
     {
-        CompressedPosition pos;
-        PositionCompressor::compress(board, pos);
+        pgn_reader::CompressedPosition_FixedLength pos;
+        pgn_reader::PositionCompressor_FixedLength::compress(board, pos);
 
         auto i { std::as_const(m_openings).find(pos) };
         if (i != m_openings.end())
