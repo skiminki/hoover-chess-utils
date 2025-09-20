@@ -128,6 +128,26 @@ struct ParametrizedLegalDestinationType
     }
 };
 
+template <MoveGenType type>
+inline SquareSet blocksAllChecksMaskTempl(Square kingSq, SquareSet checkers, Square dst) noexcept;
+
+template <>
+constexpr inline SquareSet blocksAllChecksMaskTempl<MoveGenType::NO_CHECK>(Square kingSq, SquareSet checkers, Square dst) noexcept
+{
+    static_cast<void>(kingSq);
+    static_cast<void>(checkers);
+    static_cast<void>(dst);
+
+    return SquareSet::all(); // no checks to block
+}
+
+template <>
+inline SquareSet blocksAllChecksMaskTempl<MoveGenType::CHECK>(Square kingSq, SquareSet checkers, Square dst) noexcept
+{
+    return
+        (Intercepts::getInterceptSquares(kingSq, checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
+}
+
 }
 
 #endif
