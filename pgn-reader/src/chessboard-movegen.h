@@ -148,6 +148,63 @@ inline SquareSet blocksAllChecksMaskTempl<MoveGenType::CHECK>(Square kingSq, Squ
         (Intercepts::getInterceptSquares(kingSq, checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
 }
 
+/// @brief Generates the legal castling move, if any.
+///
+/// @tparam     type               Move generator type. Must be
+///                                @coderef{MoveGenType::NO_CHECK}.
+/// @tparam     MoveStoreFn        Move store function
+/// @tparam     shortCastling      Whether the move is short castling
+/// @param[in]  board              Chess board
+/// @param[in]  attackedSquares    Attacked squares
+/// @param[in]  store              Move store target
+///
+/// @sa @coderef{Attacks::determineAttackedSquares()}
+template <MoveGenType type, typename MoveStoreFn, bool shortCastling>
+void generateMovesForCastlingStoreFnTempl(
+    const ChessBoard &board,
+    SquareSet attackedSquares,
+    typename MoveStoreFn::Store &store) noexcept
+{
+    // When in check, castling is not legal. Since the caller is supposed to
+    // classify the position before calling this function, we'll just ensure
+    // here that we're not being called when in check.
+    static_assert(type == MoveGenType::NO_CHECK);
+
+    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
+    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
+
+    using CastlingSideSpecifics = CastlingSideSpecificsTempl<shortCastling>;
+
+    const Color turn { board.getTurn() };
+    const Square sqRook { board.getCastlingRook(turn, shortCastling) };
+
+    // do we have rights to castle?
+    if (sqRook == Square::NONE)
+        return;
+
+    const std::uint8_t targetRowAdd = (-static_cast<std::uint8_t>(turn)) & 63U;
+    const Square sqKingTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::kingTargetColumn + targetRowAdd) };
+    const Square sqRookTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::rookTargetColumn + targetRowAdd) };
+
+    // note: (startSq, endSq]
+    const SquareSet kingPathHalfOpen { Intercepts::getInterceptSquares(board.getKingInTurn(), sqKingTarget) };
+    const SquareSet rookPathHalfOpen { Intercepts::getInterceptSquares(sqRook, sqRookTarget) };
+
+    const SquareSet requiredEmptySquares {
+        (kingPathHalfOpen | rookPathHalfOpen) &~ (SquareSet::square(board.getKingInTurn()) | SquareSet::square(sqRook)) };
+
+    if (((requiredEmptySquares & board.getOccupancyMask())     | // all squares between king and rook empty?
+         (SquareSet::square(sqRook) & board.getPinnedPieces()) | // castling rook not pinned?
+         (kingPathHalfOpen & attackedSquares)                    // king path is not attacked?
+            ) != SquareSet::none())
+        return;
+
+    if constexpr (shortCastling)
+        MoveStoreFn::storeMove(store, Move { board.getKingInTurn(), sqRook, MoveTypeAndPromotion::CASTLING_SHORT });
+    else
+        MoveStoreFn::storeMove(store, Move { board.getKingInTurn(), sqRook, MoveTypeAndPromotion::CASTLING_LONG });
+}
+
 }
 
 #endif

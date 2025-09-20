@@ -84,6 +84,9 @@ public:
     /// pinned piece can only be moved along the pin axis.
     static inline SquareSet getRay(Square kingSq, Square pinnedSq) noexcept
     {
+        assert(isValidSquare(kingSq));
+        assert(isValidSquare(pinnedSq));
+
         const SquareSet ray { s_raysFromKingTable[getIndexOfSquare(kingSq)][getIndexOfSquare(pinnedSq)] };
         assert(ray != SquareSet { });
         return ray;
