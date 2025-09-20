@@ -25,8 +25,11 @@
 namespace hoover_chess_utils::pgn_reader
 {
 
+namespace
+{
+
 template <typename... Args>
-Move ChessBoard::generateSingleIllegalNoMove(const ChessBoard &board, [[maybe_unused]] Args... args) noexcept
+Move generateSingleIllegalNoMove(const ChessBoard &board, [[maybe_unused]] Args... args) noexcept
 {
     static_cast<void>(board);
 
@@ -34,12 +37,14 @@ Move ChessBoard::generateSingleIllegalNoMove(const ChessBoard &board, [[maybe_un
 }
 
 template <typename... Args>
-std::size_t ChessBoard::generateNoMoves(const ChessBoard &board, ShortMoveList &moves, [[maybe_unused]] Args... args) noexcept
+std::size_t generateNoMoves(const ChessBoard &board, ShortMoveList &moves, [[maybe_unused]] Args... args) noexcept
 {
     static_cast<void>(board);
     static_cast<void>(moves);
 
     return 0U;
+}
+
 }
 
 std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
@@ -86,8 +91,8 @@ std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
         .generateSingleMoveForRookAndDest = ChessBoard::generateSingleMoveForRookAndDestTempl<MoveGenType::CHECK>,
         .generateSingleMoveForQueenAndDest = ChessBoard::generateSingleMoveForQueenAndDestTempl<MoveGenType::CHECK>,
         .generateSingleMoveForKingAndDest = ChessBoard::generateSingleMoveForKingAndDestTempl<MoveGenType::CHECK>,
-        .generateSingleMoveForShortCastling = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForLongCastling = ChessBoard::generateSingleIllegalNoMove,
+        .generateSingleMoveForShortCastling = generateSingleIllegalNoMove,
+        .generateSingleMoveForLongCastling = generateSingleIllegalNoMove,
 
         .generateMovesForPawnAndDestNoCapture = ChessBoard::generateMovesForPawnAndDestNoCaptureTempl<MoveGenType::CHECK>,
         .generateMovesForPawnAndDestCapture = ChessBoard::generateMovesForPawnAndDestCaptureTempl<MoveGenType::CHECK>,
@@ -98,8 +103,8 @@ std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
         .generateMovesForRookAndDest = ChessBoard::generateMovesForRookAndDestTempl<MoveGenType::CHECK>,
         .generateMovesForQueenAndDest = ChessBoard::generateMovesForQueenAndDestTempl<MoveGenType::CHECK>,
         .generateMovesForKingAndDest = ChessBoard::generateMovesForKingAndDestTempl<MoveGenType::CHECK>,
-        .generateMovesForShortCastling = ChessBoard::generateNoMoves,
-        .generateMovesForLongCastling = ChessBoard::generateNoMoves,
+        .generateMovesForShortCastling = generateNoMoves,
+        .generateMovesForLongCastling = generateNoMoves,
 
         .generateMoves = &ChessBoard::generateMovesTempl<MoveGenType::CHECK>,
         .getNumberOfLegalMoves = &ChessBoard::getNumberOfLegalMovesTempl<MoveGenType::CHECK>,
@@ -108,29 +113,29 @@ std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
 
     // Move generator functions: MoveGenType::DOUBLE_CHECK
     MoveGenFunctions {
-        .generateSingleMoveForPawnAndDestNoCapture = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForPawnAndDestCapture = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForPawnAndDestPromoNoCapture = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForPawnAndDestPromoCapture = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForKnightAndDest = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForBishopAndDest = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForRookAndDest = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForQueenAndDest = ChessBoard::generateSingleIllegalNoMove,
+        .generateSingleMoveForPawnAndDestNoCapture = generateSingleIllegalNoMove,
+        .generateSingleMoveForPawnAndDestCapture = generateSingleIllegalNoMove,
+        .generateSingleMoveForPawnAndDestPromoNoCapture = generateSingleIllegalNoMove,
+        .generateSingleMoveForPawnAndDestPromoCapture = generateSingleIllegalNoMove,
+        .generateSingleMoveForKnightAndDest = generateSingleIllegalNoMove,
+        .generateSingleMoveForBishopAndDest = generateSingleIllegalNoMove,
+        .generateSingleMoveForRookAndDest = generateSingleIllegalNoMove,
+        .generateSingleMoveForQueenAndDest = generateSingleIllegalNoMove,
         .generateSingleMoveForKingAndDest = ChessBoard::generateSingleMoveForKingAndDestTempl<MoveGenType::DOUBLE_CHECK>,
-        .generateSingleMoveForShortCastling = ChessBoard::generateSingleIllegalNoMove,
-        .generateSingleMoveForLongCastling = ChessBoard::generateSingleIllegalNoMove,
+        .generateSingleMoveForShortCastling = generateSingleIllegalNoMove,
+        .generateSingleMoveForLongCastling = generateSingleIllegalNoMove,
 
-        .generateMovesForPawnAndDestNoCapture = ChessBoard::generateNoMoves,
-        .generateMovesForPawnAndDestCapture = ChessBoard::generateNoMoves,
-        .generateMovesForPawnAndDestPromoNoCapture = ChessBoard::generateNoMoves,
-        .generateMovesForPawnAndDestPromoCapture = ChessBoard::generateNoMoves,
-        .generateMovesForKnightAndDest = ChessBoard::generateNoMoves,
-        .generateMovesForBishopAndDest = ChessBoard::generateNoMoves,
-        .generateMovesForRookAndDest = ChessBoard::generateNoMoves,
-        .generateMovesForQueenAndDest = ChessBoard::generateNoMoves,
+        .generateMovesForPawnAndDestNoCapture = generateNoMoves,
+        .generateMovesForPawnAndDestCapture = generateNoMoves,
+        .generateMovesForPawnAndDestPromoNoCapture = generateNoMoves,
+        .generateMovesForPawnAndDestPromoCapture = generateNoMoves,
+        .generateMovesForKnightAndDest = generateNoMoves,
+        .generateMovesForBishopAndDest = generateNoMoves,
+        .generateMovesForRookAndDest = generateNoMoves,
+        .generateMovesForQueenAndDest = generateNoMoves,
         .generateMovesForKingAndDest = ChessBoard::generateMovesForKingAndDestTempl<MoveGenType::DOUBLE_CHECK>,
-        .generateMovesForShortCastling = ChessBoard::generateNoMoves,
-        .generateMovesForLongCastling = ChessBoard::generateNoMoves,
+        .generateMovesForShortCastling = generateNoMoves,
+        .generateMovesForLongCastling = generateNoMoves,
 
         .generateMoves = &ChessBoard::generateMovesTempl<MoveGenType::DOUBLE_CHECK>,
         .getNumberOfLegalMoves = &ChessBoard::getNumberOfLegalMovesTempl<MoveGenType::DOUBLE_CHECK>,
