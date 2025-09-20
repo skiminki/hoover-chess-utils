@@ -44,6 +44,22 @@ IntType saturatingIncrease(IntType v)
     return v + inc;
 }
 
+static constexpr inline std::uint8_t getKingColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
+{
+    static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_SHORT) & 1U) == 0U);
+    static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_LONG) & 1U) == 1U);
+
+    return 6U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 4U;
+}
+
+static constexpr inline std::uint8_t getRookColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
+{
+    static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_SHORT) & 1U) == 0U);
+    static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_LONG) & 1U) == 1U);
+
+    return 5U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 2U;
+}
+
 }
 
 void ChessBoard::updateCheckersAndPins() noexcept

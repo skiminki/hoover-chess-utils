@@ -1289,42 +1289,6 @@ private:
         return m_castlingRooks[getCastlingRookIndex(c, shortCastling)];
     }
 
-    static inline constexpr MoveTypeAndPromotion pieceToTypeAndPromotion(Piece promotion) noexcept
-    {
-        static_assert(
-            (static_cast<unsigned>(Piece::KNIGHT) | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_KNIGHT));
-        static_assert(
-            (static_cast<unsigned>(Piece::BISHOP) | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_BISHOP));
-        static_assert(
-            (static_cast<unsigned>(Piece::ROOK)   | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_ROOK));
-        static_assert(
-            (static_cast<unsigned>(Piece::QUEEN)  | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_QUEEN));
-
-        assert(promotion >= Piece::KNIGHT && promotion <= Piece::QUEEN);
-        [[assume(promotion >= Piece::KNIGHT && promotion <= Piece::QUEEN)]];
-
-        return static_cast<MoveTypeAndPromotion>(static_cast<uint16_t>(promotion) | 0x08U);
-    }
-
-    static constexpr inline std::uint8_t getKingColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
-    {
-        static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_SHORT) & 1U) == 0U);
-        static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_LONG) & 1U) == 1U);
-
-        return 6U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 4U;
-    }
-
-    static constexpr inline std::uint8_t getRookColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
-    {
-        static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_SHORT) & 1U) == 0U);
-        static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_LONG) & 1U) == 1U);
-
-        return 5U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 2U;
-    }
-
-    template <MoveGenType type>
-    inline SquareSet blocksAllChecksMaskTempl(Square dst) const noexcept;
-
     /// @brief Generates legal pawn moves, the actual implementation.
     ///
     /// @tparam     IteratorType       Move list iterator type

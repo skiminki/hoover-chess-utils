@@ -33,6 +33,30 @@
 namespace hoover_chess_utils::pgn_reader
 {
 
+namespace {
+
+template <MoveGenType type>
+inline SquareSet blocksAllChecksMaskTempl(Square kingSq, SquareSet checkers, Square dst) noexcept;
+
+template <>
+constexpr inline SquareSet blocksAllChecksMaskTempl<MoveGenType::NO_CHECK>(Square kingSq, SquareSet checkers, Square dst) noexcept
+{
+    static_cast<void>(kingSq);
+    static_cast<void>(checkers);
+    static_cast<void>(dst);
+
+    return SquareSet::all(); // no checks to block
+}
+
+template <>
+constexpr inline SquareSet blocksAllChecksMaskTempl<MoveGenType::CHECK>(Square kingSq, SquareSet checkers, Square dst) noexcept
+{
+    return
+        (Intercepts::getInterceptSquares(kingSq, checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
+}
+
+}
+
 template <typename... Args>
 Move ChessBoard::generateSingleIllegalNoMove(const ChessBoard &board, [[maybe_unused]] Args... args) noexcept
 {
@@ -61,7 +85,9 @@ void ChessBoard::generateMovesForPawnAndDestNoCaptureStoreFnTempl(
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
     const Color turn { getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMaskTempl<type>(dst) };
+    const SquareSet dstSqBit {
+        SquareSet::square(dst) & ~m_occupancyMask &
+        blocksAllChecksMaskTempl<type>(m_kingSq, m_checkers, dst) };
 
     const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
 
@@ -120,7 +146,8 @@ void ChessBoard::generateMovesForPawnAndDestCaptureStoreFnTempl(
         constexpr SquareSet dstSqMask { 0x00'FF'FF'FF'FF'FF'FF'00 };
 
         SquareSet dstOkMask {
-            (blocksAllChecksMaskTempl<type>(dst) & m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
+            (blocksAllChecksMaskTempl<type>(m_kingSq, m_checkers, dst) &
+             m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
 
         SQUARESET_ENUMERATE(
             src,
@@ -175,7 +202,9 @@ void ChessBoard::generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl(
     static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
 
     const Color turn { getTurn() };
-    const SquareSet dstSqBit { SquareSet::square(dst) & ~m_occupancyMask & blocksAllChecksMaskTempl<type>(dst) };
+    const SquareSet dstSqBit {
+        SquareSet::square(dst) & ~m_occupancyMask &
+        blocksAllChecksMaskTempl<type>(m_kingSq, m_checkers, dst) };
 
     // 7th or 0th rank
     const SquareSet allowedDstSqMask { PawnLookups::rank8(turn) };
@@ -226,7 +255,8 @@ void ChessBoard::generateMovesForPawnAndDestPromoCaptureStoreFnTempl(
     const SquareSet dstSqMask { PawnLookups::rank8(turn) };
 
     SquareSet dstOkMask {
-        (blocksAllChecksMaskTempl<type>(dst) & m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
+        (blocksAllChecksMaskTempl<type>(m_kingSq, m_checkers, dst) &
+         m_occupancyMask & dstSqBit & dstSqMask & ~m_turnColorMask).allIfAny() };
 
     SQUARESET_ENUMERATE(
         src,
@@ -265,7 +295,7 @@ void ChessBoard::generateMovesForKnightAndDestStoreFnTempl(
 
     SQUARESET_ENUMERATE(
         src,
-        blocksAllChecksMaskTempl<type>(dst) &
+        blocksAllChecksMaskTempl<type>(m_kingSq, m_checkers, dst) &
         ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
          & m_turnColorMask & m_knights & srcSqMask & Attacks::getKnightAttackMask(dst) &~ m_pinnedPieces),
         {
@@ -324,7 +354,7 @@ void ChessBoard::generateMovesForSliderAndDestStoreFnTempl(
 
     SQUARESET_ENUMERATE(
         src,
-        blocksAllChecksMaskTempl<type>(dst) &
+        blocksAllChecksMaskTempl<type>(m_kingSq, m_checkers, dst) &
         ((m_turnColorMask & SquareSet::square(dst)).allIfNone() // check for no self-capture
          & pieces),
         {
