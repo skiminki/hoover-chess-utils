@@ -75,9 +75,9 @@ std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
         .generateMovesForShortCastling = ChessBoard::generateMovesForShortCastlingTempl<MoveGenType::NO_CHECK>,
         .generateMovesForLongCastling = ChessBoard::generateMovesForLongCastlingTempl<MoveGenType::NO_CHECK>,
 
-        .generateMoves = &ChessBoard::generateMovesTempl<MoveGenType::NO_CHECK>,
-        .getNumberOfLegalMoves = &ChessBoard::getNumberOfLegalMovesTempl<MoveGenType::NO_CHECK>,
-        .hasLegalMoves = &ChessBoard::hasLegalMovesTempl<MoveGenType::NO_CHECK>,
+        .generateMoves = generateMovesTempl<MoveGenType::NO_CHECK>,
+        .getNumberOfLegalMoves = getNumberOfLegalMovesTempl<MoveGenType::NO_CHECK>,
+        .hasLegalMoves = hasLegalMovesTempl<MoveGenType::NO_CHECK>,
     },
 
     // Move generator functions: MoveGenType::CHECK
@@ -106,9 +106,9 @@ std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
         .generateMovesForShortCastling = generateNoMoves,
         .generateMovesForLongCastling = generateNoMoves,
 
-        .generateMoves = &ChessBoard::generateMovesTempl<MoveGenType::CHECK>,
-        .getNumberOfLegalMoves = &ChessBoard::getNumberOfLegalMovesTempl<MoveGenType::CHECK>,
-        .hasLegalMoves = &ChessBoard::hasLegalMovesTempl<MoveGenType::CHECK>,
+        .generateMoves = generateMovesTempl<MoveGenType::CHECK>,
+        .getNumberOfLegalMoves = getNumberOfLegalMovesTempl<MoveGenType::CHECK>,
+        .hasLegalMoves = hasLegalMovesTempl<MoveGenType::CHECK>,
     },
 
     // Move generator functions: MoveGenType::DOUBLE_CHECK
@@ -137,9 +137,9 @@ std::array<MoveGenFunctions, 3U> MoveGenFunctionTables::m_fns
         .generateMovesForShortCastling = generateNoMoves,
         .generateMovesForLongCastling = generateNoMoves,
 
-        .generateMoves = &ChessBoard::generateMovesTempl<MoveGenType::DOUBLE_CHECK>,
-        .getNumberOfLegalMoves = &ChessBoard::getNumberOfLegalMovesTempl<MoveGenType::DOUBLE_CHECK>,
-        .hasLegalMoves = &ChessBoard::hasLegalMovesTempl<MoveGenType::DOUBLE_CHECK>,
+        .generateMoves = generateMovesTempl<MoveGenType::DOUBLE_CHECK>,
+        .getNumberOfLegalMoves = getNumberOfLegalMovesTempl<MoveGenType::DOUBLE_CHECK>,
+        .hasLegalMoves = hasLegalMovesTempl<MoveGenType::DOUBLE_CHECK>,
     },
 };
 

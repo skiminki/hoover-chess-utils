@@ -428,8 +428,8 @@ Move ChessBoard::generateSingleMoveForLongCastlingTempl(const ChessBoard &board)
             board.getTurn()) };
 
     Move ret { Move::illegalNoMove() };
-    board.generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, SingleMoveStoreMoveNoDupCheckFn, false>(
-        attackedSquares, ret);
+    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, SingleMoveStoreMoveNoDupCheckFn, false>(
+        board, attackedSquares, ret);
     return ret;
 }
 
@@ -451,8 +451,8 @@ std::size_t ChessBoard::generateMovesForLongCastlingTempl(const ChessBoard &boar
             board.m_oppKingSq,
             board.getTurn()) };
 
-    board.generateMovesForCastlingStoreFnTempl<
-        MoveGenType::NO_CHECK, IteratorStoreMoveFn<ShortMoveList::iterator>, false>(attackedSquares, i);
+    generateMovesForCastlingStoreFnTempl<
+        MoveGenType::NO_CHECK, IteratorStoreMoveFn<ShortMoveList::iterator>, false>(board, attackedSquares, i);
 
     return i - moves.begin();
 }
@@ -473,8 +473,8 @@ Move ChessBoard::generateSingleMoveForShortCastlingTempl(const ChessBoard &board
             board.getTurn()) };
 
     Move ret { Move::illegalNoMove() };
-    board.generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, SingleMoveStoreMoveNoDupCheckFn, true>(
-        attackedSquares, ret);
+    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, SingleMoveStoreMoveNoDupCheckFn, true>(
+        board, attackedSquares, ret);
     return ret;
 }
 
@@ -496,8 +496,8 @@ std::size_t ChessBoard::generateMovesForShortCastlingTempl(const ChessBoard &boa
             board.m_oppKingSq,
             board.getTurn()) };
 
-    board.generateMovesForCastlingStoreFnTempl<
-        MoveGenType::NO_CHECK, IteratorStoreMoveFn<ShortMoveList::iterator>, true>(attackedSquares, i);
+    generateMovesForCastlingStoreFnTempl<
+        MoveGenType::NO_CHECK, IteratorStoreMoveFn<ShortMoveList::iterator>, true>(board, attackedSquares, i);
 
     return i - moves.begin();
 }

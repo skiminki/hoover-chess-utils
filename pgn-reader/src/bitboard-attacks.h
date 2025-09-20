@@ -146,7 +146,7 @@ public:
     /// squares are provided for white pawns on 2nd rank (pawns on 1st) and
     /// black pawns on 7th rank (pawns on 8th).
     ///
-    /// @sa @coderef{ChessBoard::generateMovesForPawnsTempl()}
+    /// @sa @coderef{generateMovesForPawnsTempl()}
     template <Color pawnColor, bool captureToRight>
     static constexpr inline SquareSet getPawnAttackersMask(SquareSet capturable) noexcept
     {
