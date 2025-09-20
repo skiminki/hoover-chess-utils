@@ -784,6 +784,22 @@ public:
         return m_kings;
     }
 
+    /// @brief Returns the square of the king in turn
+    ///
+    /// @return King square
+    inline Square getKingInTurn() const noexcept
+    {
+        return m_kingSq;
+    }
+
+    /// @brief Returns the square of the king not in turn
+    ///
+    /// @return King square
+    inline Square getKingNotInTurn() const noexcept
+    {
+        return m_oppKingSq;
+    }
+
     /// @brief Returns whether the king is in check
     ///
     /// @return Whether the king is in check
@@ -1289,182 +1305,6 @@ private:
         return m_castlingRooks[getCastlingRookIndex(c, shortCastling)];
     }
 
-    /// @brief Generates legal pawn moves, the actual implementation.
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @tparam     legalDestinations  Parameter type for legal destinations
-    /// @tparam     turn               Side to move
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  legalDestinations  Legal destinations
-    /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType, Color turn>
-    IteratorType generateMovesForPawnsTempl(
-        IteratorType i,
-        ParamType legalDestinations) const noexcept;
-
-    /// @brief Generates legal pawn moves, dispatch for side-to-move.
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @tparam     legalDestinations  Parameter type for legal destinations
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  legalDestinations  Legal destinations
-    /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType>
-    IteratorType generateMovesForPawns(
-        IteratorType i,
-        ParamType legalDestinations) const noexcept;
-
-    /// @brief Generates legal knight moves
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @tparam     legalDestinations  Parameter type for legal destinations
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  sq                 Source square
-    /// @param[in]  legalDestinations  Legal destinations
-    /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType>
-    IteratorType generateMovesForKnight(
-        IteratorType i,
-        Square sq,
-        ParamType legalDestinations) const noexcept;
-
-    /// @brief Generates legal bishop moves for queen or bishop.
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @tparam     legalDestinations  Parameter type for legal destinations
-    /// @tparam     pinned             Whether the piece is pinned
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  sq                 Source square
-    /// @param[in]  legalDestinations  Legal destinations
-    /// @param[in]  typeAndPromo       @coderef{MoveTypeAndPromotion::REGULAR_BISHOP_MOVE} or
-    ///                                @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE} depending
-    ///                                on the piece.
-    /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
-    IteratorType generateMovesForBishop(
-        IteratorType i,
-        Square sq,
-        ParamType legalDestinations,
-        MoveTypeAndPromotion typeAndPromo) const noexcept;
-
-    /// @brief Generates legal rook moves for queen or rook.
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @tparam     legalDestinations  Parameter type for legal destinations
-    /// @tparam     pinned             Whether the piece is pinned
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  sq                 Source square
-    /// @param[in]  legalDestinations  Legal destinations
-    /// @param[in]  typeAndPromo       @coderef{MoveTypeAndPromotion::REGULAR_ROOK_MOVE} or
-    ///                                @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE} depending
-    ///                                on the piece.
-    /// @return                        Move list iterator (end of generated moves)
-    template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
-    IteratorType generateMovesForRook(
-        IteratorType i,
-        Square sq,
-        ParamType legalDestinations,
-        MoveTypeAndPromotion typeAndPromo) const noexcept;
-
-    /// @brief Generates legal king moves
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @tparam     type               Move generator type
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @param[in]  attackedSquares    Attacked squares
-    /// @return                        Move list iterator (end of generated moves)
-    ///
-    /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <typename IteratorType>
-    IteratorType generateMovesForKing(
-        IteratorType i,
-        SquareSet attackedSquares) const noexcept;
-
-    /// @brief Generates the legal castling move, if any.
-    ///
-    /// @tparam     type               Move generator type. Must be
-    ///                                @coderef{MoveGenType::NO_CHECK}.
-    /// @tparam     MoveStoreFn        Move store function
-    /// @tparam     shortCastling      Whether the move is short castling
-    /// @param[in]  attackedSquares    Attacked squares
-    /// @param[in]  store              Move store target
-    ///
-    /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <MoveGenType type, typename MoveStoreFn, bool shortCastling>
-    void generateMovesForCastlingStoreFnTempl(SquareSet attackedSquares, MoveStoreFn::Store &store) const noexcept;
-
-    /// @brief Generates all legal moves when not in check
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @return                        Move list iterator (end of generated moves)
-    ///
-    /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <typename IteratorType>
-    inline IteratorType generateAllLegalMovesTemplNoCheck(
-        IteratorType i) const noexcept;
-
-    /// @brief Generates all legal moves when in check (but not in double check)
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @return                        Move list iterator (end of generated moves)
-    ///
-    /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <typename IteratorType>
-    inline IteratorType generateAllLegalMovesTemplInCheck(
-        IteratorType i) const noexcept;
-
-    /// @brief Generates all legal moves when in double check
-    ///
-    /// @tparam     IteratorType       Move list iterator type
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @return                        Move list iterator (end of generated moves)
-    ///
-    /// @sa (@coderef{Attacks::determineAttackedSquares()})
-    template <typename IteratorType>
-    inline IteratorType generateAllLegalMovesTemplInDoubleCheck(
-        IteratorType i) const noexcept;
-
-    /// @brief Generates all legal moves for a specific iterator type. Selects
-    /// the move generator based on whether the king is not in check, in check,
-    /// or in double check.
-    ///
-    /// @tparam     type               Move generator type
-    /// @tparam     IteratorType       Move list iterator type
-    /// @param[in]  i                  Move list iterator (begin of list)
-    /// @return                        Move list iterator (end of generated moves)
-    ///
-    /// Depending on the iterator type, we generate the following information
-    ///
-    /// <table>
-    /// <tr>
-    ///   <th>Iterator type</th>
-    ///   <th>Generated return</th>
-    /// </tr>
-    /// <tr>
-    ///   <td>@c MoveList::iterator</td>
-    ///   <td>Proper list of legal moves</td>
-    /// </tr>
-    /// <tr>
-    ///   <td>@coderef{LegalMoveCounterIterator}</td>
-    ///   <td>Number of legal moves</td>
-    /// </tr>
-    /// <tr>
-    ///   <td>@coderef{LegalMoveDetectorIterator}</td>
-    ///   <td>Whether there are any legal moves</td>
-    /// </tr>
-    /// </table>
-    template <MoveGenType type, typename IteratorType>
-    inline IteratorType generateMovesIterTempl(
-        IteratorType i) const noexcept;
-
-
     template <MoveGenType type, typename MoveStoreFn>
     inline void generateMovesForPawnAndDestNoCaptureStoreFnTempl(
         SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
@@ -1563,15 +1403,6 @@ private:
     template <MoveGenType type>
     static std::size_t generateMovesForLongCastlingTempl(const ChessBoard &board, ShortMoveList &moves) noexcept;
 
-
-    template <MoveGenType type>
-    static std::size_t generateMovesTempl(const ChessBoard &board, MoveList &moves) noexcept;
-
-    template <MoveGenType type>
-    static bool hasLegalMovesTempl(const ChessBoard &board) noexcept;
-
-    template <MoveGenType type>
-    static std::size_t getNumberOfLegalMovesTempl(const ChessBoard &board) noexcept;
 
     void calculateMasks(const ArrayBoard &board) noexcept;
 

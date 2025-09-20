@@ -23,23 +23,35 @@
 namespace hoover_chess_utils::pgn_reader
 {
 
+/// @brief Generates legal pawn moves, the actual implementation.
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @tparam     type               Move generator type
+/// @tparam     legalDestinations  Parameter type for legal destinations
+/// @tparam     turn               Side to move
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @param[in]  legalDestinations  Legal destinations
+/// @return                        Move list iterator (end of generated moves)
 template <typename IteratorType, MoveGenType type, typename ParamType, Color turn>
-auto ChessBoard::generateMovesForPawnsTempl(
+auto generateMovesForPawnsTempl(
+    const ChessBoard &board,
     IteratorType i,
-    ParamType legalDestinations) const noexcept -> IteratorType
+    ParamType legalDestinations) noexcept -> IteratorType
 {
     using SideSpecifics = PawnLookups_SideSpecificsTempl<turn>;
 
-    const SquareSet pawns { m_pawns & m_turnColorMask };
+    const SquareSet pawns { board.getPawns() & board.getPiecesInTurn() };
 
-    const SquareSet unpinnedPawns { m_pawns & m_turnColorMask & ~m_pinnedPieces };
-    const SquareSet pinnedPawns { m_pawns & m_turnColorMask & m_pinnedPieces };
+    const SquareSet unpinnedPawns { pawns & ~board.getPinnedPieces() };
 
-    // destination squares for advancing pawns
-    const SquareSet advanceMaskUnpinned { SideSpecifics::pawnAdvance(unpinnedPawns) & ~m_occupancyMask };
+    // destination squares for advancing pawns (must be empty)
+    const SquareSet advanceMaskUnpinned {
+        SideSpecifics::pawnAdvance(unpinnedPawns) & ~board.getOccupancyMask() };
 
-    // destination squares for double-advancing pawns
-    const SquareSet doubleAdvanceMaskUnpinned { SideSpecifics::pawnAdvance(advanceMaskUnpinned & SideSpecifics::rank3) & ~m_occupancyMask };
+    // destination squares for double-advancing pawns (must be empty)
+    const SquareSet doubleAdvanceMaskUnpinned {
+        SideSpecifics::pawnAdvance(advanceMaskUnpinned & SideSpecifics::rank3) & ~board.getOccupancyMask() };
 
     // pawn advances for unpinned pawns
     if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
@@ -87,7 +99,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
         i += (advanceMaskUnpinned & SideSpecifics::promoRank & legalDestinations()).popcount() * 4U;
     }
 
-    const SquareSet oppPieces { (m_occupancyMask ^ m_turnColorMask) };
+    const SquareSet oppPieces { (board.getOccupancyMask() ^ board.getPiecesInTurn()) };
     const SquareSet leftCapturingPawns {
         Attacks::getPawnAttackersMask<turn, false>(oppPieces & legalDestinations()) & pawns };
     const SquareSet rightCapturingPawns {
@@ -98,7 +110,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
         // capture left
         SQUARESET_ENUMERATE(
             src,
-            leftCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces,
+            leftCapturingPawns & ~SideSpecifics::rank7 & ~board.getPinnedPieces(),
             {
                 *i = Move { src, SideSpecifics::captureLeftSq(src), MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
                 ++i;
@@ -107,7 +119,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
         // capture right
         SQUARESET_ENUMERATE(
             src,
-            rightCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces,
+            rightCapturingPawns & ~SideSpecifics::rank7 & ~board.getPinnedPieces(),
             {
                 *i = Move { src, SideSpecifics::captureRightSq(src), MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
                 ++i;
@@ -116,7 +128,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
         // capture left + promo
         SQUARESET_ENUMERATE(
             src,
-            leftCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces,
+            leftCapturingPawns & SideSpecifics::rank7 & ~board.getPinnedPieces(),
             {
                 const Square dst { SideSpecifics::captureLeftSq(src) };
 
@@ -136,7 +148,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
         // capture right + promo
         SQUARESET_ENUMERATE(
             src,
-            rightCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces,
+            rightCapturingPawns & SideSpecifics::rank7 & ~board.getPinnedPieces(),
             {
                 const Square dst { SideSpecifics::captureRightSq(src) };
 
@@ -155,29 +167,32 @@ auto ChessBoard::generateMovesForPawnsTempl(
     }
     else
     {
-        i += (leftCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces).popcount();
-        i += (rightCapturingPawns & ~SideSpecifics::rank7 & ~m_pinnedPieces).popcount();
-        i += (leftCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces).popcount() * 4U;
-        i += (rightCapturingPawns & SideSpecifics::rank7 & ~m_pinnedPieces).popcount() * 4U;
+        i += (leftCapturingPawns & ~SideSpecifics::rank7 & ~board.getPinnedPieces()).popcount();
+        i += (rightCapturingPawns & ~SideSpecifics::rank7 & ~board.getPinnedPieces()).popcount();
+        i += (leftCapturingPawns & SideSpecifics::rank7 & ~board.getPinnedPieces()).popcount() * 4U;
+        i += (rightCapturingPawns & SideSpecifics::rank7 & ~board.getPinnedPieces()).popcount() * 4U;
     }
 
     // pinned pawns
     // note: pinned pawns can never resolve a check
     if constexpr (type == MoveGenType::NO_CHECK)
     {
+        // note: we need to filter out the EP square with board.getPiecesInTurn()
+        const SquareSet pinnedPawns { board.getPawns() & board.getPinnedPieces() & board.getPiecesInTurn() };
+
         SQUARESET_ENUMERATE(
             src,
             pinnedPawns,
             {
                 SquareSet pawnBit { SquareSet::square(src) };
-                const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawnBit) & ~m_occupancyMask };
-                const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~m_occupancyMask };
+                const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawnBit) & ~board.getOccupancyMask() };
+                const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~board.getOccupancyMask() };
 
                 // advances, non-promo
                 SQUARESET_ENUMERATE(
                     dst,
                     (advanceMask | doubleAdvanceMask) & (~SideSpecifics::promoRank) &
-                    Intercepts::getPinRestiction<true>(m_kingSq, src) &
+                    Intercepts::getPinRestiction<true>(board.getKingInTurn(), src) &
                     legalDestinations(),
                     {
                         *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
@@ -190,7 +205,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
                 SQUARESET_ENUMERATE(
                     dst,
                     oppPieces & SideSpecifics::captureLeft(pawnBit) & (~SideSpecifics::promoRank) &
-                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    Intercepts::getPinRestiction<true>(board.getKingInTurn(), src) & legalDestinations(),
                     {
                         *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
                         ++i;
@@ -200,7 +215,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
                 SQUARESET_ENUMERATE(
                     dst,
                     oppPieces & SideSpecifics::captureLeft(pawnBit) & SideSpecifics::promoRank &
-                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    Intercepts::getPinRestiction<true>(board.getKingInTurn(), src) & legalDestinations(),
                     {
                         *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
                         ++i;
@@ -219,7 +234,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
                 SQUARESET_ENUMERATE(
                     dst,
                     oppPieces & SideSpecifics::captureRight(pawnBit) & (~SideSpecifics::promoRank) &
-                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    Intercepts::getPinRestiction<true>(board.getKingInTurn(), src) & legalDestinations(),
                     {
                         *i = Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE };
                         ++i;
@@ -229,7 +244,7 @@ auto ChessBoard::generateMovesForPawnsTempl(
                 SQUARESET_ENUMERATE(
                     dst,
                     oppPieces & SideSpecifics::captureRight(pawnBit) & SideSpecifics::promoRank &
-                    Intercepts::getPinRestiction<true>(m_kingSq, src) & legalDestinations(),
+                    Intercepts::getPinRestiction<true>(board.getKingInTurn(), src) & legalDestinations(),
                     {
                         *i = Move { src, dst, MoveTypeAndPromotion::PROMO_QUEEN };
                         ++i;
@@ -247,16 +262,16 @@ auto ChessBoard::generateMovesForPawnsTempl(
     }
 
     // EP captures
-    if (m_epSquare <= Square::H8)
+    if (board.getEpSquare() <= Square::H8)
     {
         SQUARESET_ENUMERATE(
             src,
-            Attacks::getPawnAttackerMask(m_epSquare, turn) & pawns,
+            Attacks::getPawnAttackerMask(board.getEpSquare(), turn) & pawns,
             {
                 // The only legality check we need is the capturer pin check
-                if (Attacks::pinCheck(src, SquareSet::square(m_epSquare), m_kingSq, m_pinnedPieces))
+                if (Attacks::pinCheck(src, SquareSet::square(board.getEpSquare()), board.getKingInTurn(), board.getPinnedPieces()))
                 {
-                    *i = Move { src, m_epSquare, MoveTypeAndPromotion::EN_PASSANT };
+                    *i = Move { src, board.getEpSquare(), MoveTypeAndPromotion::EN_PASSANT };
                     ++i;
                 }
             });
@@ -265,29 +280,50 @@ auto ChessBoard::generateMovesForPawnsTempl(
     return i;
 }
 
+/// @brief Generates legal pawn moves, dispatch for side-to-move.
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @tparam     type               Move generator type
+/// @tparam     legalDestinations  Parameter type for legal destinations
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @param[in]  legalDestinations  Legal destinations
+/// @return                        Move list iterator (end of generated moves)
 template <typename IteratorType, MoveGenType type, typename ParamType>
-auto ChessBoard::generateMovesForPawns(
+auto generateMovesForPawns(
+    const ChessBoard &board,
     IteratorType i,
-    ParamType legalDestinations) const noexcept -> IteratorType
+    ParamType legalDestinations) noexcept -> IteratorType
 {
-    if (getTurn() == Color::WHITE)
-        return generateMovesForPawnsTempl<IteratorType, type, ParamType, Color::WHITE>(i, legalDestinations);
+    if (board.getTurn() == Color::WHITE)
+        return generateMovesForPawnsTempl<IteratorType, type, ParamType, Color::WHITE>(board, i, legalDestinations);
     else
-        return generateMovesForPawnsTempl<IteratorType, type, ParamType, Color::BLACK>(i, legalDestinations);
+        return generateMovesForPawnsTempl<IteratorType, type, ParamType, Color::BLACK>(board, i, legalDestinations);
 }
 
+/// @brief Generates legal knight moves
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @tparam     type               Move generator type
+/// @tparam     legalDestinations  Parameter type for legal destinations
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @param[in]  sq                 Source square
+/// @param[in]  legalDestinations  Legal destinations
+/// @return                        Move list iterator (end of generated moves)
 template <typename IteratorType, MoveGenType type, typename ParamType>
-auto ChessBoard::generateMovesForKnight(
+auto generateMovesForKnight(
+    const ChessBoard &board,
     IteratorType i,
     Square sq,
-    ParamType legalDestinations) const noexcept -> IteratorType
+    ParamType legalDestinations) noexcept -> IteratorType
 {
     // occup  turnColor    valid
     //     0          0        1
     //     0          1        1
     //     1          0        1
     //     1          1        0
-    const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
+    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
     const SquareSet dstSquares { Attacks::getKnightAttackMask(sq) & emptyOrCapture & legalDestinations() };
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
@@ -308,19 +344,34 @@ auto ChessBoard::generateMovesForKnight(
     return i;
 }
 
+/// @brief Generates legal bishop moves for queen or bishop.
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @tparam     type               Move generator type
+/// @tparam     legalDestinations  Parameter type for legal destinations
+/// @tparam     pinned             Whether the piece is pinned
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @param[in]  sq                 Source square
+/// @param[in]  legalDestinations  Legal destinations
+/// @param[in]  typeAndPromo       @coderef{MoveTypeAndPromotion::REGULAR_BISHOP_MOVE} or
+///                                @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE} depending
+///                                on the piece.
+/// @return                        Move list iterator (end of generated moves)
 template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
-auto ChessBoard::generateMovesForBishop(
+auto generateMovesForBishop(
+    const ChessBoard &board,
     IteratorType i,
     Square sq,
     ParamType legalDestinations,
-    MoveTypeAndPromotion typeAndPromo) const noexcept -> IteratorType
+    MoveTypeAndPromotion typeAndPromo) noexcept -> IteratorType
 {
-    const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
+    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
 
     const SquareSet dstSquares {
-        Attacks::getBishopAttackMask(sq, m_occupancyMask) &
+        Attacks::getBishopAttackMask(sq, board.getOccupancyMask()) &
         emptyOrCapture &
-        Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
+        Intercepts::getPinRestiction<pinned>(board.getKingInTurn(), sq) &
         legalDestinations() };
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
@@ -341,18 +392,33 @@ auto ChessBoard::generateMovesForBishop(
     return i;
 }
 
+/// @brief Generates legal rook moves for queen or rook.
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @tparam     type               Move generator type
+/// @tparam     legalDestinations  Parameter type for legal destinations
+/// @tparam     pinned             Whether the piece is pinned
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @param[in]  sq                 Source square
+/// @param[in]  legalDestinations  Legal destinations
+/// @param[in]  typeAndPromo       @coderef{MoveTypeAndPromotion::REGULAR_ROOK_MOVE} or
+///                                @coderef{MoveTypeAndPromotion::REGULAR_QUEEN_MOVE} depending
+///                                on the piece.
+/// @return                        Move list iterator (end of generated moves)
 template <typename IteratorType, MoveGenType type, typename ParamType, bool pinned>
-auto ChessBoard::generateMovesForRook(
+auto generateMovesForRook(
+    const ChessBoard &board,
     IteratorType i,
     Square sq,
     ParamType legalDestinations,
-    MoveTypeAndPromotion typeAndPromo) const noexcept -> IteratorType
+    MoveTypeAndPromotion typeAndPromo) noexcept -> IteratorType
 {
-    const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
+    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
     const SquareSet dstSquares {
-        Attacks::getRookAttackMask(sq, m_occupancyMask) &
+        Attacks::getRookAttackMask(sq, board.getOccupancyMask()) &
         emptyOrCapture &
-        Intercepts::getPinRestiction<pinned>(m_kingSq, sq) &
+        Intercepts::getPinRestiction<pinned>(board.getKingInTurn(), sq) &
         legalDestinations() };
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
@@ -373,15 +439,26 @@ auto ChessBoard::generateMovesForRook(
     return i;
 }
 
+/// @brief Generates legal king moves
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @tparam     type               Move generator type
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @param[in]  attackedSquares    Attacked squares
+/// @return                        Move list iterator (end of generated moves)
+///
+/// @sa @coderef{Attacks::determineAttackedSquares()}
 template <typename IteratorType>
-auto ChessBoard::generateMovesForKing(
+auto generateMovesForKing(
+    const ChessBoard &board,
     IteratorType i,
-    SquareSet attackedSquares) const noexcept -> IteratorType
+    SquareSet attackedSquares) noexcept -> IteratorType
 {
-    const SquareSet emptyOrCapture { ~(m_occupancyMask & m_turnColorMask) };
+    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
 
     const SquareSet dstSquares {
-        Attacks::getKingAttackMask(m_kingSq) & emptyOrCapture &~ attackedSquares };
+        Attacks::getKingAttackMask(board.getKingInTurn()) & emptyOrCapture &~ attackedSquares };
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
     {
@@ -389,7 +466,7 @@ auto ChessBoard::generateMovesForKing(
             dst,
             dstSquares,
             {
-                *i = Move { m_kingSq, dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
+                *i = Move { board.getKingInTurn(), dst, MoveTypeAndPromotion::REGULAR_KING_MOVE };
                 ++i;
             });
     }
@@ -401,59 +478,23 @@ auto ChessBoard::generateMovesForKing(
     return i;
 }
 
-template <MoveGenType type, typename MoveStoreFn, bool shortCastling>
-void ChessBoard::generateMovesForCastlingStoreFnTempl(
-    SquareSet attackedSquares,
-    typename MoveStoreFn::Store &store) const noexcept
-{
-    // When in check, castling is not legal. Since the caller is supposed to
-    // classify the position before calling this function, we'll just ensure
-    // here that we're not being called when in check.
-    static_assert(type == MoveGenType::NO_CHECK);
-
-    static_assert(static_cast<std::uint8_t>(Color::WHITE) == 0U);
-    static_assert(static_cast<std::uint8_t>(Color::BLACK) == 8U);
-
-    using CastlingSideSpecifics = CastlingSideSpecificsTempl<shortCastling>;
-
-    const Color turn { getTurn() };
-    const Square sqRook { getCastlingRook(turn, shortCastling) };
-
-    // do we have rights to castle?
-    if (sqRook == Square::NONE)
-        return;
-
-    const std::uint8_t targetRowAdd = (-static_cast<std::uint8_t>(turn)) & 63U;
-    const Square sqKingTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::kingTargetColumn + targetRowAdd) };
-    const Square sqRookTarget { static_cast<std::uint8_t>(CastlingSideSpecifics::rookTargetColumn + targetRowAdd) };
-
-    // note: (startSq, endSq]
-    const SquareSet kingPathHalfOpen { Intercepts::getInterceptSquares(m_kingSq, sqKingTarget) };
-    const SquareSet rookPathHalfOpen { Intercepts::getInterceptSquares(sqRook, sqRookTarget) };
-
-    const SquareSet requiredEmptySquares {
-        (kingPathHalfOpen | rookPathHalfOpen) &~ (SquareSet::square(m_kingSq) | SquareSet::square(sqRook)) };
-
-    if (((requiredEmptySquares & m_occupancyMask) |     // all squares between king and rook empty?
-         (SquareSet::square(sqRook) & m_pinnedPieces) | // castling rook not pinned?
-         (kingPathHalfOpen & attackedSquares)           // king path is not attacked?
-            ) != SquareSet::none())
-        return;
-
-    if constexpr (shortCastling)
-        MoveStoreFn::storeMove(store, Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_SHORT });
-    else
-        MoveStoreFn::storeMove(store, Move { m_kingSq, sqRook, MoveTypeAndPromotion::CASTLING_LONG });
-}
-
+/// @brief Generates all legal moves when not in check
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @return                        Move list iterator (end of generated moves)
+///
+/// @sa @coderef{Attacks::determineAttackedSquares()}
 template <typename IteratorType>
-IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
-    IteratorType i) const noexcept
+inline IteratorType generateAllLegalMovesTemplNoCheck(
+    const ChessBoard &board,
+    IteratorType i) noexcept
 {
     using ParamType = AllLegalDestinationType;
     constexpr ParamType legalDestinations { };
 
-    i = generateMovesForPawns<IteratorType, MoveGenType::NO_CHECK>(i, legalDestinations);
+    i = generateMovesForPawns<IteratorType, MoveGenType::NO_CHECK>(board, i, legalDestinations);
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
         if (i.hasLegalMoves())
@@ -461,8 +502,8 @@ IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_knights & m_turnColorMask & ~m_pinnedPieces,
-        i = generateMovesForKnight<IteratorType, MoveGenType::NO_CHECK>(i, sq, legalDestinations));
+        board.getKnights() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
+        i = generateMovesForKnight<IteratorType, MoveGenType::NO_CHECK>(board, i, sq, legalDestinations));
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
         if (i.hasLegalMoves())
@@ -470,26 +511,26 @@ IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_bishops & m_turnColorMask & ~m_pinnedPieces,
+        board.getBishopsAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getRooksAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
             };
-            i = generateMovesForBishop<IteratorType, MoveGenType::NO_CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+            i = generateMovesForBishop<IteratorType, MoveGenType::NO_CHECK, ParamType, false>(board, i, sq, legalDestinations, typeAndPromo);
         });
 
     SQUARESET_ENUMERATE(
         sq,
-        m_bishops & m_pinnedPieces,
+        board.getBishopsAndQueens() & board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getRooksAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
             };
-            i = generateMovesForBishop<IteratorType, MoveGenType::NO_CHECK, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
+            i = generateMovesForBishop<IteratorType, MoveGenType::NO_CHECK, ParamType, true>(board, i, sq, legalDestinations, typeAndPromo);
         });
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
@@ -498,26 +539,26 @@ IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_rooks & m_turnColorMask & ~m_pinnedPieces,
+        board.getRooksAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getBishopsAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_ROOK_MOVE
             };
-            i = generateMovesForRook<IteratorType, MoveGenType::NO_CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+            i = generateMovesForRook<IteratorType, MoveGenType::NO_CHECK, ParamType, false>(board, i, sq, legalDestinations, typeAndPromo);
         });
 
     SQUARESET_ENUMERATE(
         sq,
-        m_rooks & m_pinnedPieces,
+        board.getRooksAndQueens() & board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getBishopsAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_ROOK_MOVE
             };
-            i = generateMovesForRook<IteratorType, MoveGenType::NO_CHECK, ParamType, true>(i, sq, legalDestinations, typeAndPromo);
+            i = generateMovesForRook<IteratorType, MoveGenType::NO_CHECK, ParamType, true>(board, i, sq, legalDestinations, typeAndPromo);
         });
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
@@ -529,53 +570,62 @@ IteratorType ChessBoard::generateAllLegalMovesTemplNoCheck(
     // expensive than the other moves,
     const SquareSet attackedSquares {
         Attacks::determineAttackedSquares(
-            m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
-            m_pawns &~ m_turnColorMask,
-            m_knights &~ m_turnColorMask,
-            m_bishops &~ m_turnColorMask,
-            m_rooks &~ m_turnColorMask,
-            m_oppKingSq,
-            getTurn()) };
+            board.getOccupancyMask() &~ (board.getKings() & board.getPiecesInTurn()), // remove potentially attacked king
+            board.getPawns() &~ board.getPiecesInTurn(),
+            board.getKnights() &~ board.getPiecesInTurn(),
+            board.getBishopsAndQueens() &~ board.getPiecesInTurn(),
+            board.getRooksAndQueens() &~ board.getPiecesInTurn(),
+            board.getKingNotInTurn(),
+            board.getTurn()) };
 
-    i = generateMovesForKing<IteratorType>(i, attackedSquares);
+    i = generateMovesForKing<IteratorType>(board, i, attackedSquares);
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
         if (i.hasLegalMoves())
             return i;
 
-    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, IteratorStoreMoveFn<IteratorType>, false>(attackedSquares, i);
-    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, IteratorStoreMoveFn<IteratorType>, true>(attackedSquares, i);
+    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, IteratorStoreMoveFn<IteratorType>, false>(board, attackedSquares, i);
+    generateMovesForCastlingStoreFnTempl<MoveGenType::NO_CHECK, IteratorStoreMoveFn<IteratorType>, true>(board, attackedSquares, i);
 
     return i;
 }
 
+/// @brief Generates all legal moves when in check (but not in double check)
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @return                        Move list iterator (end of generated moves)
+///
+/// @sa @coderef{Attacks::determineAttackedSquares()}
 template <typename IteratorType>
-IteratorType ChessBoard::generateAllLegalMovesTemplInCheck(
-    IteratorType i) const noexcept
+inline IteratorType generateAllLegalMovesTemplInCheck(
+    const ChessBoard &board,
+    IteratorType i) noexcept
 {
     using ParamType = ParametrizedLegalDestinationType;
     ParamType legalDestinations {
-        Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) };
+        Intercepts::getInterceptSquares(board.getKingInTurn(), board.getCheckers().firstSquare()) };
 
     // if we're in check, we'll try the king moves first
     {
         const SquareSet attackedSquares {
             Attacks::determineAttackedSquares(
-                m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
-                m_pawns &~ m_turnColorMask,
-                m_knights &~ m_turnColorMask,
-                m_bishops &~ m_turnColorMask,
-                m_rooks &~ m_turnColorMask,
-                m_oppKingSq,
-                getTurn()) };
+                board.getOccupancyMask() &~ (board.getKings() & board.getPiecesInTurn()), // remove potentially attacked king
+                board.getPawns() &~ board.getPiecesInTurn(),
+                board.getKnights() &~ board.getPiecesInTurn(),
+                board.getBishopsAndQueens() &~ board.getPiecesInTurn(),
+                board.getRooksAndQueens() &~ board.getPiecesInTurn(),
+                board.getKingNotInTurn(),
+                board.getTurn()) };
 
-        i = generateMovesForKing<IteratorType>(i, attackedSquares);
+        i = generateMovesForKing<IteratorType>(board, i, attackedSquares);
         if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
             if (i.hasLegalMoves())
                 return i;
     }
 
-    i = generateMovesForPawns<IteratorType, MoveGenType::CHECK, ParamType>(i, legalDestinations);
+    i = generateMovesForPawns<IteratorType, MoveGenType::CHECK, ParamType>(board, i, legalDestinations);
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
         if (i.hasLegalMoves())
@@ -583,8 +633,8 @@ IteratorType ChessBoard::generateAllLegalMovesTemplInCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_knights & m_turnColorMask & ~m_pinnedPieces,
-        i = generateMovesForKnight<IteratorType, MoveGenType::CHECK, ParamType>(i, sq, legalDestinations));
+        board.getKnights() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
+        i = generateMovesForKnight<IteratorType, MoveGenType::CHECK, ParamType>(board, i, sq, legalDestinations));
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::canCompleteEarly)
         if (i.hasLegalMoves())
@@ -592,14 +642,14 @@ IteratorType ChessBoard::generateAllLegalMovesTemplInCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_bishops & m_turnColorMask & ~m_pinnedPieces,
+        board.getBishopsAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (m_rooks & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getRooksAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
             };
-            i = generateMovesForBishop<IteratorType, MoveGenType::CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+            i = generateMovesForBishop<IteratorType, MoveGenType::CHECK, ParamType, false>(board, i, sq, legalDestinations, typeAndPromo);
         });
 
     // Note: pinned pieces cannot resolve checks
@@ -610,14 +660,14 @@ IteratorType ChessBoard::generateAllLegalMovesTemplInCheck(
 
     SQUARESET_ENUMERATE(
         sq,
-        m_rooks & m_turnColorMask & ~m_pinnedPieces,
+        board.getRooksAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (m_bishops & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getBishopsAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_ROOK_MOVE
             };
-            i = generateMovesForRook<IteratorType, MoveGenType::CHECK, ParamType, false>(i, sq, legalDestinations, typeAndPromo);
+            i = generateMovesForRook<IteratorType, MoveGenType::CHECK, ParamType, false>(board, i, sq, legalDestinations, typeAndPromo);
         });
 
     // Note: pinned pieces cannot resolve checks
@@ -629,69 +679,123 @@ IteratorType ChessBoard::generateAllLegalMovesTemplInCheck(
     return i;
 }
 
+/// @brief Generates all legal moves when in double check
+///
+/// @tparam     IteratorType       Move list iterator type
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @return                        Move list iterator (end of generated moves)
+///
+/// @sa (@coderef{Attacks::determineAttackedSquares()})
 template <typename IteratorType>
-IteratorType ChessBoard::generateAllLegalMovesTemplInDoubleCheck(
-    IteratorType i) const noexcept
+inline IteratorType generateAllLegalMovesTemplInDoubleCheck(
+    const ChessBoard &board,
+    IteratorType i) noexcept
 {
     // in double-check, king moves are the only legal moves
     const SquareSet attackedSquares {
         Attacks::determineAttackedSquares(
-            m_occupancyMask &~ (m_kings & m_turnColorMask), // remove potentially attacked king
-            m_pawns &~ m_turnColorMask,
-            m_knights &~ m_turnColorMask,
-            m_bishops &~ m_turnColorMask,
-            m_rooks &~ m_turnColorMask,
-            m_oppKingSq,
-            getTurn()) };
+            board.getOccupancyMask() &~ (board.getKings() & board.getPiecesInTurn()), // remove potentially attacked king
+            board.getPawns() &~ board.getPiecesInTurn(),
+            board.getKnights() &~ board.getPiecesInTurn(),
+            board.getBishopsAndQueens() &~ board.getPiecesInTurn(),
+            board.getRooksAndQueens() &~ board.getPiecesInTurn(),
+            board.getKingNotInTurn(),
+            board.getTurn()) };
 
-    i = generateMovesForKing<IteratorType>(i, attackedSquares);
+    i = generateMovesForKing<IteratorType>(board, i, attackedSquares);
 
     return i;
 }
 
+/// @brief Generates all legal moves for a specific iterator type.
+///
+/// @tparam     type               Move generator type
+/// @tparam     IteratorType       Move list iterator type
+/// @param[in]  board              Chess board
+/// @param[in]  i                  Move list iterator (begin of list)
+/// @return                        Move list iterator (end of generated moves)
+///
+/// Depending on the iterator type, we generate the following information
+///
+/// <table>
+/// <tr>
+///   <th>Iterator type</th>
+///   <th>Generated return</th>
+/// </tr>
+/// <tr>
+///   <td>@c MoveList::iterator</td>
+///   <td>Proper list of legal moves</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{LegalMoveCounterIterator}</td>
+///   <td>Number of legal moves</td>
+/// </tr>
+/// <tr>
+///   <td>@coderef{LegalMoveDetectorIterator}</td>
+///   <td>Whether there are any legal moves</td>
+/// </tr>
+/// </table>
 template <MoveGenType type, typename IteratorType>
-IteratorType ChessBoard::generateMovesIterTempl(
-    IteratorType i) const noexcept
+inline IteratorType generateMovesIterTempl(
+    const ChessBoard &board,
+    IteratorType i) noexcept
 {
     if constexpr (type == MoveGenType::NO_CHECK)
     {
         // all destinations are ok as long as the move is ok
-        i = generateAllLegalMovesTemplNoCheck<IteratorType>(i);
+        i = generateAllLegalMovesTemplNoCheck<IteratorType>(board, i);
     }
     else if constexpr (type == MoveGenType::CHECK)
     {
         // must capture the checker or block the check
-        i = generateAllLegalMovesTemplInCheck<IteratorType>(i);
+        i = generateAllLegalMovesTemplInCheck<IteratorType>(board, i);
     }
     else
     {
         static_assert(type == MoveGenType::DOUBLE_CHECK);
 
         // king moves only
-        i = generateAllLegalMovesTemplInDoubleCheck<IteratorType>(i);
+        i = generateAllLegalMovesTemplInDoubleCheck<IteratorType>(board, i);
     }
 
     return i;
 }
 
+/// @brief Generates all legal moves for a position.
+///
+/// @tparam     type               Move generator type
+/// @param[in]  board              Chess board
+/// @param[out] moves              Move list
+/// @return                        Number of generated moves
 template <MoveGenType type>
-std::size_t ChessBoard::generateMovesTempl(const ChessBoard &board, MoveList &moves) noexcept
+std::size_t generateMovesTempl(const ChessBoard &board, MoveList &moves) noexcept
 {
-    const MoveList::iterator i { board.generateMovesIterTempl<type>(moves.begin()) };
+    const MoveList::iterator i { generateMovesIterTempl<type>(board, moves.begin()) };
     return i - moves.begin();
 }
 
+/// @brief Returns the number of legal moves for a position.
+///
+/// @tparam     type               Move generator type
+/// @param[in]  board              Chess board
+/// @return                        Number of generated moves
 template <MoveGenType type>
-std::size_t ChessBoard::getNumberOfLegalMovesTempl(const ChessBoard &board) noexcept
+std::size_t getNumberOfLegalMovesTempl(const ChessBoard &board) noexcept
 {
-    return board.generateMovesIterTempl<type>(LegalMoveCounterIterator { }).getNumberOfLegalMoves();
+    return generateMovesIterTempl<type>(board, LegalMoveCounterIterator { }).getNumberOfLegalMoves();
 }
 
+/// @brief Determines whether there are any legal moves
+///
+/// @tparam     type               Move generator type
+/// @param[in]  board              Chess board
+/// @return                        Whether there are any legal moves
 template <MoveGenType type>
-bool ChessBoard::hasLegalMovesTempl(const ChessBoard &board) noexcept
+bool hasLegalMovesTempl(const ChessBoard &board) noexcept
 {
     const LegalMoveDetectorIterator legalMovesIterator {
-        board.generateMovesIterTempl<type>(LegalMoveDetectorIterator { }) };
+        generateMovesIterTempl<type>(board, LegalMoveDetectorIterator { }) };
 
     return legalMovesIterator.hasLegalMoves();
 }
