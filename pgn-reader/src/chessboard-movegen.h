@@ -71,58 +71,62 @@ struct CastlingSideSpecificsTempl<true>
     static constexpr std::uint8_t rookTargetColumn { 5U };
 };
 
-template <MoveGenType type>
-SquareSet ChessBoard::blocksAllChecksMaskTempl(Square dst) const noexcept
+inline constexpr MoveTypeAndPromotion pieceToTypeAndPromotion(Piece promotion) noexcept
 {
-    if constexpr (type == MoveGenType::NO_CHECK)
-        return SquareSet::all(); // no checks to block
-    else
-    {
-        static_assert(type == MoveGenType::CHECK);
-        return
-            (Intercepts::getInterceptSquares(m_kingSq, m_checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
-    }
+    static_assert(
+        (static_cast<unsigned>(Piece::KNIGHT) | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_KNIGHT));
+    static_assert(
+        (static_cast<unsigned>(Piece::BISHOP) | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_BISHOP));
+    static_assert(
+        (static_cast<unsigned>(Piece::ROOK)   | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_ROOK));
+    static_assert(
+        (static_cast<unsigned>(Piece::QUEEN)  | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_QUEEN));
+
+    assert(promotion >= Piece::KNIGHT && promotion <= Piece::QUEEN);
+    [[assume(promotion >= Piece::KNIGHT && promotion <= Piece::QUEEN)]];
+
+    return static_cast<MoveTypeAndPromotion>(static_cast<uint16_t>(promotion) | 0x08U);
 }
 
-    // Note about legal destinations during generateMoves().
-    //
-    // Legal destinations for a non-king move. Rules:
-    // - No checkers:
-    //   - any destination is legal (as long as the move is otherwise legal)
-    // - One checker:
-    //   - Checker must be captured; OR
-    //   - Check must be intercepted (ray attacks only)
-    // - Two checkers or more: (>= 3 cannot be reached legally)
-    //   - No legal destinations (king move is forced when in double-check)
+// Note about legal destinations during generateMoves().
+//
+// Legal destinations for a non-king move. Rules:
+// - No checkers:
+//   - any destination is legal (as long as the move is otherwise legal)
+// - One checker:
+//   - Checker must be captured; OR
+//   - Check must be intercepted (ray attacks only)
+// - Two checkers or more: (>= 3 cannot be reached legally)
+//   - No legal destinations (king move is forced when in double-check)
 
-    struct AllLegalDestinationType
+struct AllLegalDestinationType
+{
+    constexpr SquareSet operator () () const noexcept
     {
-        constexpr SquareSet operator () () const noexcept
-        {
-            return SquareSet::all();
-        }
-    };
+        return SquareSet::all();
+    }
+};
 
-    struct ParametrizedLegalDestinationType
+struct ParametrizedLegalDestinationType
+{
+    SquareSet m_legalDestinations;
+
+    constexpr ParametrizedLegalDestinationType(SquareSet legalDestinations) noexcept :
+        m_legalDestinations(legalDestinations)
     {
-        SquareSet m_legalDestinations;
+    }
 
-        constexpr ParametrizedLegalDestinationType(SquareSet legalDestinations) noexcept :
-            m_legalDestinations(legalDestinations)
-        {
-        }
+    ParametrizedLegalDestinationType(const ParametrizedLegalDestinationType &) = default;
+    ParametrizedLegalDestinationType(ParametrizedLegalDestinationType &&) = default;
+    ParametrizedLegalDestinationType &operator = (const ParametrizedLegalDestinationType &) & = default;
+    ParametrizedLegalDestinationType &operator = (ParametrizedLegalDestinationType &&) & = default;
+    ~ParametrizedLegalDestinationType() = default;
 
-        ParametrizedLegalDestinationType(const ParametrizedLegalDestinationType &) = default;
-        ParametrizedLegalDestinationType(ParametrizedLegalDestinationType &&) = default;
-        ParametrizedLegalDestinationType &operator = (const ParametrizedLegalDestinationType &) & = default;
-        ParametrizedLegalDestinationType &operator = (ParametrizedLegalDestinationType &&) & = default;
-        ~ParametrizedLegalDestinationType() = default;
-
-        constexpr SquareSet operator () () const noexcept
-        {
-            return m_legalDestinations;
-        }
-    };
+    constexpr SquareSet operator () () const noexcept
+    {
+        return m_legalDestinations;
+    }
+};
 
 
 
