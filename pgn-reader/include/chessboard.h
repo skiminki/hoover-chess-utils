@@ -1494,9 +1494,6 @@ private:
         SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) const noexcept;
 
 
-    template <typename... Args>
-    static Move generateSingleIllegalNoMove(const ChessBoard &board, Args... args) noexcept;
-
     template <MoveGenType type>
     static Move generateSingleMoveForPawnAndDestNoCaptureTempl(const ChessBoard &board, SquareSet srcSqMask, Square dst) noexcept;
 
