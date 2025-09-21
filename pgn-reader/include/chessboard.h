@@ -879,8 +879,6 @@ public:
     ///
     /// @remark When EP square is other than @coderef{Square::NONE}, at least
     /// one EP capture is guaranteed to be legal.
-    ///
-    /// @sa @coderef{canEpCapture()}
     inline Square getEpSquare() const noexcept
     {
         return m_epSquare;
@@ -1103,18 +1101,6 @@ public:
     /// @param[out] moves           List of returned moves
     /// @return                     Number of returned moves
     inline std::size_t generateMovesForLongCastling(ShortMoveList &moves) const noexcept;
-
-    /// @brief Validates en-passant capture
-    ///
-    /// @return Whether there is a legal en-passant capture move
-    ///
-    /// This function determines whether there is a legal en-passant capture
-    /// move. This function is useful for generating FENs, position databases,
-    /// and similar.
-    bool canEpCapture() const noexcept
-    {
-        return m_epSquare != Square::NONE;
-    }
 
     /// @brief Generates a list of all legal moves for the current position
     ///

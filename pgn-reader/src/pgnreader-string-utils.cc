@@ -497,7 +497,7 @@ void StringUtils::boardToFEN(const ChessBoard &board, MiniString<96U> &fen) noex
 
     *i++ = ' ';
 
-    if (board.canEpCapture())
+    if (isValidSquare(board.getEpSquare()))
     {
         *i++ = colChar(board.getEpSquare());
         *i++ = rowChar(board.getEpSquare());

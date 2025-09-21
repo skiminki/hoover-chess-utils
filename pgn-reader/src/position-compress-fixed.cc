@@ -73,16 +73,12 @@ void PositionCompressor_FixedLength::compress(const pgn_reader::ChessBoard &boar
     if (board.getTurn() == Color::WHITE)
     {
         whiteKingInTurnAndBlackKing = board.getKings();
-
-        if (board.canEpCapture())
-            epPawns = SquareSet::square(board.getEpSquare()) >> 8U;
+        epPawns = SquareSet::squareOrNone(board.getEpSquare()) >> 8U;
     }
     else
     {
         whiteKingInTurnAndBlackKing = board.getKings() & board.getPiecesInTurn();
-
-        if (board.canEpCapture())
-            epPawns = SquareSet::square(board.getEpSquare()) << 8U;
+        epPawns = SquareSet::squareOrNone(board.getEpSquare()) << 8U;
     }
 
     SquareSet nonEpPawns { board.getPawns() & ~epPawns };
