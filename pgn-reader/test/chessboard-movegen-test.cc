@@ -166,6 +166,16 @@ TEST(MoveGen, canEpCapture)
     board.loadFEN("4k3/3b4/8/5PpP/8/7K/8/8 w - g6 0 1");
     EXPECT_TRUE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
+
+    // EP capture + check, two pawns: one pinned, one not
+    board.loadFEN("1k1r4/8/8/3PpP2/3K4/8/8/8 w - e6 0 1");
+    EXPECT_EQ(board.getEpSquare(), Square::E6);
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::E6);
+
+    // EP capture + check, capturing pawn is pinned
+    board.loadFEN("1k1r4/8/8/3Pp3/3K4/8/8/8 w - e6 0 1");
+    EXPECT_EQ(board.getEpSquare(), Square::NONE);
+    PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::E6);
 }
 
 TEST(MoveGen, halfMoveClock)
