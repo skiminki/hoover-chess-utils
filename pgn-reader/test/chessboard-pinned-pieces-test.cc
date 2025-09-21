@@ -43,7 +43,8 @@ TEST(ChessBoard, pinnedPieces)
     EXPECT_EQ(board.getPinnedPieces(), SquareSet { });
 
     board.loadFEN("1k6/7b/8/4Pp2/8/8/2K5/8 w - f6 0 1");
-    EXPECT_EQ(board.getPinnedPieces(), SquareSet::square(Square::F5));
+    EXPECT_EQ(board.getPinnedPieces(), SquareSet { });
+    EXPECT_EQ(board.getEpSquare(), Square::NONE);
 }
 
 }

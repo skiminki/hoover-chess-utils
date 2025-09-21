@@ -178,7 +178,7 @@ auto generateMovesForPawnsTempl(
     if constexpr (type == MoveGenType::NO_CHECK)
     {
         // note: we need to filter out the EP square with board.getPiecesInTurn()
-        const SquareSet pinnedPawns { board.getPawns() & board.getPinnedPieces() & board.getPiecesInTurn() };
+        const SquareSet pinnedPawns { board.getPawns() & board.getPinnedPieces() };
 
         SQUARESET_ENUMERATE(
             src,

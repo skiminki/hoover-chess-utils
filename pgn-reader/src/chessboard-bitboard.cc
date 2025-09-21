@@ -93,7 +93,10 @@ void ChessBoard::updateCheckersAndPins() noexcept
     m_moveGenFns = &MoveGenFunctionTables::getFunctions(MoveGenType { numCheckers });
     // If EP pawn is pinned, it can never be captured. So, we'll reset it
     if ((m_pinnedPieces & epCapturable) != SquareSet::none())
+    {
         m_epSquare = Square::NONE;
+        m_pinnedPieces &=~ epCapturable;
+    }
 }
 
 void ChessBoard::doMove(const Move m) noexcept
