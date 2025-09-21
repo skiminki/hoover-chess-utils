@@ -50,7 +50,7 @@ void ChessBoard::printBoard() const
                        StringUtils::squareToString(getWhiteShortCastleRook(), ctStringView_NONE),
                        StringUtils::squareToString(getBlackLongCastleRook(), ctStringView_NONE),
                        StringUtils::squareToString(getBlackShortCastleRook(), ctStringView_NONE),
-                       StringUtils::squareToString(canEpCapture() ? getEpSquare() : Square::NONE, ctStringView_NONE),
+                       StringUtils::squareToString(getEpSquare(), ctStringView_NONE),
                        getHalfMoveClock(),
                        moveNumOfPly(getCurrentPlyNum()),
                        getTurn() == Color::WHITE ? 'w' : 'b')

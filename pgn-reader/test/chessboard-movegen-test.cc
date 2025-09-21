@@ -65,106 +65,106 @@ TEST(MoveGen, canEpCapture)
 {
     ChessBoard board { };
 
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     // 1. c4 c6 2. c5 Qb6 3. Nh3 h6 4. g3 Nf6 5. Bg2 a6 6. O-O g6 7. f4 d5 { cannot EP capture due to pin} 8. f5 e5 9. fxe6
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::C4);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::C6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::C5);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, QueenAndDest, SquareSet::all(), Square::B6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, KnightAndDest, SquareSet::all(), Square::H3);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::H6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::G3);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, KnightAndDest, SquareSet::all(), Square::F6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, BishopAndDest, SquareSet::all(), Square::G2);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::A6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, ShortCastling);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::G6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::F4);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::D5);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::square(Square::C5), Square::D6);
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::F5);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestNoCapture, SquareSet::all(), Square::E5);
-    EXPECT_TRUE(board.canEpCapture());
+    EXPECT_TRUE(isValidSquare(board.getEpSquare()));
 
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::square(Square::F5), Square::E6);
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
 
     // special cases
     // in check but not by EP
     board.loadFEN("1r2k3/8/8/5Pp1/8/8/1K6/8 w - g6 0 1");
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // in check by EP
     board.loadFEN("4k3/8/8/5Pp1/7K/8/8/8 w - g6 0 1");
-    EXPECT_TRUE(board.canEpCapture());
+    EXPECT_TRUE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // EP pawn is pinned (EP not possible)
     board.loadFEN("3bk3/8/8/5Pp1/7K/8/8/8 w - g6 0 1");
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // EP capture exposes king horizontally to rook
     board.loadFEN("3bk3/8/8/1r3PpK/8/8/8/8 w - g6 0 1");
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // EP capture, king on same rank, but not exposing to rook
     board.loadFEN("4k3/8/8/1n1Pp2K/8/8/8/8 w - e6 0 1");
-    EXPECT_TRUE(board.canEpCapture());
+    EXPECT_TRUE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::E6);
 
     // EP capture, two rooks (no exposure)
     board.loadFEN("4k3/8/8/1r3Ppr/8/8/5K2/8 w - g6 0 1");
-    EXPECT_TRUE(board.canEpCapture());
+    EXPECT_TRUE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // EP capture, capturing pawn pinned but ok
     board.loadFEN("4k3/7b/8/5Pp1/8/3K4/8/8 w - g6 0 1");
-    EXPECT_TRUE(board.canEpCapture());
+    EXPECT_TRUE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // EP capture, capturing pawn pinned but not ok
     board.loadFEN("4k3/3b4/8/5Pp1/8/7K/8/8 w - - 0 1");
-    EXPECT_FALSE(board.canEpCapture());
+    EXPECT_FALSE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE_EXPECT_NO_MOVES(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 
     // EP capture, two pawns: one pinned, one not
     board.loadFEN("4k3/3b4/8/5PpP/8/7K/8/8 w - g6 0 1");
-    EXPECT_TRUE(board.canEpCapture());
+    EXPECT_TRUE(isValidSquare(board.getEpSquare()));
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::G6);
 }
 
