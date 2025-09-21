@@ -819,6 +819,73 @@ public:
     /// @brief Returns squares occupied by absolutely pinned pieces
     ///
     /// @return Pinned pieces
+    ///
+    /// @remark The en passant capturable pawn is never marked as pinned. There
+    /// are three cases to consider:
+    /// - A diagonal pin. In this case, the EP-capturable pawn can never
+    ///   be EP-captured. @coderef{getEpSquare()} returns
+    ///   @coderef{Square::NONE}.
+    /// - A vertical false pin. In this case, the EP-capturing pawn blocks the
+    ///   exposed check when capturing, hence, EP capture is
+    ///   allowed&mdash;provided that the EP-capture is otherwise legal.
+    /// - A horizontal pin. In this case, both the EP-capturing pawn and the
+    ///   EP-capturable pawn leave the rank, revealing a check. Again, in
+    ///   this case, @coderef{getEpSquare()} returns @coderef{Square::NONE} to
+    ///   signal that EP-capture is not allowed.
+    /// <table>
+    /// <caption>Three cases of pins related to EP-capturing</caption>
+    /// <tr>
+    ///   <th>Case</th>
+    ///   <th>Example</th>
+    /// </tr>
+    /// <tr>
+    ///   <td>(1) Diagonally pinned EP-capturable pawn</td>
+    ///   <td>
+    ///     <table class="bitboard">
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>bB</td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td class="mask">  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>(ep)</td><td class="mask">  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td class="mask">bP</td><td>wP</td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td class="mask">  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>wK</td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     </table>
+    ///   </td>
+    /// </tr>
+    /// <tr>
+    ///   <td>(2) Vertically pinned EP-capturable pawn</td>
+    ///   <td>
+    ///     <table class="bitboard">
+    ///     <tr><td>  </td><td>  </td><td>bR</td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td class="mask">  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td class="mask">(ep)</td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td class="mask">bP</td><td>wP</td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td class="mask">  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>wK</td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     </table>
+    ///   </td>
+    /// </tr>
+    /// <tr>
+    ///   <td>(3) Horizontally pinned EP-capturable pawn</td>
+    ///   <td>
+    ///     <table class="bitboard">
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>(ep)</td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>wK</td><td class="mask">  </td><td class="mask">bP</td><td class="mask">wP</td><td class="mask">  </td><td>bR</td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     <tr><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
+    ///     </table>
+    ///   </td>
+    /// </tr>
+    /// </table>
+    ///
+    /// @sa @coderef{getEpSquare()}
     inline SquareSet getPinnedPieces() const noexcept
     {
         return m_pinnedPieces;
@@ -872,13 +939,21 @@ public:
         return m_castlingRooks[getCastlingRookIndex(c, shortCastling)];
     }
 
-    /// @brief Returns en-passant square
+    /// @brief Returns the en-passant square or @coderef{Square::NONE} if
+    /// en-passant capture is not possible.
     ///
-    /// @return En-passant square or @coderef{Square::NONE} is EP-capture is not
+    /// @return En-passant square or @coderef{Square::NONE} if EP-capture is not
     /// legal.
     ///
     /// @remark When EP square is other than @coderef{Square::NONE}, at least
     /// one EP capture is guaranteed to be legal.
+    ///
+    /// @remark When the king is in check, EP capture may be legal only when the
+    /// checker is the EP-capturable pawn. When this is not the case, this
+    /// function returns @coderef{Square::NONE}.
+    ///
+    /// @remark See @coderef{getPinnedPieces()} for a discussion on pin handling
+    /// related to EP captures.
     inline Square getEpSquare() const noexcept
     {
         return m_epSquare;
