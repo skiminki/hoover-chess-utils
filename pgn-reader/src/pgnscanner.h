@@ -173,16 +173,28 @@ public:
 
 protected:
 
-    /// @brief Provides more input to the parent class
+    /// @brief Provides more input to the parent class (general flex version)
     ///
     /// @param[in] buf       Buffer for input data
     /// @param[in] maxSize   Maximum size of data to be provided
     /// @return              Number of bytes provided
     ///
     /// @sa https://westes.github.io/flex/manual/Cxx.html
-    int LexerInput(char *buf, int maxSize)
+    inline int LexerInput(char *buf, int maxSize)
     {
-        const std::size_t copySize { std::min(std::size_t { static_cast<unsigned int>(maxSize) }, m_inputLeft) };
+        return LexerInput(buf, static_cast<std::size_t>(maxSize));
+    }
+
+    /// @brief Provides more input to the parent class (Apple flex version)
+    ///
+    /// @param[in] buf       Buffer for input data
+    /// @param[in] maxSize   Maximum size of data to be provided
+    /// @return              Number of bytes provided
+    ///
+    /// @sa https://westes.github.io/flex/manual/Cxx.html
+    std::size_t LexerInput(char *buf, std::size_t maxSize)
+    {
+        const std::size_t copySize { std::min(maxSize, m_inputLeft) };
 
         std::memcpy(buf, m_inputData, copySize);
         m_inputData += copySize;
