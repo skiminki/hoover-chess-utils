@@ -75,6 +75,8 @@ add_library(
   src/stringbuilder.cc
   )
 
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/pgnscanner.cc PROPERTIES COMPILE_OPTIONS "-Wno-error=sign-compare")
+
 target_include_directories(hoover-pgn-reader PUBLIC
   "${PROJECT_SOURCE_DIR}/include"
   )
