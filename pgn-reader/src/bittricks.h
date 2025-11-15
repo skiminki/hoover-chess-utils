@@ -20,7 +20,10 @@
 #include <bit>
 #include <cassert>
 #include <cinttypes>
+
+#if (HAVE_BMI2)
 #include <immintrin.h>
+#endif
 
 #include "pgnreader-config.h"
 
