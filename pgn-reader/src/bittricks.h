@@ -17,6 +17,8 @@
 #ifndef HOOVER_CHESS_UTILS__PGN_READER__BITTRICKS_H_INCLUDED
 #define HOOVER_CHESS_UTILS__PGN_READER__BITTRICKS_H_INCLUDED
 
+#include "pgnreader-config.h"
+
 #include <bit>
 #include <cassert>
 #include <cinttypes>
@@ -25,7 +27,6 @@
 #include <immintrin.h>
 #endif
 
-#include "pgnreader-config.h"
 
 namespace hoover_chess_utils::pgn_reader
 {
