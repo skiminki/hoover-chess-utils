@@ -192,9 +192,6 @@ struct PgnScannerTokenInfo_MOVENUM
 {
     /// @brief Move number
     std::uint32_t num;
-
-    /// @brief Side to move
-    Color color;
 };
 
 /// @brief Additional token info for numeric annotation glyph
