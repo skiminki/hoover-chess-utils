@@ -125,12 +125,13 @@ public:
 
     /// @brief Called on move number
     ///
-    /// @param[in]  plyNum
+    /// @param[in]  moveNum   Move number
     ///
-    /// @sa @coderef{colorOfPly()}, @coderef{moveNum()}
-    void moveNum(std::uint32_t plyNum)
+    /// @remark There is no white/black indication in the PGN import format, as the
+    /// periods after the move number are ignored.
+    void moveNum(std::uint32_t moveNum)
     {
-        static_cast<void>(plyNum);
+        static_cast<void>(moveNum);
     }
 
     /// @brief Pawn advancing move (non-promoting)
@@ -750,7 +751,7 @@ private:
 
     void handleMoveNum(const PgnScannerTokenInfo_MOVENUM &moveNum) const
     {
-        m_actionHandler.moveNum(makePlyNum(moveNum.num, moveNum.color));
+        m_actionHandler.moveNum(moveNum.num);
     }
 
     PgnScannerToken parseNagsAfterMove()

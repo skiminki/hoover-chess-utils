@@ -80,8 +80,7 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 "("               { return PgnScannerToken::VARIATION_START; }
 ")"               { return PgnScannerToken::VARIATION_END; }
 
-{move_number}"."       { setTokenInfo_MOVENUM(YYText(), YYText() + (YYLeng() - 1), Color::WHITE); return PgnScannerToken::MOVENUM; }
-{move_number}"..."     { setTokenInfo_MOVENUM(YYText(), YYText() + (YYLeng() - 3), Color::BLACK); return PgnScannerToken::MOVENUM; }
+{move_number}{blank}*"."*       { setTokenInfo_MOVENUM(YYText(), YYText() + YYLeng()); return PgnScannerToken::MOVENUM; }
 
 {piece_char}{col_char}{row_char}{cm}      {
     setTokenInfo_PIECE_MOVE(
@@ -163,7 +162,7 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 "!?"           { setTokenInfo_NAG(5); return PgnScannerToken::NAG; }
 "?!"           { setTokenInfo_NAG(6); return PgnScannerToken::NAG; }
 "$"{nag_number}    {
-    setTokenInfo_NAG(asciiToUnsigned<std::uint8_t>(YYText() + 1, YYText() + YYLeng(), "NAG"));
+    setTokenInfo_NAG(asciiToUnsigned<std::uint8_t, true>(YYText() + 1, YYText() + YYLeng(), "NAG"));
     return PgnScannerToken::NAG;
 }
 
@@ -213,10 +212,10 @@ symtoken       [[:alnum:]][[:alnum:]_+#=:-]*
 
 %%
 
-void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_MOVENUM(const char *str, const char *end, Color color)
+void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_MOVENUM(const char *str, const char *end)
 {
-    const std::uint32_t moveNum { asciiToUnsigned<std::uint32_t>(str, end, "move number") };
-    m_tokenInfo.moveNum = PgnScannerTokenInfo_MOVENUM { moveNum, color };
+    const std::uint32_t moveNum { asciiToUnsigned<std::uint32_t, false>(str, end, "move number") };
+    m_tokenInfo.moveNum = PgnScannerTokenInfo_MOVENUM { moveNum };
 }
 
 void hoover_chess_utils::pgn_reader::PgnScanner::setTokenInfo_PAWN_MOVE(

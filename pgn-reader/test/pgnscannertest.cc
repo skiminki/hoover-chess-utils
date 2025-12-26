@@ -99,7 +99,7 @@ TEST(PgnScannerTest, BasicTokenize)
             const PgnScannerTokenInfo_MOVENUM &moveNum { pgnScanner.getTokenInfo().moveNum };
             std::cout
                 << '('
-                << StringUtils::moveNumToString(moveNum.num, moveNum.color).getStringView()
+                << moveNum.num
                 << ')';
             break;
         }

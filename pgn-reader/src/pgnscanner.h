@@ -212,14 +212,20 @@ private:
     /// @brief Ascii to unsigned integer conversion
     ///
     /// @tparam    RetType    Unsigned integer type
+    /// @tparam    digitsOnly Whether the input is guaranteed to include only digits
     /// @param[in] str        Start of string to convert (inclusive)
     /// @param[in] end        End of string to convert (exclusive)
     /// @param[in] tokenType  Name of the token type, e.g., @c "NAG". Used for error reporting
     /// @return               Unsigned integer
     /// @throws PgnError(PgnErrorCode::BAD_CHARACTER)  Integer overflow
     ///
-    /// @pre This function assumes that the string consists only of numbers
-    template <typename RetType>
+    /// @pre When @c digitsOnly = @true, this function assumes that the string consists only of numbers.
+    ///
+    /// In case @c digitsOnly is:
+    /// - @true: This function assumes that the string consists only of numbers. If this is not the case,
+    ///   this function results in undefined behavior.
+    /// - @false: This function returns early when the first non-digit character is encountered.
+    template <typename RetType, bool digitsOnly>
     RetType asciiToUnsigned(const char *str, const char *end, const char *tokenType)
     {
         RetType ret { };
@@ -228,6 +234,13 @@ private:
         while (str != end)
         {
             char c = *str;
+
+            if constexpr (!digitsOnly)
+            {
+                if (static_cast<unsigned char>(c - '0') > 9U)
+                    break;
+            }
+
             ret *= 10U;
             ret += static_cast<RetType>(c - '0');
 
@@ -358,7 +371,7 @@ private:
         return ctCharToMovePieceTable[static_cast<std::uint8_t>(c) % ctCharToMovePieceTable.size()];
     }
 
-    inline void setTokenInfo_MOVENUM(const char *str, const char *end, Color color);
+    inline void setTokenInfo_MOVENUM(const char *str, const char *end);
     inline void setTokenInfo_PAWN_MOVE(SquareSet srcMask, Square dstSq, Piece promoPiece);
     inline void setTokenInfo_PIECE_MOVE(SquareSet srcMask, bool capture, Square dstSq);
     inline void setTokenInfo_NAG(std::uint8_t nag);

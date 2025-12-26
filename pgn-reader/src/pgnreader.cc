@@ -169,19 +169,19 @@ public:
         m_actions.moveTextSection();
     }
 
-    void moveNum(std::uint32_t plyNum)
+    void moveNum(std::uint32_t moveNum)
     {
         if (isActionClassEnabled<PgnReaderActionClass::Move>())
         {
             if (isActionClassEnabled<PgnReaderActionClass::Variation>() || m_variationLevel == 0U)
             {
-                if (m_board.getCurrentPlyNum() != plyNum)
+                if (moveNumOfPly(m_board.getCurrentPlyNum()) != moveNum)
                 {
                     throw PgnError(
                         PgnErrorCode::UNEXPECTED_MOVE_NUM,
                         std::format("Expected move {} but got {}",
-                                    StringUtils::plyNumToString(m_board.getCurrentPlyNum()).getStringView(),
-                                    StringUtils::plyNumToString(plyNum).getStringView()));
+                                    moveNumOfPly(m_board.getCurrentPlyNum()),
+                                    moveNum));
                 }
             }
         }

@@ -123,10 +123,10 @@ TEST(PgnReader, errors)
 
     // bad/unexpected move nums
     checkForExpectedError(
-        "1..",
+        "1.. ..",
         PgnErrorCode::BAD_CHARACTER);
     checkForExpectedError(
-        "1 a4",
+        ". a4",
         PgnErrorCode::BAD_CHARACTER);
     checkForExpectedError(
         "2. a4",
@@ -1422,6 +1422,30 @@ TEST(PgnReaderActionCompileTimeFilter, sanity)
         Filter::actionsToBitmask(PgnReaderActionClass { 0U },
                                  PgnReaderActionClass { 2U },
                                  PgnReaderActionClass { 4U }) == 1U + 4U + 16U);
+}
+
+TEST(PgnReader, moveNumbers)
+{
+    // all these are ok
+    constexpr std::string_view validPgns[] {
+        "1 e4 *",
+        "1. e4 *",
+        "1.. e4 *",
+        "1... e4 *",
+        "1 . e4 *",
+        "1 .. e4 *",
+        "1 ... e4 *",
+        "1 1. 1.. 1... 1.... e4 *",
+    };
+
+    PgnReaderActionFilter filter { PgnReaderActionClass::Move };
+    PgnReaderActions nullActions { };
+
+    for (const std::string_view &pgn : validPgns)
+    {
+        EXPECT_NO_THROW(PgnReader::readFromMemory(pgn, nullActions, filter));
+    }
+
 }
 
 }
