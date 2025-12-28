@@ -104,7 +104,7 @@ public:
         +1
     };
 
-#if HAVE_AVX512VL
+#if HAVE_X86_AVX512VL
     static inline __m128i getAttackedSquaresByPawns128(const SquareSet pawns, Color oppPawnColor) noexcept
     {
         static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
@@ -199,7 +199,7 @@ public:
     {
         // add knight attacks
         __m512i attacks {
-#if !HAVE_AVX512VL
+#if !HAVE_X86_AVX512VL
             getAttackedSquaresByPawns512(pawns, turn) |
 #endif
             getAttackedSquaresByKnights(knights) };
@@ -214,7 +214,7 @@ public:
 
         // reduce 4x 64b attack tables to 2x 64b & add pawn attacks
         const __m128i attacks128 {
-#if HAVE_AVX512VL
+#if HAVE_X86_AVX512VL
             getAttackedSquaresByPawns128(pawns, turn) |
 #endif
             _mm256_extracti128_si256(attacks256, 1U) |
