@@ -304,8 +304,7 @@ inline void generateMovesForSliderAndDestStoreFnTempl(
     {
         static_assert(moveType == MoveTypeAndPromotion::REGULAR_QUEEN_MOVE);
 
-        pieces = (Attacks::getBishopAttackMask(dst, board.getOccupancyMask()) |
-                  Attacks::getRookAttackMask(dst, board.getOccupancyMask()))
+        pieces = Attacks::getQueenAttackMask(dst, board.getOccupancyMask())
             & srcSqMask & board.getPiecesInTurn() & board.getBishopsAndQueens() & board.getRooksAndQueens();
     }
 

@@ -188,8 +188,6 @@ public:
         return attacks;
     }
 
-    static inline SquareSet getKingAttackMask(Square sq) noexcept;
-
     static SquareSet determineAttackedSquares(
         SquareSet occupancyMask,
         SquareSet pawns,
@@ -231,7 +229,7 @@ public:
         // ... and add king attacks
         return
             SquareSet { attacks64 } |
-            getKingAttackMask(king);
+            Attacks_Portable::getKingAttackMask(king);
     }
 
 #if 0 // note: this is quite a lot slower than the regular PEXT/PDEP implementation

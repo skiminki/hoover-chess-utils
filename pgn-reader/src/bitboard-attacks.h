@@ -20,9 +20,12 @@
 #include "chessboard-types.h"
 #include "chessboard-types-squareset.h"
 
-#include "bitboard-intercepts.h"
-#include "lookup-utils.h"
-#include "slider-attacks.h"
+// the baseline
+#include "bitboard-attacks-portable.h"
+
+#if HAVE_PDEP_PEXT
+#include "bitboard-attacks-pext-pdep.h"
+#endif
 
 #if HAVE_AVX512F
 #include "bitboard-attacks-avx512f.h"
@@ -38,26 +41,6 @@ namespace hoover_chess_utils::pgn_reader
 /// @brief Piece attack tables
 class Attacks
 {
-private:
-    /// @brief Pawn attack masks
-    ///
-    /// This table is used for both pawn-to-attacked-square and attacking-pawn-to-square
-    /// tables. Hence the inclusion of ranks 1 and 8.
-    ///
-    /// @sa @coderef{getPawnAttackMask()}
-    /// @sa @coderef{getPawnAttackerMask()}
-    static const std::array<std::array<std::uint64_t, 2U>, 64U> ctPawnAttackMaskTable;
-
-    /// @brief Knight attack masks
-    ///
-    /// Table of knight square to attacked square set masks.
-    static const std::array<std::uint64_t, 64U> ctKnightAttackMaskTable;
-
-    /// @brief King attack masks
-    ///
-    /// Table of king square to attacked square set masks.
-    static const std::array<std::uint64_t, 64U> ctKingAttackMaskTable;
-
 public:
     /// @brief Returns a set of squares that a pawn can attack
     ///
@@ -85,7 +68,7 @@ public:
         static_assert(static_cast<std::uint64_t>(Color::WHITE) == 0U);
         static_assert(static_cast<std::uint64_t>(Color::BLACK) == 8U);
 
-        return SquareSet { turnSpecificArrayLookup(ctPawnAttackMaskTable, static_cast<std::size_t>(sq), pawnColor) };
+        return Attacks_Portable::getPawnAttackMask(sq, pawnColor);
     }
 
     /// @brief Returns a set of squares from which a pawn can attack
@@ -115,8 +98,7 @@ public:
         static_assert(static_cast<std::uint64_t>(Color::WHITE) == 0U);
         static_assert(static_cast<std::uint64_t>(Color::BLACK) == 8U);
 
-        return SquareSet {
-            turnSpecificArrayLookup(ctPawnAttackMaskTable, static_cast<std::size_t>(sq), oppositeColor(pawnColor)) };
+        return Attacks_Portable::getPawnAttackerMask(sq, pawnColor);
     }
 
     /// @brief For a given set of squares, returns the squares where pawns can
@@ -150,32 +132,7 @@ public:
     template <Color pawnColor, bool captureToRight>
     static constexpr inline SquareSet getPawnAttackersMask(SquareSet capturable) noexcept
     {
-        if constexpr (pawnColor == Color::WHITE)
-        {
-            if constexpr (captureToRight)
-            {
-                SquareSet destMask { 0xFE'FE'FE'FE'FE'FE'FE'00 };
-                return (capturable & destMask) >> 9U;
-            }
-            else
-            {
-                SquareSet destMask { 0x7F'7F'7F'7F'7F'7F'7F'00 };
-                return (capturable & destMask) >> 7U;
-            }
-        }
-        else
-        {
-            if constexpr (captureToRight)
-            {
-                SquareSet destMask { 0x00'FE'FE'FE'FE'FE'FE'FE };
-                return (capturable & destMask) << 7U;
-            }
-            else
-            {
-                SquareSet destMask { 0x00'7F'7F'7F'7F'7F'7F'7F };
-                return (capturable & destMask) << 9U;
-            }
-        }
+        return Attacks_Portable::getPawnAttackersMask<pawnColor, captureToRight>(capturable);
     }
 
     /// @brief Returns the set of squares a knight can attack
@@ -197,7 +154,7 @@ public:
     /// </table>
     static inline SquareSet getKnightAttackMask(Square sq) noexcept
     {
-        return SquareSet { ctKnightAttackMaskTable[getIndexOfSquare(sq)] };
+        return Attacks_Portable::getKnightAttackMask(sq);
     }
 
     /// @brief Returns the set of squares a bishop can attack, given also
@@ -222,11 +179,11 @@ public:
     /// </tr>
     /// <tr>
     ///   <td>@ref HAVE_PDEP_PEXT</td>
-    ///   <td>Implementation using @coderef{SliderAttacksPextPdep::getBishopAttackMask()}</td>
+    ///   <td>Implementation using @coderef{Attacks_PextPdep::getBishopAttackMask()}</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
-    ///   <td>Implementation using @coderef{SliderAttacksGeneric::getBishopAttackMask()}</td>
+    ///   <td>Implementation using @coderef{Attacks_Portable::getBishopAttackMask()}</td>
     /// </tr>
     /// </table>
     ///
@@ -246,7 +203,13 @@ public:
     ///
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        return SliderAttacks::getBishopAttackMask(sq, occupancyMask);
+#if HAVE_PDEP_PEXT
+        return
+            Attacks_PextPdep::getBishopAttackMask(sq, occupancyMask);
+#else
+        return
+            Attacks_Portable::getBishopAttackMask(sq, occupancyMask);
+#endif
     }
 
     /// @brief Returns the set of squares a rook can attack, given also
@@ -271,11 +234,11 @@ public:
     /// </tr>
     /// <tr>
     ///   <td>@ref HAVE_PDEP_PEXT</td>
-    ///   <td>Implementation using @coderef{SliderAttacksPextPdep::getRookAttackMask()}</td>
+    ///   <td>Implementation using @coderef{Attacks_PextPdep::getRookAttackMask()}</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
-    ///   <td>Implementation using @coderef{SliderAttacksGeneric::getRookAttackMask()}</td>
+    ///   <td>Implementation using @coderef{Attacks_Portable::getRookAttackMask()}</td>
     /// </tr>
     /// </table>
     ///
@@ -293,7 +256,26 @@ public:
     /// </table>
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        return SliderAttacks::getRookAttackMask(sq, occupancyMask);
+#if HAVE_PDEP_PEXT
+        return
+            Attacks_PextPdep::getRookAttackMask(sq, occupancyMask);
+#else
+        return
+            Attacks_Portable::getRookAttackMask(sq, occupancyMask);
+#endif
+    }
+
+    static inline SquareSet getQueenAttackMask(Square sq, SquareSet occupancyMask) noexcept
+    {
+#if HAVE_PDEP_PEXT
+        return
+            Attacks_PextPdep::getBishopAttackMask(sq, occupancyMask) |
+            Attacks_PextPdep::getRookAttackMask(sq, occupancyMask);
+#else
+        return
+            Attacks_Portable::getBishopAttackMask(sq, occupancyMask) |
+            Attacks_Portable::getRookAttackMask(sq, occupancyMask);
+#endif
     }
 
     /// @brief Returns the set of squares a king can attack
@@ -313,7 +295,7 @@ public:
     /// </table>
     static inline SquareSet getKingAttackMask(Square sq) noexcept
     {
-        return SquareSet { ctKingAttackMaskTable[getIndexOfSquare(sq)] };
+        return Attacks_Portable::getKingAttackMask(sq);
     }
 
     /// @brief Checks whether a move by a possibly pinned piece does not expose
@@ -510,7 +492,7 @@ public:
                 const SquareSet adjacentPawnsMinus1 { adjacentPawns.removeFirstSquare() };
 
                 const SquareSet exposedHorizLine {
-                    SliderAttacksGeneric::getHorizRookAttackMask(
+                    Attacks_Portable::getHorizRookAttackMask(
                         epCapturable.firstSquare(),
                         occupancyMask &~ (adjacentPawns &~ adjacentPawnsMinus1)) };
 
@@ -557,50 +539,17 @@ public:
             king,
             turn);
 #else
-    SquareSet attacks { };
-
-    // pawn attacks
-    static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
-    static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
-
-    // for rotl -- pawn color is opposite to turn
-    std::int8_t pawnAdvanceShiftLeft = -9 + 2 * static_cast<std::int8_t>(turn);
-
-    // captures to left
-    attacks |= (pawns &~ SquareSet::column(0)).rotl(pawnAdvanceShiftLeft);
-
-    // captures to right
-    attacks |= (pawns &~ SquareSet::column(7)).rotl(pawnAdvanceShiftLeft + 2);
-
-
-    SQUARESET_ENUMERATE(
-        piece,
-        knights,
-        attacks |= Attacks::getKnightAttackMask(piece));
-
-    SQUARESET_ENUMERATE(
-        piece,
-        bishops,
-        attacks |= SliderAttacks::getBishopAttackMask(piece, occupancyMask));
-
-    SQUARESET_ENUMERATE(
-        piece,
-        rooks,
-        attacks |= SliderAttacks::getRookAttackMask(piece, occupancyMask));
-
-    attacks |= Attacks::getKingAttackMask(king);
-
-    return attacks;
+        return Attacks_Portable::determineAttackedSquares(
+            occupancyMask,
+            pawns,
+            knights,
+            bishops,
+            rooks,
+            king,
+            turn);
 #endif
     }
 };
-
-#if HAVE_AVX512F
-SquareSet Attacks_AVX512F::getKingAttackMask(Square sq) noexcept
-{
-    return Attacks::getKingAttackMask(sq);
-}
-#endif
 
 }
 
