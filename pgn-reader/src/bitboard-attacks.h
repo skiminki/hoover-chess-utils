@@ -23,6 +23,10 @@
 // the baseline
 #include "bitboard-attacks-portable.h"
 
+#if HAVE_AARCH64_SVE2_BITPERM
+#include "bitboard-attacks-aarch64-sve2-bitperm.h"
+#endif
+
 #if HAVE_X86_BMI2
 #include "bitboard-attacks-x86-bmi2.h"
 #endif
@@ -206,6 +210,9 @@ public:
 #if HAVE_X86_BMI2
         return
             Attacks_BMI2::getBishopAttackMask(sq, occupancyMask);
+#elif HAVE_AARCH64_SVE2_BITPERM
+        return
+            Attacks_AArch64_SVE2_BitPerm::getBishopAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getBishopAttackMask(sq, occupancyMask);
@@ -259,6 +266,9 @@ public:
 #if HAVE_X86_BMI2
         return
             Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
+#elif HAVE_AARCH64_SVE2_BITPERM
+        return
+            Attacks_AArch64_SVE2_BitPerm::getRookAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getRookAttackMask(sq, occupancyMask);
@@ -271,6 +281,9 @@ public:
         return
             Attacks_BMI2::getBishopAttackMask(sq, occupancyMask) |
             Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
+#elif HAVE_AARCH64_SVE2_BITPERM
+        return
+            Attacks_AArch64_SVE2_BitPerm::getQueenAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getBishopAttackMask(sq, occupancyMask) |
