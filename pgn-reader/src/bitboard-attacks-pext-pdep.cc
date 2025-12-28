@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "slider-attacks-pext-pdep.h"
+#include "bitboard-attacks-pext-pdep.h"
 #include "bittricks.h"
 #include "chessboard-types-squareset.h"
 #include "pgnreader-config.h"
@@ -183,16 +183,16 @@ constexpr auto calculatePextBishopAttackData(const std::array<SquareSet, 64U> &m
 // 0 0 0 0 0 0 0 0
 //
 // 'R' is 0
-const std::array<SquareSet, 64U> SliderAttacksPextPdep::ctPextRookMasks { generatePextRookMasks() };
-const std::array<SquareSet, 64U> SliderAttacksPextPdep::ctPextBishopMasks { generatePextBishopMasks() };
+const std::array<SquareSet, 64U> Attacks_PextPdep::ctPextRookMasks { generatePextRookMasks() };
+const std::array<SquareSet, 64U> Attacks_PextPdep::ctPextBishopMasks { generatePextBishopMasks() };
 
 
-const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextRookOffsets {
+const std::array<std::uint32_t, 64U> Attacks_PextPdep::ctPextRookOffsets {
     generatePextOffsets(generatePextRookMasks()) };
-const std::array<std::uint32_t, 64U> SliderAttacksPextPdep::ctPextBishopOffsets {
+const std::array<std::uint32_t, 64U> Attacks_PextPdep::ctPextBishopOffsets {
     generatePextOffsets(generatePextBishopMasks()) };
 
-const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> SliderAttacksPextPdep::ctPextRookAttackData {
+const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> Attacks_PextPdep::ctPextRookAttackData {
 
 //    calculatePextRookAttackData(ctPextRookMasks, ctPextRookOffsets)
 
@@ -200,7 +200,7 @@ const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> 
 
 };
 
-const std::array<std::uint64_t, calculatePextDataSize(generatePextBishopMasks())> SliderAttacksPextPdep::ctPextBishopAttackData {
+const std::array<std::uint64_t, calculatePextDataSize(generatePextBishopMasks())> Attacks_PextPdep::ctPextBishopAttackData {
 
 //    calculatePextBishopAttackData(ctPextBishopMasks, ctPextBishopOffsets)
 

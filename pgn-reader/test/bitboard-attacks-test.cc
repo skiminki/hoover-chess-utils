@@ -18,7 +18,6 @@
 
 #include "pgnreader-string-utils.h"
 #include "src/bitboard-attacks.h"
-#include "src/slider-attacks.h"
 
 #include <cmath>
 #include <cstdio>
@@ -311,7 +310,7 @@ TEST(Attacks, getBishopAttackMask)
                 }
 }
 
-TEST(Attacks, getBishopAttackMask_GenericImpl)
+TEST(Attacks, getBishopAttackMask_PortableImpl)
 {
     // try all combinations of bishop + capturable piece
     for (std::uint8_t row1 = 0U; row1 <= 7U; ++row1)
@@ -331,7 +330,7 @@ TEST(Attacks, getBishopAttackMask_GenericImpl)
                     expect |= shootRay(bishop, occupancyMask, +1, -1);
                     expect |= shootRay(bishop, occupancyMask, +1, +1);
 
-                    EXPECT_EQ(expect, SliderAttacksGeneric::getBishopAttackMask(bishop, occupancyMask))
+                    EXPECT_EQ(expect, Attacks_Portable::getBishopAttackMask(bishop, occupancyMask))
                         << std::format("Bishop={} Capturable={}",
                                        StringUtils::squareToString(bishop, "??"),
                                        StringUtils::squareToString(capturable, "??"));
@@ -365,7 +364,7 @@ TEST(Attacks, getRookAttackMask)
                 }
 }
 
-TEST(Attacks, getRookAttackMask_GenericImpl)
+TEST(Attacks, getRookAttackMask_PortableImpl)
 {
     // try all combinations of bishop + capturable piece
     for (std::uint8_t row1 = 0U; row1 <= 7U; ++row1)
@@ -385,7 +384,7 @@ TEST(Attacks, getRookAttackMask_GenericImpl)
                     expect |= shootRay(rook, occupancyMask,  0, -1);
                     expect |= shootRay(rook, occupancyMask,  0, +1);
 
-                    EXPECT_EQ(expect, SliderAttacksGeneric::getRookAttackMask(rook, occupancyMask))
+                    EXPECT_EQ(expect, Attacks_Portable::getRookAttackMask(rook, occupancyMask))
                         << std::format("Rook={} Capturable={}",
                                        StringUtils::squareToString(rook, "??"),
                                        StringUtils::squareToString(capturable, "??"));

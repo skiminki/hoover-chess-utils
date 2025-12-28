@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "bitboard-attacks.h"
+#include "bitboard-attacks-portable.h"
 
 #include <bit>
 
@@ -175,13 +175,138 @@ consteval auto interleaveArrays(const std::array<std::uint64_t, N> &first, const
     return ret;
 }
 
+
+struct HyperbolaAttackMasks
+{
+    SquareSet sqBit;
+    SquareSet vertMaskEx; // vertical column minus square
+    SquareSet diagBLTREx; // diagonal minus square
+    SquareSet diagBRTLEx; // anti-diagonal minus square
+};
+
+consteval auto generateAttackMasks() noexcept
+{
+    std::array<HyperbolaAttackMasks, 64U> ret { };
+
+    for (std::uint8_t sqIndex { }; sqIndex < 64U; ++sqIndex)
+    {
+        const Square sq { sqIndex };
+        const SquareSet sqBit { SquareSet::square(sq) };
+        const std::uint8_t col { columnOf(Square { sq }) };
+        const std::uint8_t row { rowOf(Square { sq }) };
+
+        ret[sqIndex].sqBit = sqBit;
+        ret[sqIndex].vertMaskEx = SquareSet::column(col) ^ sqBit;
+
+        const SquareSet diagBLTR { 0x80'40'20'10'08'04'02'01 };
+        const std::int8_t shiftBLTR { static_cast<std::int8_t>(col - row) };
+        const SquareSet diagBLTRShifted { (shiftBLTR >= 0) ? diagBLTR >> (shiftBLTR * 8) : diagBLTR << (-shiftBLTR) * 8 };
+
+        const SquareSet diagBRTL { 0x01'02'04'08'10'20'40'80 };
+        const std::int8_t shiftBRTL { static_cast<std::int8_t>(7U - col - row) };
+        const SquareSet diagBRTLShifted { (shiftBRTL >= 0) ? diagBRTL >> (shiftBRTL * 8) : diagBRTL << (-shiftBRTL) * 8 };
+
+        ret[sqIndex].diagBLTREx = diagBLTRShifted ^ sqBit;
+        ret[sqIndex].diagBRTLEx = diagBRTLShifted ^ sqBit;
+    }
+
+    return ret;
 }
 
-const std::array<std::array<std::uint64_t, 2U>, 64U > Attacks::ctPawnAttackMaskTable {
+consteval auto generateRookHorizAttackMasks() noexcept
+{
+    std::array<std::array<std::uint8_t, 8U>, 256U> ret { };
+
+    for (std::uint8_t rookCol { }; rookCol < 8U; ++rookCol)
+        for (std::uint16_t rankIndex { }; rankIndex < 256U; ++rankIndex)
+        {
+            std::uint8_t rankBits = rankIndex;
+
+            std::uint8_t mask { };
+
+            for (std::uint8_t c = rookCol + 1U; c < 8U; ++c)
+            {
+                const std::uint8_t maskBit = 1U << c;
+                mask |= maskBit;
+
+                if (rankBits & maskBit)
+                    break;
+            }
+
+            for (std::uint8_t c = rookCol; c > 0U; )
+            {
+                --c;
+
+                const std::uint8_t maskBit = 1U << c;
+                mask |= maskBit;
+
+                if (rankBits & maskBit)
+                    break;
+            }
+
+            ret[rankIndex][rookCol] = mask;
+        }
+
+    return ret;
+}
+
+constexpr std::array<HyperbolaAttackMasks, 64U> hyperbolaAttackMasks { generateAttackMasks() };
+constexpr std::array<std::array<std::uint8_t, 8U>, 256U> rookHorizAttackMasks { generateRookHorizAttackMasks() };
+
+}
+
+const std::array<std::array<std::uint64_t, 2U>, 64U > Attacks_Portable::ctPawnAttackMaskTable {
     interleaveArrays(generateWhitePawnAttackMaskTable(), generateBlackPawnAttackMaskTable())
 };
 
-const std::array<std::uint64_t, 64U> Attacks::ctKnightAttackMaskTable { generateKnightAttackMaskTable() };
-const std::array<std::uint64_t, 64U> Attacks::ctKingAttackMaskTable { generateKingAttackMaskTable() };
+const std::array<std::uint64_t, 64U> Attacks_Portable::ctKnightAttackMaskTable { generateKnightAttackMaskTable() };
+const std::array<std::uint64_t, 64U> Attacks_Portable::ctKingAttackMaskTable { generateKingAttackMaskTable() };
+
+SquareSet Attacks_Portable::getSliderAttackMaskHyperbola(
+    SquareSet pieceBit, SquareSet occupancyMask, SquareSet rayMaskEx) noexcept
+{
+    SquareSet forward { occupancyMask & rayMaskEx };
+    SquareSet reverse { forward.flipVert() };
+
+    forward  = forward - pieceBit;
+    reverse  = reverse - pieceBit.flipVert();
+
+    return (forward ^ reverse.flipVert()) & rayMaskEx;
+}
+
+// get mask of rook attacks/moves on populated board
+SquareSet Attacks_Portable::getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    const SquareSet pieceBit { hyperbolaAttackMasks[getIndexOfSquare(sq)].sqBit };
+
+    return
+        getSliderAttackMaskHyperbola(pieceBit, occupancyMask, hyperbolaAttackMasks[getIndexOfSquare(sq)].diagBLTREx) |
+        getSliderAttackMaskHyperbola(pieceBit, occupancyMask, hyperbolaAttackMasks[getIndexOfSquare(sq)].diagBRTLEx);
+}
+
+// get mask of rook attacks/moves on populated board
+SquareSet Attacks_Portable::getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    // vertical attacks
+    const SquareSet pieceBit { hyperbolaAttackMasks[getIndexOfSquare(sq)].sqBit };
+    const SquareSet vertAttacks { getSliderAttackMaskHyperbola(pieceBit, occupancyMask, hyperbolaAttackMasks[getIndexOfSquare(sq)].vertMaskEx) };
+
+    // horizontal attacks
+    const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
+    const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
+    const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+
+    return vertAttacks | (SquareSet { rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift);
+}
+
+SquareSet Attacks_Portable::getHorizRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    // horizontal attacks
+    const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
+    const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
+    const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+
+    return SquareSet { rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift;
+}
 
 }
