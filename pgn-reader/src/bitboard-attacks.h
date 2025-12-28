@@ -23,12 +23,12 @@
 // the baseline
 #include "bitboard-attacks-portable.h"
 
-#if HAVE_PDEP_PEXT
-#include "bitboard-attacks-pext-pdep.h"
+#if HAVE_BMI2
+#include "bitboard-attacks-x86-bmi2.h"
 #endif
 
 #if HAVE_AVX512F
-#include "bitboard-attacks-avx512f.h"
+#include "bitboard-attacks-x86-avx512f.h"
 #endif
 
 #include <array>
@@ -178,8 +178,8 @@ public:
     ///   <th>Description</th>
     /// </tr>
     /// <tr>
-    ///   <td>@ref HAVE_PDEP_PEXT</td>
-    ///   <td>Implementation using @coderef{Attacks_PextPdep::getBishopAttackMask()}</td>
+    ///   <td>@ref HAVE_BMI2</td>
+    ///   <td>Implementation using @coderef{Attacks_BMI2::getBishopAttackMask()}</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
@@ -203,9 +203,9 @@ public:
     ///
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_PDEP_PEXT
+#if HAVE_BMI2
         return
-            Attacks_PextPdep::getBishopAttackMask(sq, occupancyMask);
+            Attacks_BMI2::getBishopAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getBishopAttackMask(sq, occupancyMask);
@@ -233,8 +233,8 @@ public:
     ///   <th>Description</th>
     /// </tr>
     /// <tr>
-    ///   <td>@ref HAVE_PDEP_PEXT</td>
-    ///   <td>Implementation using @coderef{Attacks_PextPdep::getRookAttackMask()}</td>
+    ///   <td>@ref HAVE_BMI2</td>
+    ///   <td>Implementation using @coderef{Attacks_BMI2::getRookAttackMask()}</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
@@ -256,9 +256,9 @@ public:
     /// </table>
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_PDEP_PEXT
+#if HAVE_BMI2
         return
-            Attacks_PextPdep::getRookAttackMask(sq, occupancyMask);
+            Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getRookAttackMask(sq, occupancyMask);
@@ -269,8 +269,8 @@ public:
     {
 #if HAVE_PDEP_PEXT
         return
-            Attacks_PextPdep::getBishopAttackMask(sq, occupancyMask) |
-            Attacks_PextPdep::getRookAttackMask(sq, occupancyMask);
+            Attacks_BMI2::getBishopAttackMask(sq, occupancyMask) |
+            Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getBishopAttackMask(sq, occupancyMask) |

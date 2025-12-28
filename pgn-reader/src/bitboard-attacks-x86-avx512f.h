@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_AVX512F_H_INCLUDED
-#define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_AVX512F_H_INCLUDED
+#ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_X86_AVX512F_H_INCLUDED
+#define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_X86_AVX512F_H_INCLUDED
 
 #include "chessboard-types-squareset.h"
 
