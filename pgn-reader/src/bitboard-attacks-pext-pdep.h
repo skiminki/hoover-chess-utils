@@ -22,6 +22,7 @@
 
 #include <array>
 #include <cinttypes>
+#include <immintrin.h>
 
 static_assert(HAVE_PDEP_PEXT, "This file should be included only when PDEP/PEXT is available");
 
@@ -56,7 +57,9 @@ public:
         return SquareSet {
             ctPextBishopAttackData[
                 offset +
-                static_cast<std::uint64_t>(occupancyMask.parallelExtract(pextMask))] };
+                _pext_u64(
+                    static_cast<std::uint64_t>(occupancyMask),
+                    static_cast<std::uint64_t>(pextMask))] };
     }
 
     /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
@@ -68,7 +71,9 @@ public:
         return SquareSet {
             ctPextRookAttackData[
                 offset +
-                static_cast<std::uint64_t>(occupancyMask.parallelExtract(pextMask))] };
+                _pext_u64(
+                    static_cast<std::uint64_t>(occupancyMask),
+                    static_cast<std::uint64_t>(pextMask))] };
     }
 };
 
