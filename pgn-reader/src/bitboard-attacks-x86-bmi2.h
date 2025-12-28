@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_PEXT_PDEP_H_INCLUDED
-#define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_PEXT_PDEP_H_INCLUDED
+#ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_X86_BMI2_H_INCLUDED
+#define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_X86_BMI2_H_INCLUDED
 
 #include "chessboard-types-squareset.h"
 #include "pgnreader-config.h"
@@ -36,7 +36,7 @@ public:
 
 /// @ingroup PgnReaderImpl
 /// @brief Slider attacks implementation using PEXT/PDEP
-class Attacks_PextPdep
+class Attacks_BMI2
 {
 private:
     static const std::array<SquareSet, 64U> ctPextRookMasks;
