@@ -70,7 +70,7 @@ add_library(
   src/pgnreader-string-utils.cc
   src/pgnreader.cc
   src/position-compress-fixed.cc
-  $<IF:$<BOOL:${HAVE_BMI2}>,src/bitboard-attacks-x86-bmi2.cc,>
+  $<IF:$<BOOL:${HAVE_X86_BMI2}>,src/bitboard-attacks-x86-bmi2.cc,>
   src/stringbuilder.cc
   )
 

@@ -37,12 +37,20 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 ##### CPU features
-include(cpufeatures.cmake)
-cpufeatures_detect_bmi2()
-cpufeatures_detect_avx512f()
-cpufeatures_detect_avx512vl()
+include(cpufeatures-x86.cmake)
+cpufeatures_detect_x86()
+if (HAVE_X86)
+  cpufeatures_detect_x86_bmi2()
+  cpufeatures_detect_x86_avx512f()
+  cpufeatures_detect_x86_avx512vl()
+endif()
 
-set(HAVE_PDEP_PEXT ${HAVE_BMI2})
+include(cpufeatures-aarch64.cmake)
+cpufeatures_detect_aarch64()
+if (HAVE_AARCH64)
+  cpufeatures_detect_aarch64_sve2_bitperm()
+endif()
+
 
 ##### The main Doxygen build
 find_package(Doxygen COMPONENTS doxygen dot)

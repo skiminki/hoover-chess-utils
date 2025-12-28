@@ -23,11 +23,11 @@
 // the baseline
 #include "bitboard-attacks-portable.h"
 
-#if HAVE_BMI2
+#if HAVE_X86_BMI2
 #include "bitboard-attacks-x86-bmi2.h"
 #endif
 
-#if HAVE_AVX512F
+#if HAVE_X86_AVX512F
 #include "bitboard-attacks-x86-avx512f.h"
 #endif
 
@@ -178,7 +178,7 @@ public:
     ///   <th>Description</th>
     /// </tr>
     /// <tr>
-    ///   <td>@ref HAVE_BMI2</td>
+    ///   <td>@ref HAVE_X86_BMI2</td>
     ///   <td>Implementation using @coderef{Attacks_BMI2::getBishopAttackMask()}</td>
     /// </tr>
     /// <tr>
@@ -203,7 +203,7 @@ public:
     ///
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_BMI2
+#if HAVE_X86_BMI2
         return
             Attacks_BMI2::getBishopAttackMask(sq, occupancyMask);
 #else
@@ -233,7 +233,7 @@ public:
     ///   <th>Description</th>
     /// </tr>
     /// <tr>
-    ///   <td>@ref HAVE_BMI2</td>
+    ///   <td>@ref HAVE_X86_BMI2</td>
     ///   <td>Implementation using @coderef{Attacks_BMI2::getRookAttackMask()}</td>
     /// </tr>
     /// <tr>
@@ -256,7 +256,7 @@ public:
     /// </table>
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_BMI2
+#if HAVE_X86_BMI2
         return
             Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
 #else
@@ -267,7 +267,7 @@ public:
 
     static inline SquareSet getQueenAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_PDEP_PEXT
+#if HAVE_X86_BMI2
         return
             Attacks_BMI2::getBishopAttackMask(sq, occupancyMask) |
             Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
@@ -386,7 +386,7 @@ public:
         SquareSet &out_pinnedPieces) noexcept
     {
 
-#if 0 && HAVE_AVX512F // quite a lot slower than the PDEP/PEXT implementation on Zen4, so disable for now
+#if 0 && HAVE_X86_AVX512F // quite a lot slower than the PDEP/PEXT implementation on Zen4, so disable for now
         Attacks_AVX512F::determineSliderCheckersAndPins(
             occupancyMask,
             turnColorMask,
@@ -529,7 +529,7 @@ public:
         Square king,
         Color turn) noexcept
     {
-#if HAVE_AVX512F
+#if HAVE_X86_AVX512F
         return Attacks_AVX512F::determineAttackedSquares(
             occupancyMask,
             pawns,

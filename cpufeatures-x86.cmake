@@ -15,7 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-macro(cpufeatures_detect_bmi2)
+macro(cpufeatures_detect_x86)
+    include(CheckSourceCompiles)
+
+    set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
+
+    check_source_compiles(CXX "
+int main(int argc, char **argv)
+{
+#if !defined(__x86_64__)
+    static_assert(false, \"Not an x86-64 target\");
+#endif
+    return 0;
+}
+" HAVE_X86)
+endmacro()
+
+
+macro(cpufeatures_detect_x86_bmi2)
     include(CheckSourceCompiles)
 
     set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
@@ -26,11 +43,11 @@ int main(int argc, char **argv)
 {
     return _pext_u64(argc, argc);
 }
-" HAVE_BMI2)
+" HAVE_X86_BMI2)
 endmacro()
 
 
-macro(cpufeatures_detect_avx512f)
+macro(cpufeatures_detect_x86_avx512f)
     include(CheckSourceCompiles)
 
     set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
@@ -44,11 +61,11 @@ int main(int argc, char **argv)
     static_cast<void>(tmp);
     return 0;
 }
-" HAVE_AVX512F)
+" HAVE_X86_AVX512F)
 endmacro()
 
 
-macro(cpufeatures_detect_avx512vl)
+macro(cpufeatures_detect_x86_avx512vl)
     include(CheckSourceCompiles)
 
     set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
@@ -62,5 +79,5 @@ int main(int argc, char **argv)
     static_cast<void>(tmp);
     return 0;
 }
-" HAVE_AVX512VL)
+" HAVE_X86_AVX512VL)
 endmacro()

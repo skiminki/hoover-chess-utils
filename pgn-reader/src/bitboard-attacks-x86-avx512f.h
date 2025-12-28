@@ -120,7 +120,7 @@ public:
         return _mm_rolv_epi64(attackingPawns, rotateLefts);
     }
 #else
-    static const inline __m512i getAttackedSquaresByPawns512(const SquareSet pawns, Color oppPawnColor) noexcept
+    static inline __m512i getAttackedSquaresByPawns512(const SquareSet pawns, Color oppPawnColor) noexcept
     {
         static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
         static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
