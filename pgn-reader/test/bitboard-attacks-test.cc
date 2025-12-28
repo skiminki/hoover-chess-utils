@@ -391,4 +391,64 @@ TEST(Attacks, getRookAttackMask_PortableImpl)
                 }
 }
 
+TEST(Attacks, determineAttackedSquares_PortableImpl)
+{
+    // TODO: add real coverage. For now, we just rely on that this is already
+    // covered by movegen tests
+    SquareSet expect { };
+    SquareSet occupancy { };
+
+    // knight
+    occupancy |= SquareSet::square(Square::B1);
+    expect |= SquareSet::square(Square::A3);
+    expect |= SquareSet::square(Square::C3);
+    expect |= SquareSet::square(Square::D2);
+
+    // bishop
+    occupancy |= SquareSet::square(Square::C1);
+    expect |= SquareSet::square(Square::A3);
+    expect |= SquareSet::square(Square::B2);
+    expect |= SquareSet::square(Square::D2);
+    expect |= SquareSet::square(Square::E3);
+    expect |= SquareSet::square(Square::F4);
+    expect |= SquareSet::square(Square::G5);
+    expect |= SquareSet::square(Square::H6);
+
+    // rook
+    occupancy |= SquareSet::square(Square::H1);
+    expect |= SquareSet::square(Square::H2);
+    expect |= SquareSet::square(Square::H3);
+    expect |= SquareSet::square(Square::H4);
+    expect |= SquareSet::square(Square::H5);
+    expect |= SquareSet::square(Square::H6);
+    expect |= SquareSet::square(Square::H7);
+    expect |= SquareSet::square(Square::H8);
+    expect |= SquareSet::square(Square::G1);
+    expect |= SquareSet::square(Square::F1);
+    expect |= SquareSet::square(Square::E1);
+
+    // king
+    occupancy |= SquareSet::square(Square::E1);
+    expect |= SquareSet::square(Square::D1);
+    expect |= SquareSet::square(Square::D2);
+    expect |= SquareSet::square(Square::E2);
+    expect |= SquareSet::square(Square::F2);
+    expect |= SquareSet::square(Square::F1);
+
+    const SquareSet attackedSquares {
+        Attacks_Portable::determineAttackedSquares(
+            occupancy,                     // occupancyMask
+            SquareSet { },                 // pawns
+            SquareSet::square(Square::B1), // knights
+            SquareSet::square(Square::C1), // bishops
+            SquareSet::square(Square::H1), // rooks
+            Square::E1,               // king
+            Color::WHITE              // turn
+            ) };
+
+    EXPECT_EQ(
+        expect,
+        attackedSquares);
+}
+
 }
