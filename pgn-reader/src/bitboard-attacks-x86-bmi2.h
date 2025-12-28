@@ -29,11 +29,6 @@ static_assert(HAVE_X86_BMI2, "This file should be included only when PDEP/PEXT i
 namespace hoover_chess_utils::pgn_reader
 {
 
-class CompileTimeInitializers
-{
-public:
-};
-
 /// @ingroup PgnReaderImpl
 /// @brief Slider attacks implementation using PEXT/PDEP
 class Attacks_BMI2

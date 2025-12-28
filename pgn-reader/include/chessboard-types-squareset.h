@@ -380,7 +380,7 @@ public:
     /// <tr><td>C3</td><td>B3</td><td>D3</td><td>E3</td><td>F3</td><td>G3</td><td>C4</td><td>C5</td></tr>
     /// </table>
     ///
-    /// @remark @ref HAVE_PDEP_PEXT indicates fast implementation.
+    /// @remark @ref HAVE_X86_BMI2 indicates fast implementation.
     SquareSet parallelExtract(SquareSet extractMask) noexcept;
 
     /// @brief Maps squares from @c *this using extraction mask. Squares are mapped as follows:
@@ -430,7 +430,7 @@ public:
     /// <tr><td> 0</td><td> 0</td><td> 0</td><td> 0</td><td> 0</td><td> 0</td><td> 0</td><td> 0</td></tr>
     /// </table>
     ///
-    /// @remark @ref HAVE_PDEP_PEXT indicates fast implementation.
+    /// @remark @ref HAVE_X86_BMI2 indicates fast implementation.
     SquareSet parallelDeposit(SquareSet extractMask) noexcept;
 
     /// @brief Returns an empty set
