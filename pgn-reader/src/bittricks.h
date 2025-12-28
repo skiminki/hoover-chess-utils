@@ -23,7 +23,7 @@
 #include <cassert>
 #include <cinttypes>
 
-#if (HAVE_BMI2)
+#if (HAVE_X86_BMI2)
 #include <immintrin.h>
 #endif
 
@@ -110,7 +110,7 @@ struct BitTricks
     ///   <th>Description</th>
     /// </tr>
     /// <tr>
-    ///   <td>@ref HAVE_BMI2</td>
+    ///   <td>@ref HAVE_X86_BMI2</td>
     ///   <td>Fast implementation using x86 PEXT instruction</td>
     /// </tr>
     /// <tr>
@@ -122,7 +122,7 @@ struct BitTricks
     /// @sa https://www.chessprogramming.org/BMI2#PEXT
     static inline std::uint64_t parallelExtract(std::uint64_t data, std::uint64_t mask) noexcept
     {
-#if (HAVE_BMI2)
+#if (HAVE_X86_BMI2)
         return _pext_u64(data, mask);
 #else
         std::uint64_t ret { };
@@ -153,7 +153,7 @@ struct BitTricks
     ///   <th>Description</th>
     /// </tr>
     /// <tr>
-    ///   <td>@ref HAVE_BMI2</td>
+    ///   <td>@ref HAVE_X86_BMI2</td>
     ///   <td>Fast implementation using x86 PDEP instruction</td>
     /// </tr>
     /// <tr>
@@ -165,7 +165,7 @@ struct BitTricks
     /// @sa https://www.chessprogramming.org/BMI2#PDEP
     static inline std::uint64_t parallelDeposit(std::uint64_t data, std::uint64_t mask) noexcept
     {
-#if (HAVE_BMI2)
+#if (HAVE_X86_BMI2)
         return _pdep_u64(data, mask);
 #else
         std::uint64_t ret { };

@@ -24,7 +24,7 @@
 #include <cinttypes>
 #include <immintrin.h>
 
-static_assert(HAVE_PDEP_PEXT, "This file should be included only when PDEP/PEXT is available");
+static_assert(HAVE_X86_BMI2, "This file should be included only when PDEP/PEXT is available");
 
 namespace hoover_chess_utils::pgn_reader
 {
