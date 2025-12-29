@@ -17,6 +17,8 @@
 #ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_H_INCLUDED
 #define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_H_INCLUDED
 
+#include "pgnreader-config.h"
+
 #include "chessboard-types.h"
 #include "chessboard-types-squareset.h"
 
@@ -429,28 +431,45 @@ public:
         // knights
         out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
 
-        // rooks and queens
-        const SquareSet firstHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask) };
-        out_checkers |= firstHVHits & rooks;
+        SquareSet pinners { };
 
-        // bishops and queens
-        const SquareSet firstDiagHits { Attacks::getBishopAttackMask(kingSq, occupancyMask) };
-        out_checkers |= firstDiagHits & bishops;
-
+#if (HAVE_AARCH64_SVE2_BITPERM)
         out_checkers &= opponentPieces;
 
-        // Resolve pinned pieces. Notes:
-        // - We'll remove only pinnable pieces from the first hits. The idea is to avoid
-        //   x-rays over non-pinnable pieces in order to minimize the number of pinners
-        // - In the second hit check, we'll remove pieces that are already determined to be checkers.
-        //   The reason is the same as the above.
-        const SquareSet secondHVHits {
-            Attacks::getRookAttackMask(kingSq, (occupancyMask &~ firstHVHits) | opponentPieces) };
-        const SquareSet secondDiagHits {
-            Attacks::getBishopAttackMask(kingSq, (occupancyMask &~ firstDiagHits) | (opponentPieces &~ epCapturable)) };
+        Attacks_AArch64_SVE2_BitPerm::determineSliderCheckersAndPinners(
+            kingSq,
+            occupancyMask,
+            rooks,
+            bishops,
+            opponentPieces,
+            epCapturable,
+            out_checkers,
+            pinners);
+#else
+        {
+            // rooks and queens
+            const SquareSet firstHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask) };
+            out_checkers |= firstHVHits & rooks;
 
-        const SquareSet pinners {
-            ((rooks & secondHVHits) | (bishops & secondDiagHits)) & opponentPieces &~ out_checkers };
+            // bishops and queens
+            const SquareSet firstDiagHits { Attacks::getBishopAttackMask(kingSq, occupancyMask) };
+            out_checkers |= firstDiagHits & bishops;
+
+            out_checkers &= opponentPieces;
+
+            // Resolve pinned pieces. Notes:
+            // - We'll remove only pinnable pieces from the first hits. The idea is to avoid
+            //   x-rays over non-pinnable pieces in order to minimize the number of pinners
+            // - In the second hit check, we'll remove pieces that are already determined to be checkers.
+            //   The reason is the same as the above.
+            const SquareSet secondHVHits {
+                Attacks::getRookAttackMask(kingSq, (occupancyMask &~ firstHVHits) | opponentPieces) };
+            const SquareSet secondDiagHits {
+                Attacks::getBishopAttackMask(kingSq, (occupancyMask &~ firstDiagHits) | (opponentPieces &~ epCapturable)) };
+
+            pinners = ((rooks & secondHVHits) | (bishops & secondDiagHits)) & opponentPieces &~ out_checkers;
+        }
+#endif
 
         out_pinnedPieces = SquareSet { };
         SQUARESET_ENUMERATE(
@@ -552,14 +571,40 @@ public:
             king,
             turn);
 #else
-        return Attacks_Portable::determineAttackedSquares(
-            occupancyMask,
-            pawns,
+        SquareSet attacks { };
+
+        // pawn attacks
+        static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
+        static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
+
+        // for rotl -- pawn color is opposite to turn
+        std::int8_t pawnAdvanceShiftLeft = -9 + 2 * static_cast<std::int8_t>(turn);
+
+        // captures to left
+        attacks |= (pawns &~ SquareSet::column(0)).rotl(pawnAdvanceShiftLeft);
+
+        // captures to right
+        attacks |= (pawns &~ SquareSet::column(7)).rotl(pawnAdvanceShiftLeft + 2);
+
+
+        SQUARESET_ENUMERATE(
+            piece,
             knights,
+            attacks |= getKnightAttackMask(piece));
+
+        SQUARESET_ENUMERATE(
+            piece,
             bishops,
+            attacks |= getBishopAttackMask(piece, occupancyMask));
+
+        SQUARESET_ENUMERATE(
+            piece,
             rooks,
-            king,
-            turn);
+            attacks |= getRookAttackMask(piece, occupancyMask));
+
+        attacks |= getKingAttackMask(king);
+
+        return attacks;
 #endif
     }
 };

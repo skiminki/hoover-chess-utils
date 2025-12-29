@@ -282,51 +282,6 @@ public:
         return SquareSet { ctKingAttackMaskTable[getIndexOfSquare(sq)] };
     }
 
-    static inline SquareSet determineAttackedSquares(
-        SquareSet occupancyMask,
-        SquareSet pawns,
-        SquareSet knights,
-        SquareSet bishops,
-        SquareSet rooks,
-        Square king,
-        Color turn) noexcept
-    {
-        SquareSet attacks { };
-
-        // pawn attacks
-        static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
-        static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
-
-        // for rotl -- pawn color is opposite to turn
-        std::int8_t pawnAdvanceShiftLeft = -9 + 2 * static_cast<std::int8_t>(turn);
-
-        // captures to left
-        attacks |= (pawns &~ SquareSet::column(0)).rotl(pawnAdvanceShiftLeft);
-
-        // captures to right
-        attacks |= (pawns &~ SquareSet::column(7)).rotl(pawnAdvanceShiftLeft + 2);
-
-
-        SQUARESET_ENUMERATE(
-            piece,
-            knights,
-            attacks |= Attacks_Portable::getKnightAttackMask(piece));
-
-        SQUARESET_ENUMERATE(
-            piece,
-            bishops,
-            attacks |= Attacks_Portable::getBishopAttackMask(piece, occupancyMask));
-
-        SQUARESET_ENUMERATE(
-            piece,
-            rooks,
-            attacks |= Attacks_Portable::getRookAttackMask(piece, occupancyMask));
-
-        attacks |= Attacks_Portable::getKingAttackMask(king);
-
-        return attacks;
-    }
-
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for usage documentation
     ///
     /// @param[in]  sq             Bishop square
