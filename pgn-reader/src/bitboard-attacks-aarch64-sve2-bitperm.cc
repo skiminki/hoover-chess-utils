@@ -85,7 +85,7 @@ consteval auto generatePextBishopMasks() noexcept
 
 consteval auto generatePextOffsets(const std::array<std::uint64_t, 64U> &masks) noexcept
 {
-    std::array<std::uint32_t, 64U> ret { };
+    std::array<std::uint64_t, 64U> ret { };
     std::uint32_t offset { };
 
     for (std::uint8_t sq { }; sq < 64U; ++sq)
@@ -108,6 +108,33 @@ consteval auto calculatePextDataSize(const std::array<std::uint64_t, 64U> &masks
     return offset;
 }
 
+template <typename T, std::size_t N>
+consteval std::array<T, N * 2U> interleaveArrays(const std::array<T, N> &lhs, const std::array<T, N> &rhs) noexcept
+{
+    std::array<T, N * 2U> ret { };
+
+    for (std::size_t i { }; i < N; ++i)
+    {
+        ret[ 2U * i      ] = lhs[i];
+        ret[(2U * i) + 1U] = rhs[i];
+    }
+
+    return ret;
+}
+
+template <typename T, std::size_t N>
+consteval std::array<T, N> addConstant(const std::array<T, N> &lhs, const T rhs) noexcept
+{
+    std::array<T, N> ret { };
+
+    for (std::size_t i { }; i < N; ++i)
+    {
+        ret[i] = lhs[i] + rhs;
+    }
+
+    return ret;
+}
+
 }
 
 // masks for PEXT/PDEP. In general, these have the form:
@@ -122,24 +149,18 @@ consteval auto calculatePextDataSize(const std::array<std::uint64_t, 64U> &masks
 // 0 0 0 0 0 0 0 0
 //
 // 'R' is 0
-const std::array<std::uint64_t, 64U> Attacks_AArch64_SVE2_BitPerm::ctPextRookMasks { generatePextRookMasks() };
-const std::array<std::uint64_t, 64U> Attacks_AArch64_SVE2_BitPerm::ctPextBishopMasks { generatePextBishopMasks() };
 
+const Attacks_AArch64_SVE2_BitPerm::PextData Attacks_AArch64_SVE2_BitPerm::ctPextData
+{
+    interleaveArrays(generatePextBishopMasks(), generatePextRookMasks()),
 
-const std::array<std::uint32_t, 64U> Attacks_AArch64_SVE2_BitPerm::ctPextRookOffsets {
-    generatePextOffsets(generatePextRookMasks()) };
-const std::array<std::uint32_t, 64U> Attacks_AArch64_SVE2_BitPerm::ctPextBishopOffsets {
-    generatePextOffsets(generatePextBishopMasks()) };
+    interleaveArrays(generatePextOffsets(generatePextBishopMasks()),
+                     addConstant(generatePextOffsets(generatePextRookMasks()), static_cast<std::uint64_t>(5248U))),
 
-const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> Attacks_AArch64_SVE2_BitPerm::ctPextRookAttackData {
-
-#include "slider-attacks-pext-pdep-rook.inc"
-
-};
-
-const std::array<std::uint64_t, calculatePextDataSize(generatePextBishopMasks())> Attacks_AArch64_SVE2_BitPerm::ctPextBishopAttackData {
-
+    {
 #include "slider-attacks-pext-pdep-bishop.inc"
+#include "slider-attacks-pext-pdep-rook.inc"
+    },
 
 };
 
