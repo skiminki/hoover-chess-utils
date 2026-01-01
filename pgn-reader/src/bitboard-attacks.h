@@ -346,12 +346,20 @@ public:
     {
         SquareSet attackers { };
 
+#if HAVE_AARCH64_SVE2_BITPERM
+
+        const auto [ diagHits, horizVertHits ] = Attacks_AArch64_SVE2_BitPerm::getBishopAndRookAttackMasks(
+            sq,
+            occupancyMask);
+
+#else
         // rooks and queens
         const SquareSet horizVertHits { Attacks::getRookAttackMask(sq, occupancyMask) };
-        SquareSet attackers1 { horizVertHits & rooks };
 
         // bishops and queens
         const SquareSet diagHits { Attacks::getBishopAttackMask(sq, occupancyMask) };
+#endif
+        const SquareSet attackers1 { horizVertHits & rooks };
         const SquareSet attackers2 { diagHits & bishops };
 
         // pawn attackers
@@ -424,29 +432,73 @@ public:
 
 #else
         const SquareSet opponentPieces { occupancyMask ^ turnColorMask };
-
-        // pawn checkers
-        out_checkers = Attacks::getPawnAttackMask(kingSq, turn) & pawns;
-
-        // knights
-        out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
-
         SquareSet pinners { };
 
-#if (HAVE_AARCH64_SVE2_BITPERM)
-        out_checkers &= opponentPieces;
+#if HAVE_AARCH64_SVE2_BITPERM && 0 // Somewhat slower on Neoverse V2, so disable for now
+        if constexpr (false)
+        {
+            Attacks_AArch64_SVE2_BitPerm::determineSliderCheckersAndPinners(
+                kingSq,
+                occupancyMask,
+                rooks,
+                bishops,
+                opponentPieces,
+                epCapturable,
+                out_checkers,
+                pinners);
 
-        Attacks_AArch64_SVE2_BitPerm::determineSliderCheckersAndPinners(
-            kingSq,
-            occupancyMask,
-            rooks,
-            bishops,
-            opponentPieces,
-            epCapturable,
-            out_checkers,
-            pinners);
+            // pawn checkers
+            out_checkers |= Attacks::getPawnAttackMask(kingSq, turn) & pawns;
+
+            // knights
+            out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
+
+            out_checkers &= opponentPieces;
+        }
+        else
+        {
+            // rooks and queens
+            const auto [ firstDiagHits, firstHVHits ] =
+                Attacks_AArch64_SVE2_BitPerm::getBishopAndRookAttackMasks(
+                    kingSq,
+                    occupancyMask);
+
+            // pawn checkers
+            out_checkers = Attacks::getPawnAttackMask(kingSq, turn) & pawns;
+
+            // bishops and queens
+            out_checkers |= firstDiagHits & bishops;
+
+            // rooks and queens
+            out_checkers |= firstHVHits & rooks;
+
+            // Resolve pinned pieces. Notes:
+            // - We'll remove only pinnable pieces from the first hits. The idea is to avoid
+            //   x-rays over non-pinnable pieces in order to minimize the number of pinners
+            // - In the second hit check, we'll remove pieces that are already determined to be checkers.
+            //   The reason is the same as the above.
+
+            const auto [ secondDiagHits, secondHVHits ] =
+                Attacks_AArch64_SVE2_BitPerm::getBishopAndRookAttackMasks(
+                    kingSq,
+                    (occupancyMask &~ firstDiagHits) | (opponentPieces &~ epCapturable),
+                    (occupancyMask &~ firstHVHits) | opponentPieces);
+
+            // knights
+            out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
+
+            out_checkers &= opponentPieces;
+
+            pinners = ((rooks & secondHVHits) | (bishops & secondDiagHits)) & opponentPieces &~ out_checkers;
+        }
 #else
         {
+            // pawn checkers
+            out_checkers = Attacks::getPawnAttackMask(kingSq, turn) & pawns;
+
+            // knights
+            out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
+
             // rooks and queens
             const SquareSet firstHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask) };
             out_checkers |= firstHVHits & rooks;
@@ -470,7 +522,6 @@ public:
             pinners = ((rooks & secondHVHits) | (bishops & secondDiagHits)) & opponentPieces &~ out_checkers;
         }
 #endif
-
         out_pinnedPieces = SquareSet { };
         SQUARESET_ENUMERATE(
             pinner,
