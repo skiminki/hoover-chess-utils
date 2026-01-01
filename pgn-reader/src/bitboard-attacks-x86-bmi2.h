@@ -34,41 +34,44 @@ namespace hoover_chess_utils::pgn_reader
 class Attacks_BMI2
 {
 private:
-    static const std::array<SquareSet, 64U> ctPextRookMasks;
-    static const std::array<std::uint32_t, 64U> ctPextRookOffsets;
-    static const std::array<std::uint64_t, 102400U> ctPextRookAttackData;
-    static const std::array<SquareSet, 64U> ctPextBishopMasks;
-    static const std::array<std::uint32_t, 64U> ctPextBishopOffsets;
-    static const std::array<std::uint64_t, 5248U> ctPextBishopAttackData;
+    struct PextData
+    {
+        alignas(64) std::array<std::uint64_t, 64U> bishopMasks;
+        alignas(64) std::array<std::uint32_t, 64U> bishopOffsets;
+        alignas(64) std::array<std::uint64_t, 64U> rookMasks;
+        alignas(64) std::array<std::uint32_t, 64U> rookOffsets;
+        alignas(64) std::array<std::uint64_t, 5248U + 102400U> bishopRookAttackData;
+    };
 
+    static const PextData ctPextData;
 
 public:
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for documentation
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        const SquareSet pextMask { ctPextBishopMasks[static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t offset { ctPextBishopOffsets[static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMask { ctPextData.bishopMasks[static_cast<std::uint8_t>(sq)] };
+        const std::uint32_t offset { ctPextData.bishopOffsets[static_cast<std::uint8_t>(sq)] };
 
         return SquareSet {
-            ctPextBishopAttackData[
+            ctPextData.bishopRookAttackData[
                 offset +
                 _pext_u64(
                     static_cast<std::uint64_t>(occupancyMask),
-                    static_cast<std::uint64_t>(pextMask))] };
+                    pextMask)] };
     }
 
     /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        const SquareSet pextMask { ctPextRookMasks[static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t offset { ctPextRookOffsets[static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMask { ctPextData.rookMasks[static_cast<std::uint8_t>(sq)] };
+        const std::uint32_t offset { ctPextData.rookOffsets[static_cast<std::uint8_t>(sq)] };
 
         return SquareSet {
-            ctPextRookAttackData[
+            ctPextData.bishopRookAttackData[
                 offset +
                 _pext_u64(
                     static_cast<std::uint64_t>(occupancyMask),
-                    static_cast<std::uint64_t>(pextMask))] };
+                    pextMask)] };
     }
 };
 
