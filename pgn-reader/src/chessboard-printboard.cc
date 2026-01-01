@@ -57,7 +57,6 @@ void ChessBoard::printBoard() const
         << std::endl;
 
     std::cout  << "Checkers:";
-
     const SquareSet checkers { getCheckers() };
     if (checkers == SquareSet::none())
         std::cout << " (none)";
@@ -68,7 +67,19 @@ void ChessBoard::printBoard() const
             checkers,
             std::cout << ' ' << StringUtils::squareToString(checker, ctStringView_NONE));
     }
+    std::cout << std::endl;
 
+    std::cout  << "Pinned:  ";
+    const SquareSet pinnedPieces { getPinnedPieces() };
+    if (pinnedPieces == SquareSet::none())
+        std::cout << " (none)";
+    else
+    {
+        SQUARESET_ENUMERATE(
+            checker,
+            pinnedPieces,
+            std::cout << ' ' << StringUtils::squareToString(checker, ctStringView_NONE));
+    }
     std::cout << std::endl;
 }
 
