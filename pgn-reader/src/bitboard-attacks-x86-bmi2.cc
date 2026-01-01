@@ -33,7 +33,7 @@ namespace
 
 consteval auto generatePextRookMasks() noexcept
 {
-    std::array<SquareSet, 64U> ret { };
+    std::array<std::uint64_t, 64U> ret { };
 
     for (std::uint8_t sq { }; sq < 64U; ++sq)
     {
@@ -50,7 +50,7 @@ consteval auto generatePextRookMasks() noexcept
             ~(SquareSet::square(col, 0U) | SquareSet::square(col, 7U) |
               SquareSet::square(0U, row) | SquareSet::square(7U, row));
 
-        ret[sq] = mask;
+        ret[sq] = static_cast<std::uint64_t>(mask);
     }
 
     return ret;
@@ -58,7 +58,7 @@ consteval auto generatePextRookMasks() noexcept
 
 consteval auto generatePextBishopMasks() noexcept
 {
-    std::array<SquareSet, 64U> ret { };
+    std::array<std::uint64_t, 64U> ret { };
 
     for (std::uint8_t sq { }; sq < 64U; ++sq)
     {
@@ -78,13 +78,13 @@ consteval auto generatePextBishopMasks() noexcept
         // remove borders
         mask &= ~(SquareSet::column(0U) | SquareSet::column(7) | SquareSet::row(0U) | SquareSet::row(7U));
 
-        ret[sq] = mask;
+        ret[sq] = static_cast<std::uint64_t>(mask);
     }
 
     return ret;
 }
 
-consteval auto generatePextOffsets(const std::array<SquareSet, 64U> &masks) noexcept
+consteval auto generatePextOffsets(const std::array<std::uint64_t, 64U> &masks) noexcept
 {
     std::array<std::uint32_t, 64U> ret { };
     std::uint32_t offset { };
@@ -93,22 +93,21 @@ consteval auto generatePextOffsets(const std::array<SquareSet, 64U> &masks) noex
     {
         ret[sq] = offset;
 
-        offset += std::uint32_t { 1 } << masks[sq].popcount();
+        offset += std::uint32_t { 1 } << std::popcount(masks[sq]);
     }
 
     return ret;
 }
 
-consteval auto calculatePextDataSize(const std::array<SquareSet, 64U> &masks) noexcept
+consteval auto calculatePextDataSize(const std::array<std::uint64_t, 64U> &masks) noexcept
 {
     std::uint32_t offset { };
 
     for (std::uint8_t sq { }; sq < 64U; ++sq)
-        offset += std::uint32_t { 1 } << masks[sq].popcount();
+        offset += std::uint32_t { 1 } << std::popcount(masks[sq]);
 
     return offset;
 }
-
 
 #if 0
 auto calculatePextRookAttackData(const std::array<SquareSet, 64U> &masks, const std::array<std::uint32_t, 64U> &offsets) noexcept
@@ -169,42 +168,33 @@ constexpr auto calculatePextBishopAttackData(const std::array<SquareSet, 64U> &m
 }
 #endif
 
+template <typename T, std::size_t N>
+consteval std::array<T, N> addConstant(const std::array<T, N> &lhs, const T rhs) noexcept
+{
+    std::array<T, N> ret { };
+
+    for (std::size_t i { }; i < N; ++i)
+    {
+        ret[i] = lhs[i] + rhs;
+    }
+
+    return ret;
 }
 
-// masks for PEXT/PDEP. In general, these have the form:
-//
-// 0 0 0 0 0 0 0 0
-// 0 0 0 1 0 0 0 0
-// 0 0 0 1 0 0 0 0
-// 0 1 1 R 1 1 1 0
-// 0 0 0 1 0 0 0 0
-// 0 0 0 1 0 0 0 0
-// 0 0 0 1 0 0 0 0
-// 0 0 0 0 0 0 0 0
-//
-// 'R' is 0
-const std::array<SquareSet, 64U> Attacks_BMI2::ctPextRookMasks { generatePextRookMasks() };
-const std::array<SquareSet, 64U> Attacks_BMI2::ctPextBishopMasks { generatePextBishopMasks() };
+}
 
 
-const std::array<std::uint32_t, 64U> Attacks_BMI2::ctPextRookOffsets {
-    generatePextOffsets(generatePextRookMasks()) };
-const std::array<std::uint32_t, 64U> Attacks_BMI2::ctPextBishopOffsets {
-    generatePextOffsets(generatePextBishopMasks()) };
+const Attacks_BMI2::PextData Attacks_BMI2::ctPextData
+{
+    generatePextBishopMasks(),
+    generatePextOffsets(generatePextBishopMasks()),
+    generatePextRookMasks(),
+    addConstant(generatePextOffsets(generatePextRookMasks()), static_cast<std::uint32_t>(5248U)),
 
-const std::array<std::uint64_t, calculatePextDataSize(generatePextRookMasks())> Attacks_BMI2::ctPextRookAttackData {
-
-//    calculatePextRookAttackData(ctPextRookMasks, ctPextRookOffsets)
-
-#include "slider-attacks-pext-pdep-rook.inc"
-
-};
-
-const std::array<std::uint64_t, calculatePextDataSize(generatePextBishopMasks())> Attacks_BMI2::ctPextBishopAttackData {
-
-//    calculatePextBishopAttackData(ctPextBishopMasks, ctPextBishopOffsets)
-
+    {
 #include "slider-attacks-pext-pdep-bishop.inc"
+#include "slider-attacks-pext-pdep-rook.inc"
+    },
 
 };
 
