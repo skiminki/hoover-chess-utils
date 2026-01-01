@@ -640,6 +640,15 @@ TEST(MoveGen, pinnedPieceMoves)
     PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::E5);
 }
 
+TEST(MoveGen, fakePinnedPieceMoves)
+{
+    ChessBoard board { };
+
+    board.loadFEN("5r1k/1q4pp/p5p1/bp1pP3/3Q4/4B2R/PP4P1/3R3K w - d6 0 26");
+    board.printBoard();
+    PLAY_MOVE(board, PawnAndDestCapture, SquareSet::all(), Square::D6);
+}
+
 // cases not covered by other tests
 TEST(MoveGen, halfMoveClockMax)
 {
