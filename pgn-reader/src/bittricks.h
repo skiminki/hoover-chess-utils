@@ -117,6 +117,10 @@ struct BitTricks
     ///   <td>Fast implementation using x86 PEXT instruction</td>
     /// </tr>
     /// <tr>
+    ///   <td>@ref HAVE_AARCH64_SVE2_BITPERM</td>
+    ///   <td>Fast implementation using AArch64 BEXT instruction</td>
+    /// </tr>
+    /// <tr>
     ///   <td>Otherwise</td>
     ///   <td>Generic portable implementation</td>
     /// </tr>
@@ -160,6 +164,10 @@ struct BitTricks
     /// <tr>
     ///   <td>@ref HAVE_X86_BMI2</td>
     ///   <td>Fast implementation using x86 PDEP instruction</td>
+    /// </tr>
+    /// <tr>
+    ///   <td>@ref HAVE_AARCH64_SVE2_BITPERM</td>
+    ///   <td>Fast implementation using AArch64 BDEP instruction</td>
     /// </tr>
     /// <tr>
     ///   <td>Otherwise</td>
