@@ -27,6 +27,9 @@
 #include <immintrin.h>
 #endif
 
+#if (HAVE_AARCH64_SVE2_BITPERM)
+#include <arm_sve.h>
+#endif
 
 namespace hoover_chess_utils::pgn_reader
 {
@@ -124,6 +127,8 @@ struct BitTricks
     {
 #if (HAVE_X86_BMI2)
         return _pext_u64(data, mask);
+#elif (HAVE_AARCH64_SVE2_BITPERM)
+        return svbext_n_u64(svdup_u64(data), mask)[0U];
 #else
         std::uint64_t ret { };
         std::uint64_t count { 1U };
@@ -167,6 +172,8 @@ struct BitTricks
     {
 #if (HAVE_X86_BMI2)
         return _pdep_u64(data, mask);
+#elif (HAVE_AARCH64_SVE2_BITPERM)
+        return svbdep_n_u64(svdup_u64(data), mask)[0U];
 #else
         std::uint64_t ret { };
 
