@@ -23,7 +23,8 @@
 #include <bit>
 #include <cinttypes>
 
-static_assert(HAVE_X86_BMI2, "This file should be included only when PDEP/PEXT is enabled");
+
+static_assert(false, "This file should be included only if the PEXT data needs to be recreated");
 
 namespace hoover_chess_utils::pgn_reader
 {
@@ -31,85 +32,7 @@ namespace hoover_chess_utils::pgn_reader
 namespace
 {
 
-consteval auto generatePextRookMasks() noexcept
-{
-    std::array<std::uint64_t, 64U> ret { };
-
-    for (std::uint8_t sq { }; sq < 64U; ++sq)
-    {
-        const std::uint8_t col { columnOf(Square { sq }) };
-        const std::uint8_t row { rowOf(Square { sq }) };
-
-        SquareSet mask {
-            SquareSet::column(col) ^
-            SquareSet::row(row)
-        };
-
-        // remove tips of the attack rays
-        mask &=
-            ~(SquareSet::square(col, 0U) | SquareSet::square(col, 7U) |
-              SquareSet::square(0U, row) | SquareSet::square(7U, row));
-
-        ret[sq] = static_cast<std::uint64_t>(mask);
-    }
-
-    return ret;
-}
-
-consteval auto generatePextBishopMasks() noexcept
-{
-    std::array<std::uint64_t, 64U> ret { };
-
-    for (std::uint8_t sq { }; sq < 64U; ++sq)
-    {
-        const std::uint8_t col { columnOf(Square { sq }) };
-        const std::uint8_t row { rowOf(Square { sq }) };
-
-        const SquareSet diagBLTR { 0x80'40'20'10'08'04'02'01 };
-        const std::int8_t shiftBLTR { static_cast<std::int8_t>(col - row) };
-        const SquareSet diagBLTRShifted { (shiftBLTR >= 0) ? diagBLTR >> (shiftBLTR * 8) : diagBLTR << (-shiftBLTR) * 8 };
-
-        const SquareSet diagBRTL { 0x01'02'04'08'10'20'40'80 };
-        const std::int8_t shiftBRTL { static_cast<std::int8_t>(7U - col - row) };
-        const SquareSet diagBRTLShifted { (shiftBRTL >= 0) ? diagBRTL >> (shiftBRTL * 8) : diagBRTL << (-shiftBRTL) * 8 };
-
-        SquareSet mask { diagBLTRShifted ^ diagBRTLShifted };
-
-        // remove borders
-        mask &= ~(SquareSet::column(0U) | SquareSet::column(7) | SquareSet::row(0U) | SquareSet::row(7U));
-
-        ret[sq] = static_cast<std::uint64_t>(mask);
-    }
-
-    return ret;
-}
-
-consteval auto generatePextOffsets(const std::array<std::uint64_t, 64U> &masks) noexcept
-{
-    std::array<std::uint32_t, 64U> ret { };
-    std::uint32_t offset { };
-
-    for (std::uint8_t sq { }; sq < 64U; ++sq)
-    {
-        ret[sq] = offset;
-
-        offset += std::uint32_t { 1 } << std::popcount(masks[sq]);
-    }
-
-    return ret;
-}
-
-consteval auto calculatePextDataSize(const std::array<std::uint64_t, 64U> &masks) noexcept
-{
-    std::uint32_t offset { };
-
-    for (std::uint8_t sq { }; sq < 64U; ++sq)
-        offset += std::uint32_t { 1 } << std::popcount(masks[sq]);
-
-    return offset;
-}
-
-#if 0
+[[maybe_unused]]
 auto calculatePextRookAttackData(const std::array<SquareSet, 64U> &masks, const std::array<std::uint32_t, 64U> &offsets) noexcept
 {
     std::array<std::uint64_t, 102400U> ret { };
@@ -139,6 +62,7 @@ auto calculatePextRookAttackData(const std::array<SquareSet, 64U> &masks, const 
     return ret;
 }
 
+[[maybe_unused]]
 constexpr auto calculatePextBishopAttackData(const std::array<SquareSet, 64U> &masks, const std::array<std::uint32_t, 64U> &offsets) noexcept
 {
     std::array<std::uint64_t, 5248U> ret { };
@@ -166,36 +90,7 @@ constexpr auto calculatePextBishopAttackData(const std::array<SquareSet, 64U> &m
 
     return ret;
 }
-#endif
-
-template <typename T, std::size_t N>
-consteval std::array<T, N> addConstant(const std::array<T, N> &lhs, const T rhs) noexcept
-{
-    std::array<T, N> ret { };
-
-    for (std::size_t i { }; i < N; ++i)
-    {
-        ret[i] = lhs[i] + rhs;
-    }
-
-    return ret;
-}
 
 }
-
-
-const Attacks_BMI2::PextData Attacks_BMI2::ctPextData
-{
-    generatePextBishopMasks(),
-    generatePextOffsets(generatePextBishopMasks()),
-    generatePextRookMasks(),
-    addConstant(generatePextOffsets(generatePextRookMasks()), static_cast<std::uint32_t>(5248U)),
-
-    {
-#include "slider-attacks-pext-pdep-bishop.inc"
-#include "slider-attacks-pext-pdep-rook.inc"
-    },
-
-};
 
 }

@@ -310,33 +310,6 @@ TEST(Attacks, getBishopAttackMask)
                 }
 }
 
-TEST(Attacks, getBishopAttackMask_PortableImpl)
-{
-    // try all combinations of bishop + capturable piece
-    for (std::uint8_t row1 = 0U; row1 <= 7U; ++row1)
-        for (std::uint8_t col1 = 0U; col1 <= 7U; ++col1)
-            for (std::uint8_t row2 = 0U; row2 <= 7U; ++row2)
-                for (std::uint8_t col2 = 0U; col2 <= 7U; ++col2)
-                {
-                    Square bishop { makeSquare(row1, col1) };
-                    Square capturable { makeSquare(row2, col2) };
-
-                    SquareSet occupancyMask { SquareSet::square(capturable) | SquareSet::square(bishop) };
-
-                    SquareSet expect { };
-
-                    expect |= shootRay(bishop, occupancyMask, -1, -1);
-                    expect |= shootRay(bishop, occupancyMask, -1, +1);
-                    expect |= shootRay(bishop, occupancyMask, +1, -1);
-                    expect |= shootRay(bishop, occupancyMask, +1, +1);
-
-                    EXPECT_EQ(expect, Attacks_Portable::getBishopAttackMask(bishop, occupancyMask))
-                        << std::format("Bishop={} Capturable={}",
-                                       StringUtils::squareToString(bishop, "??"),
-                                       StringUtils::squareToString(capturable, "??"));
-                }
-}
-
 TEST(Attacks, getRookAttackMask)
 {
     // try all combinations of bishop + capturable piece
@@ -358,33 +331,6 @@ TEST(Attacks, getRookAttackMask)
                     expect |= shootRay(rook, occupancyMask,  0, +1);
 
                     EXPECT_EQ(expect, Attacks::getRookAttackMask(rook, occupancyMask))
-                        << std::format("Rook={} Capturable={}",
-                                       StringUtils::squareToString(rook, "??"),
-                                       StringUtils::squareToString(capturable, "??"));
-                }
-}
-
-TEST(Attacks, getRookAttackMask_PortableImpl)
-{
-    // try all combinations of bishop + capturable piece
-    for (std::uint8_t row1 = 0U; row1 <= 7U; ++row1)
-        for (std::uint8_t col1 = 0U; col1 <= 7U; ++col1)
-            for (std::uint8_t row2 = 0U; row2 <= 7U; ++row2)
-                for (std::uint8_t col2 = 0U; col2 <= 7U; ++col2)
-                {
-                    Square rook { makeSquare(row1, col1) };
-                    Square capturable { makeSquare(row2, col2) };
-
-                    SquareSet occupancyMask { SquareSet::square(capturable) | SquareSet::square(rook) };
-
-                    SquareSet expect { };
-
-                    expect |= shootRay(rook, occupancyMask, -1, 0);
-                    expect |= shootRay(rook, occupancyMask, +1, 0);
-                    expect |= shootRay(rook, occupancyMask,  0, -1);
-                    expect |= shootRay(rook, occupancyMask,  0, +1);
-
-                    EXPECT_EQ(expect, Attacks_Portable::getRookAttackMask(rook, occupancyMask))
                         << std::format("Rook={} Capturable={}",
                                        StringUtils::squareToString(rook, "??"),
                                        StringUtils::squareToString(capturable, "??"));

@@ -34,25 +34,6 @@ namespace hoover_chess_utils::pgn_reader
 class Attacks_Portable
 {
 private:
-    /// @brief Pawn attack masks
-    ///
-    /// This table is used for both pawn-to-attacked-square and attacking-pawn-to-square
-    /// tables. Hence the inclusion of ranks 1 and 8.
-    ///
-    /// @sa @coderef{getPawnAttackMask()}
-    /// @sa @coderef{getPawnAttackerMask()}
-    static const std::array<std::array<std::uint64_t, 2U>, 64U> ctPawnAttackMaskTable;
-
-    /// @brief Knight attack masks
-    ///
-    /// Table of knight square to attacked square set masks.
-    static const std::array<std::uint64_t, 64U> ctKnightAttackMaskTable;
-
-    /// @brief King attack masks
-    ///
-    /// Table of king square to attacked square set masks.
-    static const std::array<std::uint64_t, 64U> ctKingAttackMaskTable;
-
     /// @brief Calculate vertical, diagonal, or antidiagonal attack mask using
     /// the Hyperbola quintessence algorithm
     ///
@@ -229,7 +210,10 @@ public:
 
     static inline SquareSet getPawnAttackMask(Square sq, Color pawnColor) noexcept
     {
-        return SquareSet { turnSpecificArrayLookup(ctPawnAttackMaskTable, static_cast<std::size_t>(sq), pawnColor) };
+        return SquareSet {
+            turnSpecificArrayLookup(
+                ctBitBoardTables.pawnAttackMasks,
+                static_cast<std::size_t>(sq), pawnColor) };
     }
 
     static inline SquareSet getPawnAttackerMask(Square sq, Color pawnColor) noexcept
@@ -238,7 +222,9 @@ public:
         static_assert(static_cast<std::uint64_t>(Color::BLACK) == 8U);
 
         return SquareSet {
-            turnSpecificArrayLookup(ctPawnAttackMaskTable, static_cast<std::size_t>(sq), oppositeColor(pawnColor)) };
+            turnSpecificArrayLookup(
+                ctBitBoardTables.pawnAttackMasks,
+                static_cast<std::size_t>(sq), oppositeColor(pawnColor)) };
     }
 
     template <Color pawnColor, bool captureToRight>
@@ -274,12 +260,12 @@ public:
 
     static inline SquareSet getKnightAttackMask(Square sq) noexcept
     {
-        return SquareSet { ctKnightAttackMaskTable[getIndexOfSquare(sq)] };
+        return SquareSet { ctBitBoardTables.knightAttackMasks[getIndexOfSquare(sq)] };
     }
 
     static inline SquareSet getKingAttackMask(Square sq) noexcept
     {
-        return SquareSet { ctKingAttackMaskTable[getIndexOfSquare(sq)] };
+        return SquareSet { ctBitBoardTables.kingAttackMasks[getIndexOfSquare(sq)] };
     }
 
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for usage documentation
@@ -289,7 +275,7 @@ public:
     /// @return                    Set of attacked squares
     ///
     /// @coderef{getSliderAttackMaskHyperbola()} is used to implement this function.
-    static SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept;
+    static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 
     /// @brief See @coderef{Attacks::getRookAttackMask()} for usage documentation
     ///
@@ -307,15 +293,64 @@ public:
     /// -# Use a precomputed table mapping the first rank occupancy and piece column
     ///    to attack squares
     /// -# Shift the attack squares back to piece row
-    static SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
+    static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
 
     /// @brief Returns horizontal rook attack mask
     ///
     /// @param[in]  sq             Rook square
     /// @param[in]  occupancyMask  Set of occupied squares
     /// @return                    Set of horizontally attacked squares
-    static SquareSet getHorizRookAttackMask(Square sq, SquareSet occupancyMask) noexcept;
+    static inline SquareSet getHorizRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+    {
+        // horizontal attacks
+        const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
+        const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
+        const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+
+        return SquareSet { ctBitBoardTables.rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift;
+    }
 };
+
+#if (BITBOARD_TABLES_HAVE_HYPERBOLA)
+SquareSet Attacks_Portable::getSliderAttackMaskHyperbola(
+    SquareSet pieceBit, SquareSet occupancyMask, SquareSet rayMaskEx) noexcept
+{
+    std::uint64_t forward { static_cast<std::uint64_t>(occupancyMask & rayMaskEx) };
+    std::uint64_t reverse { static_cast<std::uint64_t>(SquareSet { forward }.flipVert()) };
+
+    forward = forward - static_cast<std::uint64_t>(pieceBit);
+    reverse = reverse - static_cast<std::uint64_t>(pieceBit.flipVert());
+
+    return (SquareSet { forward } ^ SquareSet { reverse }.flipVert()) & rayMaskEx;
+}
+
+SquareSet Attacks_Portable::getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    const SquareSet pieceBit { ctBitBoardTables.hyperbolaAttackMasks[getIndexOfSquare(sq)].sqBit };
+
+    return
+        getSliderAttackMaskHyperbola(
+            pieceBit, occupancyMask, SquareSet { ctBitBoardTables.hyperbolaAttackMasks[getIndexOfSquare(sq)].diagBLTREx }) |
+        getSliderAttackMaskHyperbola(
+            pieceBit, occupancyMask, SquareSet { ctBitBoardTables.hyperbolaAttackMasks[getIndexOfSquare(sq)].diagBRTLEx });
+}
+
+SquareSet Attacks_Portable::getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
+{
+    // vertical attacks
+    const SquareSet pieceBit { ctBitBoardTables.hyperbolaAttackMasks[getIndexOfSquare(sq)].sqBit };
+    const SquareSet vertAttacks {
+        getSliderAttackMaskHyperbola(
+            pieceBit, occupancyMask, SquareSet { ctBitBoardTables.hyperbolaAttackMasks[getIndexOfSquare(sq)].vertMaskEx }) };
+
+    // horizontal attacks
+    const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
+    const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
+    const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+
+    return vertAttacks | (SquareSet { ctBitBoardTables.rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift);
+}
+#endif
 
 }
 

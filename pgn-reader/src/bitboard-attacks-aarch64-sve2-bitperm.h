@@ -17,6 +17,8 @@
 #ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_AARCH64_SVE2_BITPERM_H_INCLUDED
 #define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_AARCH64_SVE2_BITPERM_H_INCLUDED
 
+#include "bitboard-tables.h"
+
 #include "chessboard-types-squareset.h"
 #include "pgnreader-config.h"
 
@@ -49,29 +51,29 @@ public:
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for documentation
     static SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        const std::uint64_t pextMask { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t offset { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMask { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t offset { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
 
         svuint64_t occupancyMaskV { svdup_u64(static_cast<std::uint64_t>(occupancyMask)) };
 
         svuint64_t extractedV { svbext_n_u64(occupancyMaskV, static_cast<std::uint64_t>(pextMask)) };
         const std::uint64_t extracted { extractedV[0U] };
 
-        return SquareSet { ctPextData.bishopRookAttackData[offset + extracted] };
+        return SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offset + extracted] };
     }
 
     /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        const std::uint64_t pextMask { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
-        const std::uint64_t offset { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t pextMask { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t offset { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
         svuint64_t occupancyMaskV { svdup_u64(static_cast<std::uint64_t>(occupancyMask)) };
 
         svuint64_t extractedV { svbext_n_u64(occupancyMaskV, static_cast<std::uint64_t>(pextMask)) };
         const std::uint64_t extracted { extractedV[0U] };
 
-        return SquareSet { ctPextData.bishopRookAttackData[offset + extracted] };
+        return SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offset + extracted] };
     }
 
     /// @brief See @coderef{Attacks::getQueenAttackMask()} for documentation
@@ -80,11 +82,11 @@ public:
         // note: the vector elements are in order: bishop, rook
 
         // we'll use the first two elements of the vector when it matters
-        const std::uint64_t pextMaskB { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t pextMaskR { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t pextMaskB { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMaskR { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
-        const std::uint64_t offsetB { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t offsetR { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t offsetB { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t offsetR { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
         const svuint64_t pextMaskV { svdupq_u64(pextMaskB, pextMaskR) };
 
@@ -96,8 +98,8 @@ public:
         const std::uint64_t extractedR { extractedV[1U] };
 
         return
-            SquareSet { ctPextData.bishopRookAttackData[offsetB + extractedB] } |
-            SquareSet { ctPextData.bishopRookAttackData[offsetR + extractedR] };
+            SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offsetB + extractedB] } |
+            SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offsetR + extractedR] };
 
     }
 
@@ -105,13 +107,13 @@ public:
         Square sq,
         SquareSet occupancyMask) noexcept
     {
-        const std::uint64_t pextMaskB { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t pextMaskR { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t pextMaskB { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMaskR { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
         const svuint64_t pextMaskV { svdupq_u64(pextMaskB, pextMaskR) };
 
-        const std::uint64_t offsetB { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t offsetR { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t offsetB { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t offsetR { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
         const svuint64_t occupancyMaskV { svdup_u64(static_cast<std::uint64_t>(occupancyMask)) };
 
@@ -121,8 +123,8 @@ public:
         const std::uint64_t extractedR { extractedV[1U] };
 
         return std::make_pair(
-            SquareSet { ctPextData.bishopRookAttackData[offsetB + extractedB] },
-            SquareSet { ctPextData.bishopRookAttackData[offsetR + extractedR] });
+            SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offsetB + extractedB] },
+            SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offsetR + extractedR] });
     }
 
     static inline std::pair<SquareSet, SquareSet> getBishopAndRookAttackMasks(
@@ -130,13 +132,13 @@ public:
         SquareSet occupancyMaskForBishopAttacks,
         SquareSet occupancyMaskForRookAttacks) noexcept
     {
-        const std::uint64_t pextMaskB { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t pextMaskR { ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t pextMaskB { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMaskR { ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
         const svuint64_t pextMaskV { svdupq_u64(pextMaskB, pextMaskR) };
 
-        const std::uint64_t offsetB { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
-        const std::uint64_t offsetR { ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
+        const std::uint64_t offsetB { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t offsetR { ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(sq) + 1U] };
 
         const svuint64_t occupancyMaskV { svdupq_u64(
                 static_cast<std::uint64_t>(occupancyMaskForBishopAttacks),
@@ -148,8 +150,8 @@ public:
         const std::uint64_t extractedR { extractedV[1U] };
 
         return std::make_pair(
-            SquareSet { ctPextData.bishopRookAttackData[offsetB + extractedB] },
-            SquareSet { ctPextData.bishopRookAttackData[offsetR + extractedR] });
+            SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offsetB + extractedB] },
+            SquareSet { ctBitBoardTables.sve2BishopRookAttackData[offsetR + extractedR] });
     }
 
     static void determineSliderCheckersAndPinners(
@@ -164,15 +166,15 @@ public:
     {
         const svbool_t firstTwo { svptrue_pat_b64(SV_VL2) };
 
-        const svuint64_t pextMaskV { svld1_u64(firstTwo, &ctPextData.bishopRookMasks[2U * static_cast<std::uint8_t>(kingSq)]) };
+        const svuint64_t pextMaskV { svld1_u64(firstTwo, &ctBitBoardTables.sve2BishopRookMasks[2U * static_cast<std::uint8_t>(kingSq)]) };
         const svuint64_t occupancyMaskV { svdup_u64(static_cast<std::uint64_t>(occupancyMask)) };
         const svuint64_t opponentPiecesV { svdup_u64(static_cast<std::uint64_t>(opponentPieces)) };
         const svuint64_t bishopsRooksV { svdupq_u64(static_cast<std::uint64_t>(bishops), static_cast<std::uint64_t>(rooks)) };
-        const svuint64_t baseOffsetV { svld1_u64(firstTwo, &ctPextData.bishopRookOffsets[2U * static_cast<std::uint8_t>(kingSq)]) };
+        const svuint64_t baseOffsetV { svld1_u64(firstTwo, &ctBitBoardTables.sve2BishopRookOffsets[2U * static_cast<std::uint8_t>(kingSq)]) };
 
         // Resolve checkers
         svuint64_t extractedV { svbext_u64(occupancyMaskV, pextMaskV) };
-        const svuint64_t firstHitsV { svld1_gather_u64index_u64(firstTwo, ctPextData.bishopRookAttackData.data(), baseOffsetV + extractedV) };
+        const svuint64_t firstHitsV { svld1_gather_u64index_u64(firstTwo, ctBitBoardTables.sve2BishopRookAttackData.data(), baseOffsetV + extractedV) };
         const svuint64_t checkersV { firstHitsV & bishopsRooksV & opponentPiecesV };
 
         out_checkers = { SquareSet { svorv_u64(firstTwo, checkersV) } };
@@ -186,7 +188,7 @@ public:
             ((occupancyMaskV &~ firstHitsV) | (opponentPiecesV &~ svdupq_u64(static_cast<std::uint64_t>(epCapturable), 0U))),
             pextMaskV);
 
-        const svuint64_t secondHitsV { svld1_gather_u64index_u64(firstTwo, ctPextData.bishopRookAttackData.data(), baseOffsetV + extractedV) };
+        const svuint64_t secondHitsV { svld1_gather_u64index_u64(firstTwo, ctBitBoardTables.sve2BishopRookAttackData.data(), baseOffsetV + extractedV) };
         const svuint64_t pinnersV { secondHitsV & bishopsRooksV };
 
         out_pinners = SquareSet { svorv_u64(firstTwo, pinnersV) } &~ out_checkers & opponentPieces;

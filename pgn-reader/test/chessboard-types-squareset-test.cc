@@ -161,4 +161,11 @@ TEST(SquareSet, shiftsAndRotations)
     EXPECT_EQ(ss2, SquareSet { 0x00'01'23'45'67'89'AB'CD });
 }
 
+TEST(SquareSet, flipVert)
+{
+    EXPECT_EQ(
+        SquareSet { 0x12'34'56'78'9A'BC'DE'F0 },
+        SquareSet { 0xF0'DE'BC'9A'78'56'34'12 }.flipVert());
+}
+
 }

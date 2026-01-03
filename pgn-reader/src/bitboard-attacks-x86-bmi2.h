@@ -17,8 +17,10 @@
 #ifndef HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_X86_BMI2_H_INCLUDED
 #define HOOVER_CHESS_UTILS__PGN_READER__BITBOARD_ATTACKS_X86_BMI2_H_INCLUDED
 
-#include "chessboard-types-squareset.h"
 #include "pgnreader-config.h"
+
+#include "bitboard-tables.h"
+#include "chessboard-types-squareset.h"
 
 #include <array>
 #include <cinttypes>
@@ -33,27 +35,15 @@ namespace hoover_chess_utils::pgn_reader
 /// @brief Slider attacks implementation using PEXT/PDEP
 class Attacks_BMI2
 {
-private:
-    struct PextData
-    {
-        alignas(64) std::array<std::uint64_t, 64U> bishopMasks;
-        alignas(64) std::array<std::uint32_t, 64U> bishopOffsets;
-        alignas(64) std::array<std::uint64_t, 64U> rookMasks;
-        alignas(64) std::array<std::uint32_t, 64U> rookOffsets;
-        alignas(64) std::array<std::uint64_t, 5248U + 102400U> bishopRookAttackData;
-    };
-
-    static const PextData ctPextData;
-
 public:
     /// @brief See @coderef{Attacks::getBishopAttackMask()} for documentation
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        const std::uint64_t pextMask { ctPextData.bishopMasks[static_cast<std::uint8_t>(sq)] };
-        const std::uint32_t offset { ctPextData.bishopOffsets[static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMask { ctBitBoardTables.bmi2BishopMasks[static_cast<std::uint8_t>(sq)] };
+        const std::uint32_t offset { ctBitBoardTables.bmi2BishopOffsets[static_cast<std::uint8_t>(sq)] };
 
         return SquareSet {
-            ctPextData.bishopRookAttackData[
+            ctBitBoardTables.bmi2BishopRookAttackData[
                 offset +
                 _pext_u64(
                     static_cast<std::uint64_t>(occupancyMask),
@@ -63,11 +53,11 @@ public:
     /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-        const std::uint64_t pextMask { ctPextData.rookMasks[static_cast<std::uint8_t>(sq)] };
-        const std::uint32_t offset { ctPextData.rookOffsets[static_cast<std::uint8_t>(sq)] };
+        const std::uint64_t pextMask { ctBitBoardTables.bmi2RookMasks[static_cast<std::uint8_t>(sq)] };
+        const std::uint32_t offset { ctBitBoardTables.bmi2RookOffsets[static_cast<std::uint8_t>(sq)] };
 
         return SquareSet {
-            ctPextData.bishopRookAttackData[
+            ctBitBoardTables.bmi2BishopRookAttackData[
                 offset +
                 _pext_u64(
                     static_cast<std::uint64_t>(occupancyMask),
