@@ -308,15 +308,6 @@ public:
         return (*this);
     }
 
-    /// @brief Arithmetic subtraction
-    ///
-    /// @param[in]  other   Subtraction amount
-    /// @return             Result of @c *this @c - @c other
-    constexpr inline SquareSet operator - (SquareSet other) const noexcept
-    {
-        return SquareSet { m_bitmask - other.m_bitmask };
-    }
-
     /// @brief Flips the squares vertically (upside down)
     ///
     /// @return             Result

@@ -55,8 +55,7 @@ endif()
 add_library(
   hoover-pgn-reader STATIC
   ${FLEX_PgnScanner_OUTPUTS}
-  src/bitboard-attacks-portable.cc
-  src/bitboard-intercepts.cc
+  src/bitboard-tables.cc
   src/chessboard-bitboard.cc
   src/chessboard-boardsetup.cc
   src/chessboard-loadfen.cc
@@ -70,8 +69,6 @@ add_library(
   src/pgnreader-string-utils.cc
   src/pgnreader.cc
   src/position-compress-fixed.cc
-  $<IF:$<BOOL:${HAVE_X86_BMI2}>,src/bitboard-attacks-x86-bmi2.cc,>
-  $<IF:$<BOOL:${HAVE_AARCH64_SVE2_BITPERM}>,src/bitboard-attacks-aarch64-sve2-bitperm.cc,>
   src/stringbuilder.cc
   )
 

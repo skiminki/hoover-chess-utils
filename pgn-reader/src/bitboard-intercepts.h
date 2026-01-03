@@ -20,6 +20,8 @@
 #include "chessboard-types.h"
 #include "chessboard-types-squareset.h"
 
+#include "bitboard-tables.h"
+
 #include <array>
 #include <cinttypes>
 
@@ -32,11 +34,6 @@ namespace hoover_chess_utils::pgn_reader
 /// @brief Check interceptions and pin checks
 class Intercepts
 {
-private:
-    static const std::array<std::array<SquareSet, 64U>, 65U> s_interceptsTable;
-
-    static const std::array<std::array<SquareSet, 64U>, 64U> s_raysFromKingTable;
-
 public:
     /// @brief Returns the set of squares that intercepts a check.
     ///
@@ -69,7 +66,7 @@ public:
     static inline SquareSet getInterceptSquares(Square kingSq, Square checkerSq) noexcept
     {
         assert(checkerSq <= Square::NONE);
-        return s_interceptsTable[static_cast<std::size_t>(checkerSq)][getIndexOfSquare(kingSq)];
+        return SquareSet { ctBitBoardTables.rayIntercepts[static_cast<std::size_t>(checkerSq)][getIndexOfSquare(kingSq)] };
     }
 
     /// @brief Returns a ray from king square to the direction of pinned piece square.
@@ -87,7 +84,7 @@ public:
         assert(isValidSquare(kingSq));
         assert(isValidSquare(pinnedSq));
 
-        const SquareSet ray { s_raysFromKingTable[getIndexOfSquare(kingSq)][getIndexOfSquare(pinnedSq)] };
+        const SquareSet ray { ctBitBoardTables.raysFromKing[getIndexOfSquare(kingSq)][getIndexOfSquare(pinnedSq)] };
         assert(ray != SquareSet { });
         return ray;
     }
