@@ -22,6 +22,8 @@
 #include <atomic>
 #include <bit>
 #include <cassert>
+#include <cstdint>
+#include <type_traits>
 
 
 namespace hoover_chess_utils::pgn_reader
@@ -39,6 +41,26 @@ private:
 public:
     /// @brief Default constructor (empty set)
     constexpr inline SquareSet() = default;
+
+    /// @brief Constructor from a list of @coderef{Square}s
+    ///
+    /// @param[in]  squares    A list of squares to initially populate the square set
+    constexpr inline SquareSet(std::same_as<Square> auto... squares) noexcept :
+        m_bitmask {  }
+    {
+        std::uint64_t bitmask { };
+        for (auto sq : std::initializer_list<Square>{ squares... })
+        {
+            const auto sqRaw { static_cast<std::underlying_type_t<Square> >(sq) };
+
+            assert(sqRaw < 64U);
+            [[assume(sqRaw < 64U)]];
+
+            bitmask |= UINT64_C(1) << sqRaw;
+        }
+
+        m_bitmask = bitmask;
+    }
 
     /// @brief Default destructor
     constexpr ~SquareSet() = default;

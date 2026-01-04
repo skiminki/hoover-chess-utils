@@ -59,13 +59,13 @@ void PositionCompressor_FixedLength::compress(const pgn_reader::ChessBoard &boar
     SquareSet rooksCanCastle { };
 
     if (board.getWhiteLongCastleRook()  != Square::NONE)
-        rooksCanCastle |= SquareSet::square(board.getWhiteLongCastleRook());
+        rooksCanCastle |= SquareSet { board.getWhiteLongCastleRook() };
     if (board.getWhiteShortCastleRook() != Square::NONE)
-        rooksCanCastle |= SquareSet::square(board.getWhiteShortCastleRook());
+        rooksCanCastle |= SquareSet { board.getWhiteShortCastleRook() };
     if (board.getBlackLongCastleRook()  != Square::NONE)
-        rooksCanCastle |= SquareSet::square(board.getBlackLongCastleRook());
+        rooksCanCastle |= SquareSet { board.getBlackLongCastleRook() };
     if (board.getBlackShortCastleRook() != Square::NONE)
-        rooksCanCastle |= SquareSet::square(board.getBlackShortCastleRook());
+        rooksCanCastle |= SquareSet { board.getBlackShortCastleRook() };
 
     SquareSet epPawns { };
     SquareSet whiteKingInTurnAndBlackKing;
@@ -127,11 +127,11 @@ void PositionCompressor_FixedLength::decompress(
     SquareSet whiteKingNotInTurn { whiteKingNotInTurnOrEp & ~planes[3U] };
     SquareSet rooksCanCastle { ~planes[0U] & planes[1U] & planes[2U] };
 
-    Color turn { whiteKingNotInTurn == SquareSet::none() ? Color::WHITE : Color::BLACK };
+    Color turn { whiteKingNotInTurn == SquareSet { } ? Color::WHITE : Color::BLACK };
 
     SquareSet epPawn { whiteKingNotInTurnOrEp & planes[3U] };
 
-    if (epPawn != SquareSet::none())
+    if (epPawn != SquareSet { })
     {
         epSquare = epPawn.firstSquare();
         epSquare = addToSquareNoOverflowCheck(epSquare, 8);

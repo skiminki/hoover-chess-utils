@@ -36,7 +36,7 @@ inline void generateMovesForPawnAndDestNoCaptureStoreFnTempl(
 
     const Color turn { board.getTurn() };
     const SquareSet dstSqBit {
-        SquareSet::square(dst) & ~board.getOccupancyMask() &
+        SquareSet { dst } & ~board.getOccupancyMask() &
         blocksAllChecksMaskTempl<type>(board.getKingInTurn(), board.getCheckers(), dst) };
 
     const auto pawnAdvanceShift = PawnLookups::pawnAdvanceShift(turn);
@@ -51,10 +51,10 @@ inline void generateMovesForPawnAndDestNoCaptureStoreFnTempl(
         (singleAdvancingPawnSquare | doubleAdvancingPawnSquare) &
         board.getPawns() & board.getPiecesInTurn() & srcSqMask };
 
-    if (advancingPawn != SquareSet::none()) [[likely]]
+    if (advancingPawn != SquareSet { }) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (Attacks::pinCheck(src, SquareSet::square(dst), board.getKingInTurn(), board.getPinnedPieces())) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces())) [[likely]]
         {
             MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
         }
@@ -93,7 +93,7 @@ inline void generateMovesForPawnAndDestCaptureStoreFnTempl(
 
     if (dst != board.getEpSquare()) [[likely]]
     {
-        const SquareSet dstSqBit { SquareSet::square(dst) };
+        const SquareSet dstSqBit { dst };
         constexpr SquareSet dstSqMask { 0x00'FF'FF'FF'FF'FF'FF'00 };
 
         SquareSet dstOkMask {
@@ -105,7 +105,7 @@ inline void generateMovesForPawnAndDestCaptureStoreFnTempl(
             dstOkMask &
             srcSqMask & board.getPawns() & board.getPiecesInTurn() & Attacks::getPawnAttackerMask(dst, turn),
             {
-                if (Attacks::pinCheck(src, SquareSet::square(dst), board.getKingInTurn(), board.getPinnedPieces()))
+                if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces()))
                 {
                     MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE });
                 }
@@ -117,7 +117,7 @@ inline void generateMovesForPawnAndDestCaptureStoreFnTempl(
             src,
             srcSqMask & board.getPawns() & board.getPiecesInTurn() & Attacks::getPawnAttackerMask(dst, turn),
             {
-                if (Attacks::pinCheck(src, SquareSet::square(dst), board.getKingInTurn(), board.getPinnedPieces()))
+                if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces()))
                 {
                     MoveStoreFn::storeMove(store, Move { src, board.getEpSquare(), MoveTypeAndPromotion::EN_PASSANT });
                 }
@@ -155,7 +155,7 @@ inline void generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl(
 
     const Color turn { board.getTurn() };
     const SquareSet dstSqBit {
-        SquareSet::square(dst) & ~board.getOccupancyMask() &
+        SquareSet { dst } & ~board.getOccupancyMask() &
         blocksAllChecksMaskTempl<type>(board.getKingInTurn(), board.getCheckers(), dst) };
 
     // 7th or 0th rank
@@ -168,10 +168,10 @@ inline void generateMovesForPawnAndDestPromoNoCaptureStoreFnTempl(
         singleAdvancingPawnSquare &
         board.getPawns() & board.getPiecesInTurn() & srcSqMask };
 
-    if (advancingPawn != SquareSet::none()) [[likely]]
+    if (advancingPawn != SquareSet { }) [[likely]]
     {
         Square src { advancingPawn.firstSquare() };
-        if (Attacks::pinCheck(src, SquareSet::square(dst), board.getKingInTurn(), board.getPinnedPieces())) [[likely]]
+        if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces())) [[likely]]
         {
             MoveStoreFn::storeMove(store, Move { src, dst, pieceToTypeAndPromotion(promo) });
         }
@@ -205,7 +205,7 @@ inline void generateMovesForPawnAndDestPromoCaptureStoreFnTempl(
 
     const Color turn { board.getTurn() };
 
-    const SquareSet dstSqBit { SquareSet::square(dst) };
+    const SquareSet dstSqBit { dst };
     const SquareSet dstSqMask { PawnLookups::rank8(turn) };
 
     SquareSet dstOkMask {
@@ -217,7 +217,7 @@ inline void generateMovesForPawnAndDestPromoCaptureStoreFnTempl(
         dstOkMask &
         srcSqMask & board.getPawns() & board.getPiecesInTurn() & Attacks::getPawnAttackerMask(dst, turn),
         {
-            if (Attacks::pinCheck(src, SquareSet::square(dst), board.getKingInTurn(), board.getPinnedPieces()))
+            if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces()))
             {
                 MoveStoreFn::storeMove(store, Move { src, dst, pieceToTypeAndPromotion(promo) });
             }
@@ -252,7 +252,7 @@ inline void generateMovesForKnightAndDestStoreFnTempl(
     SQUARESET_ENUMERATE(
         src,
         blocksAllChecksMaskTempl<type>(board.getKingInTurn(), board.getCheckers(), dst) &
-        ((board.getPiecesInTurn() & SquareSet::square(dst)).allIfNone() // check for no self-capture
+        ((board.getPiecesInTurn() & SquareSet { dst }).allIfNone() // check for no self-capture
          & board.getPiecesInTurn() & board.getKnights() & srcSqMask & Attacks::getKnightAttackMask(dst) &~ board.getPinnedPieces()),
         {
             MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE });
@@ -311,10 +311,10 @@ inline void generateMovesForSliderAndDestStoreFnTempl(
     SQUARESET_ENUMERATE(
         src,
         blocksAllChecksMaskTempl<type>(board.getKingInTurn(), board.getCheckers(), dst) &
-        ((board.getPiecesInTurn() & SquareSet::square(dst)).allIfNone() // check for no self-capture
+        ((board.getPiecesInTurn() & SquareSet { dst }).allIfNone() // check for no self-capture
          & pieces),
         {
-            if (Attacks::pinCheck(src, SquareSet::square(dst), board.getKingInTurn(), board.getPinnedPieces()))
+            if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces()))
             {
                 MoveStoreFn::storeMove(store, Move { src, dst, moveType });
             }
@@ -383,8 +383,8 @@ inline void generateMovesForKingAndDestStoreFnTempl(
     const ChessBoard &board,
     SquareSet srcSqMask, Square dst, typename MoveStoreFn::Store &store) noexcept
 {
-    const SquareSet dstSqBit { SquareSet::square(dst) };
-    const SquareSet srcSqBit { SquareSet::square(board.getKingInTurn()) };
+    const SquareSet dstSqBit { dst };
+    const SquareSet srcSqBit { board.getKingInTurn() };
 
     const SquareSet kingAttackers {
         Attacks::determineAttackers(
@@ -401,7 +401,7 @@ inline void generateMovesForKingAndDestStoreFnTempl(
 
     if (((board.getPiecesInTurn() & dstSqBit).allIfNone() &
          kingAttackers.allIfNone() &
-         srcSqMask & SquareSet::square(board.getKingInTurn()) & Attacks::getKingAttackMask(dst)) != SquareSet::none())
+         srcSqMask & SquareSet { board.getKingInTurn() } & Attacks::getKingAttackMask(dst)) != SquareSet { })
     {
         MoveStoreFn::storeMove(store, Move { board.getKingInTurn(), dst, MoveTypeAndPromotion::REGULAR_KING_MOVE });
     }

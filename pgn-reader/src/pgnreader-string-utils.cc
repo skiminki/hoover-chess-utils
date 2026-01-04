@@ -183,7 +183,7 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
     MiniString<7U> ret { MiniString_Uninitialized() };
     char *i { ret.data() };
 
-    const SquareSet srcBit { SquareSet::square(move.getSrc()) };
+    const SquareSet srcBit { move.getSrc() };
 
     ShortMoveList moves;
     std::size_t numMoves { };
@@ -243,7 +243,7 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
             }
 
             // capture?
-            if ((SquareSet::square(move.getDst()) & board.getOccupancyMask()) != SquareSet::none())
+            if ((SquareSet { move.getDst() } & board.getOccupancyMask()) != SquareSet { })
             {
                 *i++ = 'x';
             }
@@ -257,7 +257,7 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
             numMoves = board.generateMovesForKingAndDest(moves, srcBit, move.getDst());
 
             // capture?
-            if ((SquareSet::square(move.getDst()) & board.getOccupancyMask()) != SquareSet::none())
+            if ((SquareSet { move.getDst() } & board.getOccupancyMask()) != SquareSet { })
             {
                 *i++ = 'x';
             }
@@ -441,7 +441,7 @@ void StringUtils::boardToFEN(const ChessBoard &board, MiniString<96U> &fen) noex
             }
 
             rowRemainingBits >>= numEmptySquares + 1U;
-            if (rowRemainingBits == SquareSet::none())
+            if (rowRemainingBits == SquareSet { })
                 break;
 
             const std::size_t fenCharOffset =

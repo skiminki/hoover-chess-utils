@@ -145,7 +145,7 @@ template <>
 inline SquareSet blocksAllChecksMaskTempl<MoveGenType::CHECK>(Square kingSq, SquareSet checkers, Square dst) noexcept
 {
     return
-        (Intercepts::getInterceptSquares(kingSq, checkers.firstSquare()) & SquareSet::square(dst)).allIfAny();
+        (Intercepts::getInterceptSquares(kingSq, checkers.firstSquare()) & SquareSet { dst }).allIfAny();
 }
 
 /// @brief Generates the legal castling move, if any.
@@ -191,12 +191,12 @@ void generateMovesForCastlingStoreFnTempl(
     const SquareSet rookPathHalfOpen { Intercepts::getInterceptSquares(sqRook, sqRookTarget) };
 
     const SquareSet requiredEmptySquares {
-        (kingPathHalfOpen | rookPathHalfOpen) &~ (SquareSet::square(board.getKingInTurn()) | SquareSet::square(sqRook)) };
+        (kingPathHalfOpen | rookPathHalfOpen) &~ SquareSet { board.getKingInTurn(), sqRook } };
 
     if (((requiredEmptySquares & board.getOccupancyMask())     | // all squares between king and rook empty?
-         (SquareSet::square(sqRook) & board.getPinnedPieces()) | // castling rook not pinned?
+         (SquareSet { sqRook } & board.getPinnedPieces()) | // castling rook not pinned?
          (kingPathHalfOpen & attackedSquares)                    // king path is not attacked?
-            ) != SquareSet::none())
+            ) != SquareSet { })
         return;
 
     if constexpr (shortCastling)

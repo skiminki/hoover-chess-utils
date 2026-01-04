@@ -78,7 +78,7 @@ void playMove(
                 0U,
                 generateMovesFn,
                 generateSingleMoveFn,
-                ~SquareSet::square(singleMove.getSrc()),
+                ~SquareSet { singleMove.getSrc() },
                 dstSq,
                 std::forward<Args>(args) ...);
 

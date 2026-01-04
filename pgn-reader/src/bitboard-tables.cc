@@ -211,7 +211,7 @@ consteval std::int8_t clampDifference(std::int8_t diff) noexcept
 consteval auto computeIntercept(Square kingSq, Square checkerSq) noexcept
 {
     if (kingSq == checkerSq)
-        return SquareSet::none();
+        return SquareSet { };
 
     const std::int8_t dx = columnOf(checkerSq) - columnOf(kingSq);
     const std::int8_t dy = rowOf(checkerSq) - rowOf(kingSq);
@@ -229,7 +229,7 @@ consteval auto computeIntercept(Square kingSq, Square checkerSq) noexcept
         {
             sq = addToSquareNoOverflowCheck(sq, shift);
 
-            intercept |= SquareSet::square(sq);
+            intercept |= SquareSet { sq };
         }
         while (sq != checkerSq);
 
@@ -238,20 +238,20 @@ consteval auto computeIntercept(Square kingSq, Square checkerSq) noexcept
     else
     {
         // knight jump or garbage
-        return SquareSet::square(checkerSq);
+        return SquareSet { checkerSq };
     }
 }
 
-static_assert(computeIntercept(Square::A1, Square::A1) == SquareSet::none());
-static_assert(computeIntercept(Square::A1, Square::A2) == SquareSet::square(Square::A2));
+static_assert(computeIntercept(Square::A1, Square::A1) == SquareSet { });
+static_assert(computeIntercept(Square::A1, Square::A2) == SquareSet { Square::A2 });
 static_assert(computeIntercept(Square::A1, Square::A8) == SquareSet { 0x01'01'01'01'01'01'01'00U } );
 static_assert(computeIntercept(Square::A1, Square::H8) == SquareSet { 0x80'40'20'10'08'04'02'00U } );
-static_assert(computeIntercept(Square::A1, Square::B3) == SquareSet::square(Square::B3));
+static_assert(computeIntercept(Square::A1, Square::B3) == SquareSet { Square::B3 });
 
 consteval auto computeRay(Square kingSq, Square pinnedSq) noexcept
 {
     if (kingSq == pinnedSq)
-        return SquareSet::none();
+        return SquareSet { };
 
     const std::int8_t dx = columnOf(pinnedSq) - columnOf(kingSq);
     const std::int8_t dy = rowOf(pinnedSq) - rowOf(kingSq);
@@ -457,7 +457,7 @@ consteval auto generateHyperbolaAttackMasks() noexcept
     for (std::uint8_t sqIndex { }; sqIndex < 64U; ++sqIndex)
     {
         const Square sq { sqIndex };
-        const SquareSet sqBit { SquareSet::square(sq) };
+        const SquareSet sqBit { sq };
         const std::uint8_t col { columnOf(Square { sq }) };
         const std::uint8_t row { rowOf(Square { sq }) };
 

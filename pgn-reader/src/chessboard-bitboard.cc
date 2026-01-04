@@ -106,11 +106,11 @@ void ChessBoard::doMove(const Move m) noexcept
     if (m.isRegularMove()) [[likely]]
     {
         // regular move
-        const SquareSet srcSqBit { SquareSet::square(m.getSrc()) };
-        const SquareSet dstSqBit { SquareSet::square(m.getDst()) };
+        const SquareSet srcSqBit { m.getSrc() };
+        const SquareSet dstSqBit { m.getDst() };
 
         // capture?
-        if ((dstSqBit & m_occupancyMask) != SquareSet::none()) [[unlikely]]
+        if ((dstSqBit & m_occupancyMask) != SquareSet { }) [[unlikely]]
         {
             m_halfMoveClock = 0U;
 
@@ -231,20 +231,20 @@ void ChessBoard::doMove(const Move m) noexcept
         const Square rookSqAfterCastling { makeSquare(getRookColumnAfterCastling(m.getTypeAndPromotion()), row) };
 
         // update occupancy mask
-        m_occupancyMask ^= SquareSet::square(m.getSrc());
-        m_occupancyMask ^= SquareSet::square(m.getDst());
-        m_occupancyMask |= SquareSet::square(kingSqAfterCastling);
-        m_occupancyMask |= SquareSet::square(rookSqAfterCastling);
+        m_occupancyMask ^= SquareSet { m.getSrc() };
+        m_occupancyMask ^= SquareSet { m.getDst() };
+        m_occupancyMask |= SquareSet { kingSqAfterCastling };
+        m_occupancyMask |= SquareSet { rookSqAfterCastling };
 
         // update turn color mask
-        m_turnColorMask |= SquareSet::square(kingSqAfterCastling);
-        m_turnColorMask |= SquareSet::square(rookSqAfterCastling);
+        m_turnColorMask |= SquareSet { kingSqAfterCastling };
+        m_turnColorMask |= SquareSet { rookSqAfterCastling };
 
         // update piece masks
-        m_kings ^= SquareSet::square(m.getSrc());
-        m_kings |= SquareSet::square(kingSqAfterCastling);
-        m_rooks ^= SquareSet::square(m.getDst());
-        m_rooks |= SquareSet::square(rookSqAfterCastling);
+        m_kings ^= SquareSet { m.getSrc() };
+        m_kings |= SquareSet { kingSqAfterCastling };
+        m_rooks ^= SquareSet { m.getDst() };
+        m_rooks |= SquareSet { rookSqAfterCastling };
 
         m_halfMoveClock = saturatingIncrease(m_halfMoveClock);
 
@@ -260,9 +260,9 @@ void ChessBoard::doMove(const Move m) noexcept
         // captured pawn location
         const Square capturedPawnSq { makeSquare(columnOf(m.getDst()), rowOf(m.getSrc())) };
 
-        const SquareSet srcSqBit { SquareSet::square(m.getSrc()) };
-        const SquareSet dstSqBit { SquareSet::square(m.getDst()) };
-        const SquareSet epSqBit { SquareSet::square(capturedPawnSq) };
+        const SquareSet srcSqBit { m.getSrc() };
+        const SquareSet dstSqBit { m.getDst() };
+        const SquareSet epSqBit { capturedPawnSq };
 
         // update occupancy mask
         m_occupancyMask ^= srcSqBit;
@@ -273,7 +273,7 @@ void ChessBoard::doMove(const Move m) noexcept
         m_turnColorMask |= dstSqBit;
 
         // update pawn mask
-        m_pawns   |= SquareSet::square(m.getDst());
+        m_pawns   |= SquareSet { m.getDst() };
         m_pawns   ^= srcSqBit;
         m_pawns   ^= epSqBit;
 
@@ -284,8 +284,8 @@ void ChessBoard::doMove(const Move m) noexcept
         // promotion move
         assert(m.isPromotionMove());
 
-        const SquareSet srcSqBit { SquareSet::square(m.getSrc()) };
-        const SquareSet dstSqBit { SquareSet::square(m.getDst()) };
+        const SquareSet srcSqBit { m.getSrc() };
+        const SquareSet dstSqBit { m.getDst() };
 
         // update occupancy mask
         m_occupancyMask ^= srcSqBit;
@@ -363,7 +363,7 @@ void ChessBoard::calculateMasks(const ArrayBoard &board) noexcept
         if (pc == PieceAndColor::NONE)
             continue;
 
-        const SquareSet sqBit { SquareSet::square(Square { sqIndex }) };
+        const SquareSet sqBit { Square { sqIndex } };
 
         if (colorOf(pc) == turn)
             turnColorMask |= sqBit;

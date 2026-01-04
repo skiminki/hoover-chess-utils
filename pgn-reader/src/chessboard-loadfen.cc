@@ -101,14 +101,14 @@ std::string_view::iterator parseBoard(std::string_view::iterator i, std::string_
 
             SquareSet bit { SquareSet::square(col, row) };
 
-            board.pawns       |= (charOffset == 'P' - 64U) ? bit : SquareSet::none();
-            board.knights     |= (charOffset == 'N' - 64U) ? bit : SquareSet::none();
-            board.bishops     |= (charOffset == 'B' - 64U) ? bit : SquareSet::none();
-            board.rooks       |= (charOffset == 'R' - 64U) ? bit : SquareSet::none();
-            board.queens      |= (charOffset == 'Q' - 64U) ? bit : SquareSet::none();
-            board.kings       |= (charOffset == 'K' - 64U) ? bit : SquareSet::none();
+            board.pawns       |= (charOffset == 'P' - 64U) ? bit : SquareSet { };
+            board.knights     |= (charOffset == 'N' - 64U) ? bit : SquareSet { };
+            board.bishops     |= (charOffset == 'B' - 64U) ? bit : SquareSet { };
+            board.rooks       |= (charOffset == 'R' - 64U) ? bit : SquareSet { };
+            board.queens      |= (charOffset == 'Q' - 64U) ? bit : SquareSet { };
+            board.kings       |= (charOffset == 'K' - 64U) ? bit : SquareSet { };
 
-            board.whitePieces |= (c < 96U ? bit : SquareSet::none());
+            board.whitePieces |= (c < 96U ? bit : SquareSet { });
 
             ++col;
         }

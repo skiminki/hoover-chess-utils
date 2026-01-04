@@ -30,14 +30,14 @@ TEST(ChessBoard, pinnedPieces)
     EXPECT_EQ(board.getPinnedPieces(), SquareSet { });
 
     board.loadFEN("rnbqkbnr/pppp1ppp/8/4p2Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2");
-    EXPECT_EQ(board.getPinnedPieces(), SquareSet::square(Square::F7));
+    EXPECT_EQ(board.getPinnedPieces(), SquareSet(Square::F7));
 
     board.loadFEN("rnbqk1nr/ppppbppp/8/4Q3/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 0 3");
-    EXPECT_EQ(board.getPinnedPieces(), SquareSet::square(Square::E7));
+    EXPECT_EQ(board.getPinnedPieces(), SquareSet(Square::E7));
 
     board.loadFEN("rnbqkb1r/pppp1ppp/5n2/4Q3/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 0 3");
     EXPECT_EQ(board.getPinnedPieces(), SquareSet { });
-    EXPECT_EQ(board.getCheckers(), SquareSet::square(Square::E5));
+    EXPECT_EQ(board.getCheckers(), SquareSet(Square::E5));
 
     board.loadFEN("r1bqkb1r/ppp2ppp/2np1n2/8/4P3/5N2/PPPPQPPP/RNB1KB1R b KQkq - 3 5");
     EXPECT_EQ(board.getPinnedPieces(), SquareSet { });

@@ -184,7 +184,7 @@ auto generateMovesForPawnsTempl(
             src,
             pinnedPawns,
             {
-                SquareSet pawnBit { SquareSet::square(src) };
+                SquareSet pawnBit { src };
                 const SquareSet advanceMask { SideSpecifics::pawnAdvance(pawnBit) & ~board.getOccupancyMask() };
                 const SquareSet doubleAdvanceMask { SideSpecifics::pawnAdvance(advanceMask & SideSpecifics::rank3) & ~board.getOccupancyMask() };
 
@@ -269,7 +269,7 @@ auto generateMovesForPawnsTempl(
             Attacks::getPawnAttackerMask(board.getEpSquare(), turn) & pawns,
             {
                 // The only legality check we need is the capturer pin check
-                if (Attacks::pinCheck(src, SquareSet::square(board.getEpSquare()), board.getKingInTurn(), board.getPinnedPieces()))
+                if (Attacks::pinCheck(src, SquareSet { board.getEpSquare() }, board.getKingInTurn(), board.getPinnedPieces()))
                 {
                     *i = Move { src, board.getEpSquare(), MoveTypeAndPromotion::EN_PASSANT };
                     ++i;
@@ -514,7 +514,7 @@ inline IteratorType generateAllLegalMovesTemplNoCheck(
         board.getBishopsAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (board.getRooksAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getRooksAndQueens() & SquareSet { sq }) != SquareSet { } ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
             };
@@ -526,7 +526,7 @@ inline IteratorType generateAllLegalMovesTemplNoCheck(
         board.getBishopsAndQueens() & board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (board.getRooksAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getRooksAndQueens() & SquareSet { sq }) != SquareSet { } ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
             };
@@ -542,7 +542,7 @@ inline IteratorType generateAllLegalMovesTemplNoCheck(
         board.getRooksAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (board.getBishopsAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getBishopsAndQueens() & SquareSet { sq }) != SquareSet { } ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_ROOK_MOVE
             };
@@ -554,7 +554,7 @@ inline IteratorType generateAllLegalMovesTemplNoCheck(
         board.getRooksAndQueens() & board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (board.getBishopsAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getBishopsAndQueens() & SquareSet { sq }) != SquareSet { } ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_ROOK_MOVE
             };
@@ -645,7 +645,7 @@ inline IteratorType generateAllLegalMovesTemplInCheck(
         board.getBishopsAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (board.getRooksAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getRooksAndQueens() & SquareSet { sq }) != SquareSet { } ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_BISHOP_MOVE
             };
@@ -663,7 +663,7 @@ inline IteratorType generateAllLegalMovesTemplInCheck(
         board.getRooksAndQueens() & board.getPiecesInTurn() & ~board.getPinnedPieces(),
         {
             const MoveTypeAndPromotion typeAndPromo {
-                (board.getBishopsAndQueens() & SquareSet::square(sq)) != SquareSet::none() ?
+                (board.getBishopsAndQueens() & SquareSet { sq }) != SquareSet { } ?
                 MoveTypeAndPromotion::REGULAR_QUEEN_MOVE :
                 MoveTypeAndPromotion::REGULAR_ROOK_MOVE
             };
