@@ -26,6 +26,58 @@
 namespace hoover_chess_utils::pgn_reader::unit_test
 {
 
+TEST(SquareSet, constructor)
+{
+    // first, just ensure that the primary constructors can be evaluated compile-time
+    static_assert(
+        static_cast<std::uint64_t>(SquareSet { }) == UINT64_C(0x00'00'00'00'00'00'00'00));
+    static_assert(
+        static_cast<std::uint64_t>(SquareSet { Square::A1 }) == UINT64_C(0x00'00'00'00'00'00'00'01));
+    static_assert(
+        static_cast<std::uint64_t>(SquareSet { Square::A1, Square::A2 }) == UINT64_C(0x00'00'00'00'00'00'01'01));
+    static_assert(
+        static_cast<std::uint64_t>(SquareSet { Square::A1, Square::A2, Square::A3 }) == UINT64_C(0x00'00'00'00'00'01'01'01));
+    static_assert(
+        static_cast<std::uint64_t>(SquareSet { Square::A1, Square::A2, Square::A3, Square::H8 }) == UINT64_C(0x80'00'00'00'00'01'01'01));
+
+    // make sure we can pass all sorts of references to the SquareSet constructor
+    auto makeSquareSet1 = [] (Square sq1, Square sq2) noexcept
+    {
+        return SquareSet { sq1, sq2 };
+    };
+
+    auto makeSquareSet2 = [] (const Square sq1, const Square sq2) noexcept
+    {
+        return SquareSet { sq1, sq2 };
+    };
+
+    auto makeSquareSet3 = [] (const Square &sq1, const Square &sq2) noexcept
+    {
+        return SquareSet { sq1, sq2 };
+    };
+
+    auto makeSquareSet4 = [] (Square &&sq1, Square &&sq2) noexcept
+    {
+        return SquareSet { sq1, sq2 };
+    };
+
+    auto makeSquareSet5 = [] (Square &sq1, Square &sq2) noexcept
+    {
+        return SquareSet { sq1, sq2 };
+    };
+
+    EXPECT_EQ(static_cast<std::uint64_t>(makeSquareSet1(Square::A1, Square::B1)), UINT64_C(0x00'00'00'00'00'00'00'03));
+    EXPECT_EQ(static_cast<std::uint64_t>(makeSquareSet2(Square::A1, Square::B1)), UINT64_C(0x00'00'00'00'00'00'00'03));
+    EXPECT_EQ(static_cast<std::uint64_t>(makeSquareSet3(Square::A1, Square::B1)), UINT64_C(0x00'00'00'00'00'00'00'03));
+    EXPECT_EQ(static_cast<std::uint64_t>(makeSquareSet4(Square::A1, Square::B1)), UINT64_C(0x00'00'00'00'00'00'00'03));
+
+    {
+        Square sq1 { Square::A1 };
+        Square sq2 { Square::B1 };
+        EXPECT_EQ(static_cast<std::uint64_t>(makeSquareSet5(sq1, sq2)), UINT64_C(0x00'00'00'00'00'00'00'03));
+    }
+}
+
 TEST(SquareSet, popcount)
 {
     // constexpr

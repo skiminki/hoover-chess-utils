@@ -314,24 +314,17 @@ TEST(ChessBoard, validateBoard_BitBoard)
     referenceBoard.loadFEN("r2qkb1r/pppb1ppp/2np1n2/1B2p1B1/3PP3/2N2N2/PPP2PPP/R2QK2R b KQkq - 2 6");
 
     BitBoard bitBoard { };
-    bitBoard.pawns =
-        SquareSet::square(Square::A2) | SquareSet::square(Square::B2) | SquareSet::square(Square::C2) | SquareSet::square(Square::D4) |
-        SquareSet::square(Square::E4) | SquareSet::square(Square::F2) | SquareSet::square(Square::G2) | SquareSet::square(Square::H2) |
-        SquareSet::square(Square::A7) | SquareSet::square(Square::B7) | SquareSet::square(Square::C7) | SquareSet::square(Square::D6) |
-        SquareSet::square(Square::E5) | SquareSet::square(Square::F7) | SquareSet::square(Square::G7) | SquareSet::square(Square::H7);
-    bitBoard.knights =
-        SquareSet::square(Square::C3) | SquareSet::square(Square::C6) | SquareSet::square(Square::F3) | SquareSet::square(Square::F6);
-    bitBoard.bishops =
-        SquareSet::square(Square::B5) | SquareSet::square(Square::G5) | SquareSet::square(Square::D7) | SquareSet::square(Square::F8);
-    bitBoard.rooks =
-        SquareSet::square(Square::A1) | SquareSet::square(Square::A8) | SquareSet::square(Square::H1) | SquareSet::square(Square::H8);
-    bitBoard.queens =
-        SquareSet::square(Square::D1) | SquareSet::square(Square::D8);
-    bitBoard.kings =
-        SquareSet::square(Square::E1) | SquareSet::square(Square::E8);
+    bitBoard.pawns = SquareSet {
+        Square::A2, Square::B2, Square::C2, Square::D4, Square::E4, Square::F2, Square::G2, Square::H2,
+        Square::A7, Square::B7, Square::C7, Square::D6, Square::E5, Square::F7, Square::G7, Square::H7 };
+    bitBoard.knights = SquareSet { Square::C3, Square::C6, Square::F3, Square::F6 };
+    bitBoard.bishops = SquareSet { Square::B5, Square::G5, Square::D7, Square::F8 };
+    bitBoard.rooks   = SquareSet { Square::A1, Square::A8, Square::H1, Square::H8 };
+    bitBoard.queens  = SquareSet { Square::D1, Square::D8 };
+    bitBoard.kings   = SquareSet { Square::E1, Square::E8 };
 
     bitBoard.whitePieces =
-        SquareSet::row(0) | SquareSet::row(1) | SquareSet::row(2) | SquareSet::row(3) | SquareSet::square(Square::B5) | SquareSet::square(Square::G5);
+        SquareSet::row(0) | SquareSet::row(1) | SquareSet::row(2) | SquareSet::row(3) | SquareSet { Square::B5, Square::G5 };
 
     ChessBoard board { };
     board.setBoard(
@@ -372,7 +365,7 @@ TEST(ChessBoard, validateBoard_BitBoard)
             Square::NONE, 2U, makePlyNum(100000U, Color::WHITE)));
 
     // intersecting bit boards
-    bitBoard.rooks |= SquareSet::square(Square::C3);
+    bitBoard.rooks |= SquareSet { Square::C3 };
     TEST_EXPECT_THROW_PGN_ERROR(
         board.setBoard(
             bitBoard,

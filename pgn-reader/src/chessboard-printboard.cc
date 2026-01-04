@@ -58,7 +58,7 @@ void ChessBoard::printBoard() const
 
     std::cout  << "Checkers:";
     const SquareSet checkers { getCheckers() };
-    if (checkers == SquareSet::none())
+    if (checkers == SquareSet { })
         std::cout << " (none)";
     else
     {
@@ -71,7 +71,7 @@ void ChessBoard::printBoard() const
 
     std::cout  << "Pinned:  ";
     const SquareSet pinnedPieces { getPinnedPieces() };
-    if (pinnedPieces == SquareSet::none())
+    if (pinnedPieces == SquareSet { })
         std::cout << " (none)";
     else
     {

@@ -148,7 +148,7 @@ public:
 
     static inline __m512i getAttackedSquaresBySliders(__m512i attacks, const SquareSet bishops, const SquareSet rooks, const SquareSet occupancyMask) noexcept
     {
-        if ((bishops | rooks) == SquareSet::none())
+        if ((bishops | rooks) == SquareSet { })
             return attacks;
 
         const __m512i rotateLefts = _mm512_load_epi64(ctAttackingSliderRotateLefts.data());
@@ -244,7 +244,7 @@ public:
         SquareSet &out_pinnedPieces)
     {
         // rays expanding outwards from king towards a checker or possibly pinned piece
-        __m512i kingRays { _mm512_set1_epi64(static_cast<std::uint64_t>(SquareSet::square(kingSq))) };
+        __m512i kingRays { _mm512_set1_epi64(static_cast<std::uint64_t>(SquareSet { kingSq })) };
 
         __m512i oppSliders {
             _mm512_set_epi64(

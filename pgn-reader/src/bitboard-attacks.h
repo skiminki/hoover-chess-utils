@@ -329,8 +329,8 @@ public:
     /// piece moves directly towards or away from the king.
     static inline bool pinCheck(Square src, SquareSet dstBit, Square kingSq, SquareSet pinnedPieces) noexcept
     {
-        return ((pinnedPieces & SquareSet::square(src)) == SquareSet::none() ||
-                (Intercepts::getPinRestiction<true>(kingSq, src) & dstBit) != SquareSet::none());
+        return ((pinnedPieces & SquareSet { src }) == SquareSet { } ||
+                (Intercepts::getPinRestiction<true>(kingSq, src) & dstBit) != SquareSet { });
     }
 
     static inline SquareSet determineAttackers(
@@ -532,16 +532,16 @@ public:
             });
 #endif
         // The rest of this function is EP capture legality checking. Short-circuit if there's no EP to capture
-        if (epCapturable == SquareSet::none())
+        if (epCapturable == SquareSet { })
             return;
 
         // If we're in check and the only checker is not the EP pawn, EP capture
         // is not legal
-        if ((out_checkers &~ epCapturable) != SquareSet::none())
+        if ((out_checkers &~ epCapturable) != SquareSet { })
             out_pinnedPieces |= epCapturable;
 
         // If not marked illegal yet, check whether the EP capture is legal.
-        if ((epCapturable &~ out_pinnedPieces) != SquareSet::none())
+        if ((epCapturable &~ out_pinnedPieces) != SquareSet { })
         {
             // Adjacent pawns. This leaves one pawn in case there's
             // adjacent pawns both sides.
@@ -560,7 +560,7 @@ public:
                 epCapturer,
                 adjacentPawns,
                 {
-                    if (pinCheck(epCapturer, SquareSet::square(epSquare), kingSq, out_pinnedPieces))
+                    if (pinCheck(epCapturer, SquareSet { epSquare }, kingSq, out_pinnedPieces))
                         epCaptureLegalMask = SquareSet::all();
                 });
 
@@ -570,7 +570,7 @@ public:
             // Check whether the EP capturable pawn is horizontally pinned. This can only happen
             // when the king is on the same row
             if ((epCapturable & (SquareSet::row(0U) << (static_cast<std::uint64_t>(kingSq) & 56U)))
-                != SquareSet::none())
+                != SquareSet { })
             {
                 const SquareSet adjacentPawnsMinus1 { adjacentPawns.removeFirstSquare() };
 
@@ -579,7 +579,7 @@ public:
                         epCapturable.firstSquare(),
                         occupancyMask &~ (adjacentPawns &~ adjacentPawnsMinus1)) };
 
-                const SquareSet kingBit { SquareSet::square(kingSq) };
+                const SquareSet kingBit { kingSq };
                 const SquareSet oppRooks { rooks & ~turnColorMask };
 
                 const SquareSet pinnedEp { epCapturable &

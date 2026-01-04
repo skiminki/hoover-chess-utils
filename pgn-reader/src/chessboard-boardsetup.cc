@@ -82,22 +82,22 @@ void setBoardFirstLineInputValidation(
 
 Piece ChessBoard::getSquarePieceNoColor(Square sq) const noexcept
 {
-    if ((m_occupancyMask & SquareSet::square(sq)) == SquareSet::none())
+    if ((m_occupancyMask & SquareSet { sq }) == SquareSet { })
         return Piece::NONE;
 
-    if ((m_pawns & SquareSet::square(sq)) != SquareSet::none())
+    if ((m_pawns & SquareSet { sq }) != SquareSet { })
         return Piece::PAWN;
 
-    if ((m_knights & SquareSet::square(sq)) != SquareSet::none())
+    if ((m_knights & SquareSet { sq }) != SquareSet { })
         return Piece::KNIGHT;
 
-    if ((m_kings & SquareSet::square(sq)) != SquareSet::none())
+    if ((m_kings & SquareSet { sq }) != SquareSet { })
         return Piece::KING;
 
-    if ((m_bishops & m_rooks & SquareSet::square(sq)) != SquareSet::none())
+    if ((m_bishops & m_rooks & SquareSet { sq }) != SquareSet { })
         return Piece::QUEEN;
 
-    if ((m_bishops & SquareSet::square(sq)) != SquareSet::none())
+    if ((m_bishops & SquareSet { sq }) != SquareSet { })
         return Piece::BISHOP;
 
     return Piece::ROOK;
@@ -114,7 +114,7 @@ PieceAndColor ChessBoard::getSquarePiece(Square sq) const noexcept
 
     return makePieceAndColor(
         p,
-        (whitePieces & SquareSet::square(sq)) != SquareSet::none() ? Color::WHITE : Color::BLACK);
+        (whitePieces & SquareSet { sq }) != SquareSet { } ? Color::WHITE : Color::BLACK);
 }
 
 void ChessBoard::setBoard(
@@ -184,7 +184,7 @@ void ChessBoard::setBoard(
     occupancyMask    |= board.kings;
     m_kings           = board.kings;
 
-    if (intersectionMask != SquareSet::none())
+    if (intersectionMask != SquareSet { })
         throw PgnError(PgnErrorCode::BAD_FEN, "Two pieces occupy the same square");
 
     m_occupancyMask = occupancyMask;
@@ -233,7 +233,7 @@ void ChessBoard::validateBoard()
         const Square longCastleRook { getWhiteLongCastleRook() };
         if (longCastleRook != Square::NONE)
         {
-            if ((SquareSet::square(longCastleRook) & getWhitePieces() & getRooks()) == SquareSet::none())
+            if ((SquareSet { longCastleRook } & getWhitePieces() & getRooks()) == SquareSet { })
                 throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: White long castling rook not found");
 
             if (longCastleRook >= kingSq)
@@ -243,7 +243,7 @@ void ChessBoard::validateBoard()
         const Square shortCastleRook { getWhiteShortCastleRook() };
         if (shortCastleRook != Square::NONE)
         {
-            if ((SquareSet::square(shortCastleRook) & getWhitePieces() & getRooks()) == SquareSet::none())
+            if ((SquareSet { shortCastleRook } & getWhitePieces() & getRooks()) == SquareSet { })
                 throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: White short castling rook not found");
 
             if (shortCastleRook <= kingSq)
@@ -261,7 +261,7 @@ void ChessBoard::validateBoard()
         const Square longCastleRook { getBlackLongCastleRook() };
         if (longCastleRook != Square::NONE)
         {
-            if ((SquareSet::square(longCastleRook) & getBlackPieces() & getRooks()) == SquareSet::none())
+            if ((SquareSet { longCastleRook } & getBlackPieces() & getRooks()) == SquareSet { })
                 throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: Black long castling rook not found");
 
             if (longCastleRook >= kingSq)
@@ -271,7 +271,7 @@ void ChessBoard::validateBoard()
         const Square shortCastleRook { getBlackShortCastleRook() };
         if (shortCastleRook != Square::NONE)
         {
-            if ((SquareSet::square(shortCastleRook) & getBlackPieces() & getRooks()) == SquareSet::none())
+            if ((SquareSet { shortCastleRook } & getBlackPieces() & getRooks()) == SquareSet { })
                 throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: Black short castling rook not found");
 
             if (shortCastleRook <= kingSq)
@@ -280,13 +280,13 @@ void ChessBoard::validateBoard()
     }
 
     // pawns on 1st row?
-    if ((m_pawns & SquareSet::row(0U)) != SquareSet::none())
+    if ((m_pawns & SquareSet::row(0U)) != SquareSet { })
     {
         throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: pawns on 1st rank");
     }
 
     // pawns on 8th row?
-    if ((m_pawns & SquareSet::row(7U)) != SquareSet::none())
+    if ((m_pawns & SquareSet::row(7U)) != SquareSet { })
     {
         throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: pawns on 8th rank");
     }
@@ -309,13 +309,13 @@ void ChessBoard::validateBoard()
         // There is a corresponding pawn for the EP square?
         const Square pawnSquare { makeSquare(columnOf(m_epSquare), pawnRow) };
 
-        if ((m_pawns & (~m_turnColorMask) & SquareSet::square(pawnSquare)) == SquareSet::none())
+        if ((m_pawns & (~m_turnColorMask) & SquareSet { pawnSquare }) == SquareSet { })
         {
             throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: EP square set but no pawn to capture");
         }
 
         // EP square is empty?
-        if ((m_occupancyMask & SquareSet::square(m_epSquare)) != SquareSet::none())
+        if ((m_occupancyMask & SquareSet { m_epSquare }) != SquareSet { })
         {
             throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: EP square not empty");
         }
@@ -325,11 +325,11 @@ void ChessBoard::validateBoard()
         const SquareSet adjacentPawns {
             ((((m_pawns & m_turnColorMask) & ~SquareSet::column(0U)) >> 1U) |
              (((m_pawns & m_turnColorMask) & ~SquareSet::column(7U)) << 1U))
-            & SquareSet::square(pawnSquare)
+            & SquareSet { pawnSquare }
         };
 
         // No adjacent pawns?
-        if (adjacentPawns == SquareSet::none())
+        if (adjacentPawns == SquareSet { })
             m_epSquare = Square::NONE;
     }
 
@@ -344,7 +344,7 @@ void ChessBoard::validateBoard()
             m_rooks,
             m_kings,
             m_oppKingSq,
-            oppositeTurn) != SquareSet::none())
+            oppositeTurn) != SquareSet { })
     {
         throw PgnError(PgnErrorCode::BAD_FEN, "Illegal position: opponent's king in check");
     }

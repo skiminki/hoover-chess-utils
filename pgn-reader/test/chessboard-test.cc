@@ -108,28 +108,22 @@ TEST(ChessBoard, bitmasks)
     EXPECT_EQ(board.getPawns(), SquareSet::row(1) | SquareSet::row(6));
     EXPECT_EQ(
         board.getKnights(),
-        SquareSet::square(Square::B1) | SquareSet::square(Square::G1) |
-        SquareSet::square(Square::B8) | SquareSet::square(Square::G8));
+        SquareSet(Square::B1, Square::G1, Square::B8, Square::G8));
     EXPECT_EQ(
         board.getBishops(),
-        SquareSet::square(Square::C1) | SquareSet::square(Square::F1) |
-        SquareSet::square(Square::C8) | SquareSet::square(Square::F8));
+        SquareSet(Square::C1, Square::F1, Square::C8, Square::F8));
     EXPECT_EQ(
         board.getRooks(),
-        SquareSet::square(Square::A1) | SquareSet::square(Square::H1) |
-        SquareSet::square(Square::A8) | SquareSet::square(Square::H8));
+        SquareSet(Square::A1, Square::H1, Square::A8, Square::H8));
     EXPECT_EQ(
         board.getQueens(),
-        SquareSet::square(Square::D1) |
-        SquareSet::square(Square::D8));
+        SquareSet(Square::D1, Square::D8));
     EXPECT_EQ(
         board.getBishopsAndQueens(),
-        SquareSet::square(Square::C1) | SquareSet::square(Square::D1) | SquareSet::square(Square::F1) |
-        SquareSet::square(Square::C8) | SquareSet::square(Square::D8) | SquareSet::square(Square::F8));
+        SquareSet(Square::C1, Square::D1, Square::F1, Square::C8, Square::D8, Square::F8));
     EXPECT_EQ(
         board.getRooksAndQueens(),
-        SquareSet::square(Square::A1) | SquareSet::square(Square::D1) | SquareSet::square(Square::H1) |
-        SquareSet::square(Square::A8) | SquareSet::square(Square::D8) | SquareSet::square(Square::H8));
+        SquareSet(Square::A1, Square::D1, Square::H1, Square::A8, Square::D8, Square::H8));
 
     board.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
     EXPECT_EQ(board.getPiecesInTurn(), SquareSet::row(6) | SquareSet::row(7));
