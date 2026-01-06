@@ -65,7 +65,6 @@ void perft(const std::string &fen, const std::uint32_t maxDepth)
     using namespace hoover_chess_utils::pgn_reader;
 
     std::uint64_t numPositions { };
-    std::uint64_t failedTryMoves { };
     std::int64_t usecs { };
 
     if (maxDepth > 0)
@@ -137,7 +136,6 @@ void perft(const std::string &fen, const std::uint32_t maxDepth)
     {
         printf("%" PRIu64 " positions per second\n", (numPositions * UINT64_C(1000000)) / usecs);
     }
-    printf("Failed doMoves: %" PRIu64 "\n", failedTryMoves);
 }
 
 }
