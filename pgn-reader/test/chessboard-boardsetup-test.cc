@@ -131,6 +131,56 @@ TEST(ChessBoard, getPositionStatus)
     }
 }
 
+TEST(ChessBoard, arrayBoardSetup)
+{
+    for (std::size_t i = 0U; i < std::size(expectStatus); ++i)
+    {
+        const InputAndExpect &t { expectStatus[i] };
+        ChessBoard board;
+
+        EXPECT_NO_THROW(board.loadFEN(t.fen));
+        EXPECT_EQ(t.status, board.determineStatus());
+
+        ArrayBoard ab { };
+
+        board.getArrayBoard(ab);
+
+        if constexpr (false)
+        {
+            for (RowColumn r { 8U }; r > 0U; )
+            {
+                --r;
+                printf("A");
+                for (RowColumn c { 0 }; c < 8U; ++c)
+                {
+                    printf("|%02X", static_cast<unsigned>(ab[(r * 8U) + c]));
+                }
+                printf("|\n");
+            }
+        }
+
+        ChessBoard board2;
+
+        EXPECT_NO_THROW(
+            board2.setBoard(
+                ab,
+                board.getWhiteLongCastleRook(), board.getWhiteShortCastleRook(),
+                board.getBlackLongCastleRook(), board.getBlackShortCastleRook(),
+                board.getEpSquare(),
+                board.getHalfMoveClock(), board.getCurrentPlyNum()));
+
+        EXPECT_EQ(board, board2);
+
+        if (board != board2)
+        {
+            board.printBoard();
+            board2.printBoard();
+
+            break;
+        }
+    }
+}
+
 #define TEST_EXPECT_THROW_PGN_ERROR(st) \
     EXPECT_THROW(                       \
     try {                               \
@@ -161,18 +211,18 @@ TEST(ChessBoard, validateBoard_badCastlingRooks)
 {
     ArrayBoard ab { };
 
-    ab[getIndexOfSquare(Square::E1)] = PieceAndColor::WHITE_KING;
-    ab[getIndexOfSquare(Square::A2)] = PieceAndColor::WHITE_ROOK;
-    ab[getIndexOfSquare(Square::H2)] = PieceAndColor::WHITE_ROOK;
+    ab[getIndexOfSquare(Square::E1)] = PieceAndColorCompact::WHITE_KING;
+    ab[getIndexOfSquare(Square::A2)] = PieceAndColorCompact::WHITE_ROOK;
+    ab[getIndexOfSquare(Square::H2)] = PieceAndColorCompact::WHITE_ROOK;
 
-    ab[getIndexOfSquare(Square::E8)] = PieceAndColor::BLACK_KING;
-    ab[getIndexOfSquare(Square::A7)] = PieceAndColor::BLACK_ROOK;
-    ab[getIndexOfSquare(Square::H7)] = PieceAndColor::BLACK_ROOK;
+    ab[getIndexOfSquare(Square::E8)] = PieceAndColorCompact::BLACK_KING;
+    ab[getIndexOfSquare(Square::A7)] = PieceAndColorCompact::BLACK_ROOK;
+    ab[getIndexOfSquare(Square::H7)] = PieceAndColorCompact::BLACK_ROOK;
 
     // wall of pawns to block checks
     for (std::size_t i { getIndexOfSquare(Square::A4) }; i < getIndexOfSquare(Square::A5); ++i)
     {
-        ab[i] = PieceAndColor::WHITE_PAWN;
+        ab[i] = PieceAndColorCompact::WHITE_PAWN;
     }
 
     // castling rooks on wrong rank
@@ -229,18 +279,18 @@ TEST(ChessBoard, validateBoard_badCastlingRookSide)
 {
     ArrayBoard ab { };
 
-    ab[getIndexOfSquare(Square::E1)] = PieceAndColor::WHITE_KING;
-    ab[getIndexOfSquare(Square::A1)] = PieceAndColor::WHITE_ROOK;
-    ab[getIndexOfSquare(Square::H1)] = PieceAndColor::WHITE_ROOK;
+    ab[getIndexOfSquare(Square::E1)] = PieceAndColorCompact::WHITE_KING;
+    ab[getIndexOfSquare(Square::A1)] = PieceAndColorCompact::WHITE_ROOK;
+    ab[getIndexOfSquare(Square::H1)] = PieceAndColorCompact::WHITE_ROOK;
 
-    ab[getIndexOfSquare(Square::E8)] = PieceAndColor::BLACK_KING;
-    ab[getIndexOfSquare(Square::A8)] = PieceAndColor::BLACK_ROOK;
-    ab[getIndexOfSquare(Square::H8)] = PieceAndColor::BLACK_ROOK;
+    ab[getIndexOfSquare(Square::E8)] = PieceAndColorCompact::BLACK_KING;
+    ab[getIndexOfSquare(Square::A8)] = PieceAndColorCompact::BLACK_ROOK;
+    ab[getIndexOfSquare(Square::H8)] = PieceAndColorCompact::BLACK_ROOK;
 
     // wall of pawns to block checks
     for (std::size_t i { getIndexOfSquare(Square::A4) }; i < getIndexOfSquare(Square::A5); ++i)
     {
-        ab[i] = PieceAndColor::WHITE_PAWN;
+        ab[i] = PieceAndColorCompact::WHITE_PAWN;
     }
 
     // castling rooks on wrong side of the king
@@ -270,18 +320,18 @@ TEST(ChessBoard, validateBoard_badCastlingKings)
 {
     ArrayBoard ab { };
 
-    ab[getIndexOfSquare(Square::E2)] = PieceAndColor::WHITE_KING;
-    ab[getIndexOfSquare(Square::A1)] = PieceAndColor::WHITE_ROOK;
-    ab[getIndexOfSquare(Square::H1)] = PieceAndColor::WHITE_ROOK;
+    ab[getIndexOfSquare(Square::E2)] = PieceAndColorCompact::WHITE_KING;
+    ab[getIndexOfSquare(Square::A1)] = PieceAndColorCompact::WHITE_ROOK;
+    ab[getIndexOfSquare(Square::H1)] = PieceAndColorCompact::WHITE_ROOK;
 
-    ab[getIndexOfSquare(Square::E7)] = PieceAndColor::BLACK_KING;
-    ab[getIndexOfSquare(Square::A8)] = PieceAndColor::BLACK_ROOK;
-    ab[getIndexOfSquare(Square::H8)] = PieceAndColor::BLACK_ROOK;
+    ab[getIndexOfSquare(Square::E7)] = PieceAndColorCompact::BLACK_KING;
+    ab[getIndexOfSquare(Square::A8)] = PieceAndColorCompact::BLACK_ROOK;
+    ab[getIndexOfSquare(Square::H8)] = PieceAndColorCompact::BLACK_ROOK;
 
     // wall of pawns to block checks
     for (std::size_t i { getIndexOfSquare(Square::A4) }; i < getIndexOfSquare(Square::A5); ++i)
     {
-        ab[i] = PieceAndColor::WHITE_PAWN;
+        ab[i] = PieceAndColorCompact::WHITE_PAWN;
     }
 
     // castling rooks on wrong rank

@@ -594,7 +594,7 @@ private:
 
             if (moveIndex < m_moves.size())
             {
-                const std::uint32_t plyNum { board.getCurrentPlyNum() };
+                const std::uint_fast32_t plyNum { board.getCurrentPlyNum() };
                 if (pgn_reader::colorOfPly(plyNum) == pgn_reader::Color::WHITE)
                     moveNumBeforeNextMove = true;
 

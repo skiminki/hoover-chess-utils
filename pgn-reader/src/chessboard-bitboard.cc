@@ -44,20 +44,20 @@ IntType saturatingIncrease(IntType v)
     return v + inc;
 }
 
-static constexpr inline std::uint8_t getKingColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
+static constexpr inline RowColumn getKingColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
 {
     static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_SHORT) & 1U) == 0U);
     static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_LONG) & 1U) == 1U);
 
-    return 6U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 4U;
+    return 6U - (static_cast<RowColumn>(typeAndPromo) & 1U) * 4U;
 }
 
-static constexpr inline std::uint8_t getRookColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
+static constexpr inline RowColumn getRookColumnAfterCastling(MoveTypeAndPromotion typeAndPromo) noexcept
 {
     static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_SHORT) & 1U) == 0U);
     static_assert((static_cast<std::uint8_t>(MoveTypeAndPromotion::CASTLING_LONG) & 1U) == 1U);
 
-    return 5U - (static_cast<std::uint8_t>(typeAndPromo) & 1U) * 2U;
+    return 5U - (static_cast<RowColumn>(typeAndPromo) & 1U) * 2U;
 }
 
 }
@@ -226,7 +226,7 @@ void ChessBoard::doMove(const Move m) noexcept
     {
         // castling move
 
-        const std::uint8_t row { rowOf(m.getSrc()) };
+        const RowColumn row { rowOf(m.getSrc()) };
         const Square kingSqAfterCastling { makeSquare(getKingColumnAfterCastling(m.getTypeAndPromotion()), row) };
         const Square rookSqAfterCastling { makeSquare(getRookColumnAfterCastling(m.getTypeAndPromotion()), row) };
 
@@ -341,53 +341,6 @@ void ChessBoard::doMove(const Move m) noexcept
 
     // update checkers and pinners for this turn
     updateCheckersAndPins();
-}
-
-void ChessBoard::calculateMasks(const ArrayBoard &board) noexcept
-{
-    static_assert(static_cast<std::size_t>(Piece::PAWN)   <= 7U);
-    static_assert(static_cast<std::size_t>(Piece::KNIGHT) <= 7U);
-    static_assert(static_cast<std::size_t>(Piece::BISHOP) <= 7U);
-    static_assert(static_cast<std::size_t>(Piece::ROOK)   <= 7U);
-    static_assert(static_cast<std::size_t>(Piece::QUEEN)  <= 7U);
-    static_assert(static_cast<std::size_t>(Piece::KING)   <= 7U);
-
-    SquareSet turnColorMask { };
-    std::array<SquareSet, 8U> squareSets { };
-
-    const Color turn { getTurn() };
-
-    for (std::uint8_t sqIndex { }; sqIndex < 64U; ++sqIndex)
-    {
-        const PieceAndColor pc { board[sqIndex] };
-        if (pc == PieceAndColor::NONE)
-            continue;
-
-        const SquareSet sqBit { Square { sqIndex } };
-
-        if (colorOf(pc) == turn)
-            turnColorMask |= sqBit;
-
-        squareSets[static_cast<std::size_t>(pieceOf(pc))] |= sqBit;
-    }
-
-    m_turnColorMask = turnColorMask;
-
-    m_pawns   = squareSets[static_cast<std::size_t>(Piece::PAWN)];
-    m_knights = squareSets[static_cast<std::size_t>(Piece::KNIGHT)];
-    m_bishops =
-        squareSets[static_cast<std::size_t>(Piece::BISHOP)] |
-        squareSets[static_cast<std::size_t>(Piece::QUEEN)];
-    m_rooks   =
-        squareSets[static_cast<std::size_t>(Piece::ROOK)] |
-        squareSets[static_cast<std::size_t>(Piece::QUEEN)];
-    m_kings   = squareSets[static_cast<std::size_t>(Piece::KING)];
-
-    m_occupancyMask = m_pawns | m_knights | m_bishops | m_rooks | m_kings;
-
-    // kings
-    m_kingSq    = (m_kings &  m_turnColorMask).firstSquare();
-    m_oppKingSq = (m_kings & ~m_turnColorMask).firstSquare();
 }
 
 }

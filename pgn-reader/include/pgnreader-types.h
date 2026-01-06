@@ -28,7 +28,7 @@ namespace hoover_chess_utils::pgn_reader
 /// @{
 
 /// @brief Game result
-enum class PgnResult : std::uint8_t
+enum class PgnResult : std::uint_fast8_t
 {
     /// @brief White win
     WHITE_WIN,
@@ -48,7 +48,7 @@ enum class PgnResult : std::uint8_t
 /// @param[in] moveNum     Full move number. Range: [1, 2147483648]
 /// @param[in] color       Side to move
 /// @return                Ply number
-constexpr inline std::uint32_t makePlyNum(std::uint32_t moveNum, Color color) noexcept
+constexpr inline std::uint_fast32_t makePlyNum(std::uint_fast32_t moveNum, Color color) noexcept
 {
     assert(moveNum >= 1U);
     [[assume(moveNum >= 1U)]];
@@ -63,7 +63,7 @@ constexpr inline std::uint32_t makePlyNum(std::uint32_t moveNum, Color color) no
 ///
 /// @param[in] plyNum      Ply number
 /// @return                Side to move
-constexpr inline Color colorOfPly(std::uint32_t plyNum) noexcept
+constexpr inline Color colorOfPly(std::uint_fast32_t plyNum) noexcept
 {
     return (plyNum & 1U) ? Color::BLACK : Color::WHITE;
 }
@@ -72,7 +72,7 @@ constexpr inline Color colorOfPly(std::uint32_t plyNum) noexcept
 ///
 /// @param[in] plyNum      Ply number
 /// @return                Full move number
-constexpr inline std::uint32_t moveNumOfPly(std::uint32_t plyNum) noexcept
+constexpr inline std::uint_fast32_t moveNumOfPly(std::uint_fast32_t plyNum) noexcept
 {
     return 1U + (plyNum / 2U);
 }

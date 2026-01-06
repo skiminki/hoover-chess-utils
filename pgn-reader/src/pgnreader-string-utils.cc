@@ -506,9 +506,9 @@ void StringUtils::boardToFEN(const ChessBoard &board, MiniString<96U> &fen) noex
         *i++ = '-';
 
     *i++ = ' ';
-    i = genUnsignedToString<3U>(i, board.getHalfMoveClock());
+    i = genUnsignedToString<3U, std::uint8_t>(i, board.getHalfMoveClock());
     *i++ = ' ';
-    i = genUnsignedToString<10U>(i, moveNumOfPly(board.getCurrentPlyNum()));
+    i = genUnsignedToString<10U, std::uint32_t>(i, moveNumOfPly(board.getCurrentPlyNum()));
 
     fen.setLength(i - fen.data());
 }

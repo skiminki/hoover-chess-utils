@@ -21,13 +21,35 @@
 #include <bit>
 #include <cassert>
 #include <cinttypes>
+#include <cstdint>
 #include <string_view>
+#include <type_traits>
+
 
 namespace hoover_chess_utils::pgn_reader
 {
 
 /// @addtogroup PgnReaderAPI
 /// @{
+
+/// @brief Type definition helper
+///
+/// @param Type       Enumeration type name
+/// @param Bits       Minimum number of bits required by the enum (8/16/32/64)
+#define HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Type, Bits)  \
+    using Type ## UnderlyingType = std::uint_fast ## Bits ## _t; \
+    using Type ## CompactType = std::uint ## Bits ## _t
+
+HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Square, 8);
+HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Color, 8);
+HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Piece, 8);
+HOOVER_CHESS_UTILS__TYPEDEF_HELPER(PieceAndColor, 8);
+HOOVER_CHESS_UTILS__TYPEDEF_HELPER(PositionStatus, 8);
+HOOVER_CHESS_UTILS__TYPEDEF_HELPER(RowColumn, 8);
+
+/// @brief Row/colum coordinate type
+using RowColumn = RowColumnUnderlyingType;
+
 
 /// @brief Named square
 ///
@@ -55,7 +77,7 @@ namespace hoover_chess_utils::pgn_reader
 /// @sa @coderef{isValidValue(Square)}, @coderef{isValidSquare()}
 /// @sa @coderef{makeSquare()}, @coderef{rowOf(Square)}, @coderef{columnOf(Square)}
 /// @sa @coderef{getSquareForIndex()}, @coderef{getIndexOfSquare()}
-enum class Square : std::uint8_t
+enum class Square : SquareUnderlyingType
 {
     A1 = 0U, ///< row 0, column 0
     B1 = 1U, ///< row 0, column 1
@@ -127,7 +149,7 @@ enum class Square : std::uint8_t
 };
 
 /// @brief Color of a piece or side to move
-enum class Color : std::uint8_t
+enum class Color : ColorUnderlyingType
 {
     /// @brief White piece or white side to move
     WHITE = 0U,
@@ -137,7 +159,7 @@ enum class Color : std::uint8_t
 };
 
 /// @brief Named piece
-enum class Piece : std::uint8_t
+enum class Piece : PieceUnderlyingType
 {
     NONE = 0U, ///< Value representing no piece
     PAWN,      ///< Pawn
@@ -152,9 +174,38 @@ enum class Piece : std::uint8_t
 ///
 /// @remark Values are organized such that extracting @coderef{Piece} and @coderef{Color} is a matter
 /// of bitwise and.
-enum class PieceAndColor : std::uint8_t
+enum class PieceAndColor : PieceAndColorUnderlyingType
 {
-    NONE = 0U, ///< Value representing no piece and color. This is synonym to @coderef{WHITE_NONE}.
+    NONE = 0U,       ///< Value representing no piece and color. This is synonym to @coderef{WHITE_NONE}.
+
+    WHITE_PAWN = 1U, ///< White pawn
+    WHITE_KNIGHT,    ///< White knight
+    WHITE_BISHOP,    ///< White bishop
+    WHITE_ROOK,      ///< White rook
+    WHITE_QUEEN,     ///< White queen
+    WHITE_KING,      ///< White king
+
+    BLACK_PAWN = 9U, ///< Black pawn
+    BLACK_KNIGHT,    ///< Black knight
+    BLACK_BISHOP,    ///< Black bishop
+    BLACK_ROOK,      ///< Black rook
+    BLACK_QUEEN,     ///< Black queen
+    BLACK_KING,      ///< Black king
+
+    WHITE_NONE = 0U, ///< Special value to make <tt>@coderef{makePieceAndColor}</tt><tt>(@coderef{Piece::NONE}, @coderef{Color::WHITE})</tt> well-defined
+    BLACK_NONE = 8U, ///< Special value to make <tt>@coderef{makePieceAndColor}</tt><tt>(@coderef{Piece::NONE}, @coderef{Color::BLACK})</tt> well-defined
+};
+
+/// @brief Named piece and color (compact representation)
+///
+/// The compact representation is generally better suited to store in memory
+/// than the fast type.
+///
+/// Use @coderef{toCompactType()} and @coderef{toFastType()} to switch between
+/// representations.
+enum class PieceAndColorCompact : PieceAndColorCompactType
+{
+    NONE = 0U,       ///< Value representing no piece and color. This is synonym to @coderef{WHITE_NONE}.
 
     WHITE_PAWN = 1U, ///< White pawn
     WHITE_KNIGHT,    ///< White knight
@@ -180,7 +231,7 @@ enum class PieceAndColor : std::uint8_t
 /// illegal position. Hence, there is no enumeration for an illegal position.
 ///
 /// @sa @coderef{ChessBoard::determineStatus()}
-enum class PositionStatus : std::uint8_t
+enum class PositionStatus : PositionStatusUnderlyingType
 {
     /// @brief Regular position (not in check, mate, or stalemate)
     NORMAL,
@@ -221,7 +272,7 @@ constexpr inline bool isValidSquare(Square sq) noexcept
 /// @param[in] col     Column number (0 for A-file). Range: [0, 7]
 /// @param[in] row     Row number (0 for 1st rank). Range: [0, 7]
 /// @return            Constructed @coderef{Square}
-constexpr inline Square makeSquare(std::uint8_t col, std::uint8_t row) noexcept
+constexpr inline Square makeSquare(RowColumn col, RowColumn row) noexcept
 {
     assert(col <= 7U);
     assert(row <= 7U);
@@ -229,31 +280,31 @@ constexpr inline Square makeSquare(std::uint8_t col, std::uint8_t row) noexcept
     [[assume(row <= 7U)]];
     [[assume(col <= 7U)]];
 
-    return static_cast<Square>((row * 8U) + col);
+    return Square((row * 8U) + col);
 }
 
 /// @brief Returns column number of square
 ///
 /// @param[in] sq      Square. Range: [Square::A1, Square::H8]
 /// @return            Column number (0 for A-file)
-constexpr inline std::uint8_t columnOf(Square sq) noexcept
+constexpr inline RowColumn columnOf(Square sq) noexcept
 {
     assert(sq <= Square::H8);
     [[assume(sq <= Square::H8)]];
 
-    return static_cast<std::uint8_t>(sq) & 7U;
+    return static_cast<SquareUnderlyingType>(sq) & 7U;
 }
 
 /// @brief Returns row number of square
 ///
 /// @param[in] sq      Square. Range: [Square::A1, Square::H8]
 /// @return            Row number (0 for 1st rank)
-constexpr inline std::uint8_t rowOf(Square sq) noexcept
+constexpr inline RowColumn rowOf(Square sq) noexcept
 {
     assert(sq <= Square::H8);
     [[assume(sq <= Square::H8)]];
 
-    return static_cast<std::uint8_t>(sq) / 8U;
+    return static_cast<SquareUnderlyingType>(sq) / 8U;
 }
 
 /// @brief Returns a square for an index. In essence, this is the ordinal of the
@@ -268,7 +319,7 @@ constexpr inline Square getSquareForIndex(std::size_t index) noexcept
     assert(index <= 63U);
     [[assume(index <= 63U)]];
 
-    return Square { static_cast<std::uint8_t>(index & 63U) };
+    return Square(index);
 }
 
 /// @brief Returns an index for a square
@@ -295,9 +346,9 @@ constexpr inline std::size_t getIndexOfSquare(Square sq) noexcept
 /// @code
 /// Square newSq = getSquareForIndex(getIndexOfSquare(sq) + shift)
 /// @endcode
-constexpr inline Square addToSquareNoOverflowCheck(Square sq, std::int8_t shift) noexcept
+constexpr inline Square addToSquareNoOverflowCheck(Square sq, std::int_fast8_t shift) noexcept
 {
-    return static_cast<Square>(static_cast<std::uint8_t>(sq) + shift);
+    return Square(static_cast<SquareUnderlyingType>(sq) + shift);
 }
 
 /// @brief Checks whether a value is a valid enumeration value.
@@ -316,7 +367,7 @@ constexpr inline bool isValidValue(Color c) noexcept
 /// @return          Opposite color
 constexpr inline Color oppositeColor(Color c) noexcept
 {
-    return Color { static_cast<std::uint8_t>(static_cast<std::uint8_t>(c) ^ 0x08U) };
+    return Color(static_cast<ColorUnderlyingType>(c) ^ 0x08U);
 }
 
 /// @brief Returns color of a piece
@@ -328,7 +379,7 @@ constexpr inline Color colorOf(PieceAndColor pc) noexcept
     assert((pc >= PieceAndColor::WHITE_NONE && pc <= PieceAndColor::WHITE_KING) ||
            (pc >= PieceAndColor::BLACK_NONE && pc <= PieceAndColor::BLACK_KING));
 
-    return Color { static_cast<std::uint8_t>(static_cast<std::uint8_t>(pc) & 0x8U) };
+    return Color(static_cast<PieceAndColorUnderlyingType>(pc) & 0x8U);
 }
 
 
@@ -359,7 +410,7 @@ constexpr inline Piece pieceOf(PieceAndColor pc) noexcept
     assert(isValidValue(pc));
     [[assume(pc <= PieceAndColor::BLACK_KING)]];
 
-    return Piece { static_cast<std::uint8_t>(static_cast<std::uint8_t>(pc) & 0x7U) };
+    return Piece(static_cast<PieceAndColorUnderlyingType>(pc) & 0x7U);
 }
 
 /// @brief Constructs a PieceAndColor enumeration value from Piece and Color
@@ -372,10 +423,22 @@ constexpr inline PieceAndColor makePieceAndColor(Piece p, Color c) noexcept
     assert(isValidValue(p));
     assert(isValidValue(c));
 
-    return PieceAndColor {
-        static_cast<std::uint8_t>(
-            static_cast<std::uint8_t>(p) | static_cast<std::uint8_t>(c)) };
+    return PieceAndColor(
+        static_cast<PieceUnderlyingType>(p) |
+        static_cast<ColorUnderlyingType>(c));
 }
+
+
+constexpr inline PieceAndColorCompact toCompactType(PieceAndColor pc) noexcept
+{
+    return PieceAndColorCompact(static_cast<PieceAndColorUnderlyingType>(pc));
+}
+
+constexpr inline PieceAndColor toFastType(PieceAndColorCompact pc) noexcept
+{
+    return PieceAndColor(static_cast<PieceAndColorCompactType>(pc));
+}
+
 
 /// @}
 

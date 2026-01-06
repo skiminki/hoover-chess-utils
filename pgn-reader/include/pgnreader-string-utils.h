@@ -305,12 +305,17 @@ public:
     /// @param[in]  num    Number to convert
     /// @return            Pointer one past the string. Difference to @c s is the length
     ///                    of the written string.
-    template <std::size_t bufSize, typename UintType>
+    template <std::size_t bufSize, typename UintRangeType, typename UintType>
     static char *genUnsignedToString(char *s, UintType num) noexcept
     {
         static_assert(std::is_unsigned_v<UintType>);
         static_assert(std::is_integral_v<UintType>);
-        static_assert(std::numeric_limits<UintType>::digits10 + 1U == bufSize);
+        static_assert(std::is_unsigned_v<UintRangeType>);
+        static_assert(std::is_integral_v<UintRangeType>);
+        static_assert(std::numeric_limits<UintRangeType>::digits10 + 1U == bufSize);
+
+        // force limit the range
+        num &= std::numeric_limits<UintRangeType>::max();
 
         char *i = s;
 
@@ -343,7 +348,7 @@ public:
     /// @return            Move string in PGN move number format. E.g.,
     ///                    @c "1." for first white move and
     ///                    @c "2..." for second black move.
-    static MiniString<13U> moveNumToString(std::uint32_t moveNum, Color turn) noexcept
+    static MiniString<13U> moveNumToString(std::uint_fast32_t moveNum, Color turn) noexcept
     {
         // max length: "4294967295..."
         //              1234567890123 = 13 chars
@@ -351,7 +356,7 @@ public:
 
         char *i = ret.data();
 
-        i = genUnsignedToString<10U>(i, moveNum);
+        i = genUnsignedToString<10U, std::uint32_t>(i, moveNum);
 
         *i++ = '.';
         if (turn == Color::BLACK)
