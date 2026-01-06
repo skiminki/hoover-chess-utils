@@ -51,7 +51,7 @@ public:
         std::uint64_t bitmask { };
         for (auto sq : std::initializer_list<Square>{ squares... })
         {
-            const auto sqRaw { static_cast<std::underlying_type_t<Square> >(sq) };
+            const auto sqRaw { static_cast<SquareUnderlyingType>(sq) };
 
             assert(sqRaw < 64U);
             [[assume(sqRaw < 64U)]];
@@ -92,7 +92,7 @@ public:
     /// @brief Returns the number of squares in the set
     ///
     /// @return Number of squares in the set
-    constexpr inline std::uint8_t popcount() const noexcept
+    constexpr inline std::uint_fast8_t popcount() const noexcept
     {
         return std::popcount(m_bitmask);
     }
@@ -114,8 +114,8 @@ public:
     /// empty set.
     constexpr inline Square lastSquare() const noexcept
     {
-        std::uint8_t tmp = 63U - std::countl_zero(m_bitmask);
-        return tmp <= 63U ? Square { tmp } : Square::NONE;
+        SquareUnderlyingType tmp = 63U - std::countl_zero(m_bitmask);
+        return tmp <= 63U ? Square(tmp) : Square::NONE;
     }
 
     /// @brief Returns a square set with the first square (if any) removed.
@@ -239,7 +239,7 @@ public:
     /// // b includes squares A2..A8, since A1 became A2, A2 become A3, and so
     /// // on. A8 would have overflown to A9.
     /// @endcode
-    constexpr inline SquareSet operator << (std::uint8_t shift) const noexcept
+    constexpr inline SquareSet operator << (std::uint_fast8_t shift) const noexcept
     {
         return SquareSet { m_bitmask << shift };
     }
@@ -263,7 +263,7 @@ public:
     /// // b includes squares A1..A7, since A2 became A1, A3 become A2, and so
     /// // on. A1 would have overflown to A0.
     /// @endcode
-    constexpr inline SquareSet operator >> (std::uint8_t shift) const noexcept
+    constexpr inline SquareSet operator >> (std::uint_fast8_t shift) const noexcept
     {
         return SquareSet { m_bitmask >> shift };
     }
@@ -284,7 +284,7 @@ public:
     /// // b includes squares A1..A8, since A1 became A2, A2 become A3, and so
     /// // on. A8 wrap-arounds to A1 (equivalent to A9).
     /// @endcode
-    constexpr inline SquareSet rotl(std::int8_t shift) const noexcept
+    constexpr inline SquareSet rotl(std::int_fast8_t shift) const noexcept
     {
         return SquareSet { std::rotl(m_bitmask, shift) };
     }
@@ -305,7 +305,7 @@ public:
     /// // b includes squares A1..A8, since A2 became A1, A3 become A2, and so
     /// // on. A1 wrap-arounds to A8 (equivalent to A0).
     /// @endcode
-    constexpr inline SquareSet rotr(std::int8_t shift) const noexcept
+    constexpr inline SquareSet rotr(std::int_fast8_t shift) const noexcept
     {
         return SquareSet { std::rotr(m_bitmask, shift) };
     }
@@ -314,7 +314,7 @@ public:
     ///
     /// @param[in] shift   Shift amount. Range: [0, 63]
     /// @return            @c *this after assignment
-    constexpr inline SquareSet operator <<= (std::uint8_t shift) noexcept
+    constexpr inline SquareSet operator <<= (std::uint_fast8_t shift) noexcept
     {
         m_bitmask <<= shift;
         return (*this);
@@ -324,7 +324,7 @@ public:
     ///
     /// @param[in] shift   Shift amount. Range: [0, 63]
     /// @return            @c *this after assignment
-    constexpr inline SquareSet operator >>= (std::uint8_t shift) noexcept
+    constexpr inline SquareSet operator >>= (std::uint_fast8_t shift) noexcept
     {
         m_bitmask >>= shift;
         return (*this);
@@ -468,7 +468,7 @@ public:
     /// @return            Set of squares in column @c col. Range: [0, 7]
     ///
     /// @remark The A-file is column 0, the B file is column 1, and so on.
-    static constexpr inline SquareSet column(std::uint8_t col) noexcept
+    static constexpr inline SquareSet column(RowColumn col) noexcept
     {
         assert(col <= 7U);
         [[assume(col <= 7U)]];
@@ -482,7 +482,7 @@ public:
     /// @return            Set of squares in row @c row. Range: [0, 7]
     ///
     /// @remark The 1st rank is row 0, the 2nd rank is row 1, and so on.
-    static constexpr inline SquareSet row(std::uint8_t row) noexcept
+    static constexpr inline SquareSet row(RowColumn row) noexcept
     {
         assert(row <= 7U);
         [[assume(row <= 7U)]];
@@ -496,10 +496,10 @@ public:
     /// @return           The set containing @c sq
     static constexpr inline SquareSet square(Square sq) noexcept
     {
-        assert(static_cast<std::uint8_t>(sq) <= 63U);
-        [[assume(static_cast<std::uint8_t>(sq) <= 63U)]];
+        assert(static_cast<SquareUnderlyingType>(sq) <= 63U);
+        [[assume(static_cast<SquareUnderlyingType>(sq) <= 63U)]];
 
-        return SquareSet { std::uint64_t { 1U } << static_cast<std::uint8_t>(sq) };
+        return SquareSet { std::uint64_t { 1U } << static_cast<SquareUnderlyingType>(sq) };
     }
 
     /// @brief Returns a set of 0 or 1 squares
@@ -509,7 +509,7 @@ public:
     static constexpr inline SquareSet squareOrNone(Square sq) noexcept
     {
         const std::uint64_t bitToShift { sq < Square::NONE };
-        return SquareSet { std::rotl(bitToShift, static_cast<unsigned>(sq)) };
+        return SquareSet { std::rotl(bitToShift, static_cast<SquareUnderlyingType>(sq)) };
     }
 
     /// @brief Returns a set of single square specified by column and row numbers
@@ -517,7 +517,7 @@ public:
     /// @param[in] col    Column number of the square
     /// @param[in] row    Row number of the square
     /// @return           The set containing square specified by @c col and @c row.
-    static constexpr inline SquareSet square(std::uint8_t col, std::uint8_t row) noexcept
+    static constexpr inline SquareSet square(RowColumn col, RowColumn row) noexcept
     {
         assert(col <= 7U);
         assert(row <= 7U);
@@ -534,7 +534,7 @@ public:
         assert(static_cast<std::uint8_t>(sq) <= 63U);
         [[assume(static_cast<std::uint8_t>(sq) <= 63U)]];
 
-        return (m_bitmask & (std::uint64_t { 1U } << static_cast<std::uint8_t>(sq))) != 0U;
+        return (m_bitmask & (std::uint64_t { 1U } << static_cast<SquareUnderlyingType>(sq))) != 0U;
     }
 
     /// @brief Conditional

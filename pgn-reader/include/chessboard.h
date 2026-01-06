@@ -44,7 +44,7 @@ class MoveGenFunctionTables;
 ///
 /// @sa @coderef{ChessBoard::setBoard()}
 /// @sa @coderef{getIndexOfSquare()}
-using ArrayBoard = std::array<PieceAndColor, 64U>;
+using ArrayBoard = std::array<PieceAndColorCompact, 64U>;
 
 /// @ingroup PgnReaderAPI
 /// @brief Board representation using @coderef{SquareSet}s (bit boards)
@@ -84,7 +84,7 @@ struct BitBoard
 /// specify the source and destination squares of the move.
 ///
 /// @sa @coderef{Move::getTypeAndPromotion()}
-enum class MoveTypeAndPromotion : std::uint8_t
+enum class MoveTypeAndPromotion : std::uint_fast8_t
 {
     /// @brief Regular non-capturing, non-promoting pawn move
     REGULAR_PAWN_MOVE    = 0U,
@@ -346,7 +346,7 @@ public:
             (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_QUEEN)  & 0x7U) ==
             static_cast<std::uint8_t>(Piece::QUEEN));
 
-        return Piece(static_cast<std::uint8_t>(getTypeAndPromotion()) & 0x7U);
+        return Piece(static_cast<std::uint_fast8_t>(getTypeAndPromotion()) & 0x7U);
     }
 
     /// @brief Checks whether the move type is illegal
@@ -365,7 +365,7 @@ public:
     /// @brief Returns raw encoded value. Usually only used in debugging.
     ///
     /// @return Encoded value of move
-    constexpr std::uint16_t getEncodedValue() const noexcept
+    constexpr std::uint_fast16_t getEncodedValue() const noexcept
     {
         return m_encoded;
     }
@@ -410,7 +410,7 @@ using ShortMoveList = std::array<Move, 8U>;
 
 /// @ingroup PgnReaderImpl
 /// @brief Move generator type
-enum class MoveGenType : std::uint8_t
+enum class MoveGenType
 {
     /// @brief Move generator for when the king is not in check. All moves
     /// are considered.
@@ -545,7 +545,9 @@ public:
         Square whiteLongCastleRook, Square whiteShortCastleRook,
         Square blackLongCastleRook, Square blackShortCastleRook,
         Square epSquare,
-        std::uint8_t halfMoveClock, std::uint32_t plyNum);
+        std::uint_fast8_t halfMoveClock, std::uint_fast32_t plyNum);
+
+    void getArrayBoard(ArrayBoard &out_board) const noexcept;
 
     /// @brief Sets the board from @coderef{SquareSet}s (bit board)
     ///
@@ -587,7 +589,7 @@ public:
         Square whiteLongCastleRook, Square whiteShortCastleRook,
         Square blackLongCastleRook, Square blackShortCastleRook,
         Square epSquare,
-        std::uint8_t halfMoveClock, std::uint32_t plyNum);
+        std::uint_fast8_t halfMoveClock, std::uint_fast32_t plyNum);
 
     /// @brief Sets the board from FEN
     ///
@@ -696,7 +698,7 @@ public:
     /// @return Occupied squares
     inline SquareSet getWhitePieces() const noexcept
     {
-        const std::uint64_t flipBits { getTurn() == Color::WHITE ? UINT64_C(0) : ~UINT64_C(0) };
+        const std::uint_fast64_t flipBits { getTurn() == Color::WHITE ? UINT64_C(0) : ~UINT64_C(0) };
 
         return m_occupancyMask & (m_turnColorMask ^ SquareSet { flipBits });
     }
@@ -706,7 +708,7 @@ public:
     /// @return Occupied squares
     inline SquareSet getBlackPieces() const noexcept
     {
-        const std::uint64_t flipBits { getTurn() == Color::WHITE ? ~UINT64_C(0) : UINT64_C(0) };
+        const std::uint_fast64_t flipBits { getTurn() == Color::WHITE ? ~UINT64_C(0) : UINT64_C(0) };
 
         return m_occupancyMask & (m_turnColorMask ^ SquareSet { flipBits });
     }
@@ -963,7 +965,7 @@ public:
     ///
     /// Half-move clock is used to determine 50-move rule and similar draw
     /// termination rules.
-    inline std::uint8_t getHalfMoveClock() const noexcept
+    inline std::uint_fast8_t getHalfMoveClock() const noexcept
     {
         return m_halfMoveClock;
     }
@@ -974,7 +976,7 @@ public:
     /// move.
     ///
     /// @sa @coderef{moveNumOfPly()}, @coderef{colorOfPly()}
-    inline std::uint32_t getCurrentPlyNum() const noexcept
+    inline std::uint_fast32_t getCurrentPlyNum() const noexcept
     {
         return m_plyNum;
     }
@@ -984,7 +986,7 @@ public:
     /// @return Side to move
     inline Color getTurn() const noexcept
     {
-        return Color { static_cast<std::uint8_t>((m_plyNum & 1U) * 8U) };
+        return Color { static_cast<std::uint_fast8_t>((m_plyNum & 1U) * 8U) };
     }
 
     /// @brief Generates a legal non-promoting, non-capturing pawn move with a known
@@ -1745,7 +1747,7 @@ PositionStatus ChessBoard::determineStatus() const noexcept
     const bool noLegalMoves { !m_moveGenFns->hasLegalMoves(*this) };
     const bool inCheck { m_checkers != SquareSet::none() };
 
-    return PositionStatus { static_cast<std::uint8_t>(noLegalMoves * 2U + inCheck) };
+    return PositionStatus { static_cast<std::uint_fast8_t>(noLegalMoves * 2U + inCheck) };
 }
 
 

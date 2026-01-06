@@ -36,7 +36,7 @@ void setBoardFirstLineInputValidation(
     Square whiteLongCastleRook, Square whiteShortCastleRook,
     Square blackLongCastleRook, Square blackShortCastleRook,
     Square epSquare,
-    std::uint32_t plyNum)
+    std::uint_fast32_t plyNum)
 {
     if (!isValidValue(whiteLongCastleRook))
         throw PgnError(
@@ -117,12 +117,59 @@ PieceAndColor ChessBoard::getSquarePiece(Square sq) const noexcept
         (whitePieces & SquareSet { sq }) != SquareSet { } ? Color::WHITE : Color::BLACK);
 }
 
+void ChessBoard::calculateMasks(const ArrayBoard &board) noexcept
+{
+    static_assert(static_cast<std::size_t>(Piece::PAWN)   <= 6U);
+    static_assert(static_cast<std::size_t>(Piece::KNIGHT) <= 6U);
+    static_assert(static_cast<std::size_t>(Piece::BISHOP) <= 6U);
+    static_assert(static_cast<std::size_t>(Piece::ROOK)   <= 6U);
+    static_assert(static_cast<std::size_t>(Piece::QUEEN)  <= 6U);
+    static_assert(static_cast<std::size_t>(Piece::KING)   <= 6U);
+
+    SquareSet turnColorMask { std::uint64_t { m_plyNum & 1U } - 1U };
+    std::array<SquareSet, 7U> squareSets { };
+
+    for (std::size_t sqIndex { }; sqIndex < 64U; ++sqIndex)
+    {
+        const PieceAndColor pc { toFastType(board[sqIndex]) };
+        if (pc == PieceAndColor::NONE)
+            continue;
+
+        const SquareSet sqBit { getSquareForIndex(sqIndex) };
+
+        static_assert(static_cast<ColorUnderlyingType>(Color::WHITE) == 0);
+        static_assert(static_cast<ColorUnderlyingType>(Color::BLACK) == 8);
+
+        const SquareSet colorBaseBit { static_cast<std::uint64_t>(static_cast<ColorUnderlyingType>(colorOf(pc))) >> 3U };
+        turnColorMask ^= (colorBaseBit << sqIndex);
+
+        squareSets[static_cast<std::size_t>(pieceOf(pc))] |= sqBit;
+    }
+
+    m_pawns   = squareSets[static_cast<std::size_t>(Piece::PAWN)];
+    m_knights = squareSets[static_cast<std::size_t>(Piece::KNIGHT)];
+    m_bishops =
+        squareSets[static_cast<std::size_t>(Piece::BISHOP)] |
+        squareSets[static_cast<std::size_t>(Piece::QUEEN)];
+    m_rooks   =
+        squareSets[static_cast<std::size_t>(Piece::ROOK)] |
+        squareSets[static_cast<std::size_t>(Piece::QUEEN)];
+    m_kings   = squareSets[static_cast<std::size_t>(Piece::KING)];
+
+    m_occupancyMask = m_pawns | m_knights | m_bishops | m_rooks | m_kings;
+    m_turnColorMask = turnColorMask & m_occupancyMask;
+
+    // kings
+    m_kingSq    = (m_kings &  m_turnColorMask).firstSquare();
+    m_oppKingSq = (m_kings & ~m_turnColorMask).firstSquare();
+}
+
 void ChessBoard::setBoard(
     const ArrayBoard &board,
     Square whiteLongCastleRook, Square whiteShortCastleRook,
     Square blackLongCastleRook, Square blackShortCastleRook,
     Square epSquare,
-    std::uint8_t halfMoveClock, std::uint32_t plyNum)
+    std::uint_fast8_t halfMoveClock, std::uint_fast32_t plyNum)
 {
     setBoardFirstLineInputValidation(
         whiteLongCastleRook, whiteShortCastleRook,
@@ -130,7 +177,7 @@ void ChessBoard::setBoard(
         epSquare, plyNum);
 
     m_plyNum = plyNum;
-    m_halfMoveClock = halfMoveClock;
+    m_halfMoveClock = std::min<std::uint_fast8_t>(halfMoveClock, 255U);
     m_epSquare = epSquare;
     setCastlingRook(Color::WHITE, false, whiteLongCastleRook);
     setCastlingRook(Color::WHITE, true, whiteShortCastleRook);
@@ -141,12 +188,46 @@ void ChessBoard::setBoard(
     validateBoard();
 }
 
+void ChessBoard::getArrayBoard(ArrayBoard &out_board) const noexcept
+{
+    const SquareSet pawns       { getPawns() };
+    const SquareSet knights     { getKnights() };
+    const SquareSet bishops     { getBishops() };
+    const SquareSet rooks       { getRooks() };
+    const SquareSet queens      { getQueens() };
+    const SquareSet kings       { getKings() };
+    const SquareSet blackPieces { getBlackPieces() };
+
+    for (std::size_t i { }; i < 64U; ++i)
+    {
+        Piece p { };
+
+        const SquareSet bit { getSquareForIndex(i) };
+
+        static_assert(static_cast<PieceUnderlyingType>(Piece::PAWN) == 1U);
+        p = Piece(static_cast<std::uint64_t>(pawns >> i) & 1U);
+
+        if ((knights & bit) != SquareSet { }) p = Piece::KNIGHT;
+        if ((bishops & bit) != SquareSet { }) p = Piece::BISHOP;
+        if ((rooks   & bit) != SquareSet { }) p = Piece::ROOK;
+        if ((queens  & bit) != SquareSet { }) p = Piece::QUEEN;
+        if ((kings   & bit) != SquareSet { }) p = Piece::KING;
+
+        static_assert(static_cast<ColorUnderlyingType>(Color::WHITE) == 0U);
+        static_assert(static_cast<ColorUnderlyingType>(Color::BLACK) == 8U);
+
+        Color c = Color((static_cast<std::uint64_t>(blackPieces >> i) & 1U) << 3U);
+
+        out_board[i] = toCompactType(makePieceAndColor(p, c));
+    }
+}
+
 void ChessBoard::setBoard(
     const BitBoard &board,
     Square whiteLongCastleRook, Square whiteShortCastleRook,
     Square blackLongCastleRook, Square blackShortCastleRook,
     Square epSquare,
-    std::uint8_t halfMoveClock, std::uint32_t plyNum)
+    std::uint_fast8_t halfMoveClock, std::uint_fast32_t plyNum)
 {
     setBoardFirstLineInputValidation(
         whiteLongCastleRook, whiteShortCastleRook,

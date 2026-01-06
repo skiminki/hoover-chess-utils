@@ -106,7 +106,7 @@ private:
             if (moveIndex != 0U)
                 out.write(' ');
 
-            const std::uint32_t plyNum { board.getCurrentPlyNum() };
+            const std::uint_fast32_t plyNum { board.getCurrentPlyNum() };
             if (forceMoveNum || pgn_reader::colorOfPly(plyNum) == pgn_reader::Color::WHITE)
             {
                 out.write(pgn_reader::StringUtils::moveNumToString(pgn_reader::moveNumOfPly(plyNum), pgn_reader::colorOfPly(plyNum)));

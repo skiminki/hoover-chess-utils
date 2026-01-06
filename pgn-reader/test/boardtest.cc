@@ -37,20 +37,20 @@ TEST(BoardTest, LoadStartPos)
     // board setup
     const ArrayBoard expect {
 
-            PieceAndColor::WHITE_ROOK, PieceAndColor::WHITE_KNIGHT, PieceAndColor::WHITE_BISHOP, PieceAndColor::WHITE_QUEEN, PieceAndColor::WHITE_KING, PieceAndColor::WHITE_BISHOP, PieceAndColor::WHITE_KNIGHT, PieceAndColor::WHITE_ROOK,
-            PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN, PieceAndColor::WHITE_PAWN,
-            PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE,
-            PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE,
-            PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE,
-            PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE, PieceAndColor::NONE,
-            PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN, PieceAndColor::BLACK_PAWN,
-            PieceAndColor::BLACK_ROOK, PieceAndColor::BLACK_KNIGHT, PieceAndColor::BLACK_BISHOP, PieceAndColor::BLACK_QUEEN, PieceAndColor::BLACK_KING, PieceAndColor::BLACK_BISHOP, PieceAndColor::BLACK_KNIGHT, PieceAndColor::BLACK_ROOK,
+            PieceAndColorCompact::WHITE_ROOK, PieceAndColorCompact::WHITE_KNIGHT, PieceAndColorCompact::WHITE_BISHOP, PieceAndColorCompact::WHITE_QUEEN, PieceAndColorCompact::WHITE_KING, PieceAndColorCompact::WHITE_BISHOP, PieceAndColorCompact::WHITE_KNIGHT, PieceAndColorCompact::WHITE_ROOK,
+            PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN, PieceAndColorCompact::WHITE_PAWN,
+            PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE,
+            PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE,
+            PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE,
+            PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE, PieceAndColorCompact::NONE,
+            PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN, PieceAndColorCompact::BLACK_PAWN,
+            PieceAndColorCompact::BLACK_ROOK, PieceAndColorCompact::BLACK_KNIGHT, PieceAndColorCompact::BLACK_BISHOP, PieceAndColorCompact::BLACK_QUEEN, PieceAndColorCompact::BLACK_KING, PieceAndColorCompact::BLACK_BISHOP, PieceAndColorCompact::BLACK_KNIGHT, PieceAndColorCompact::BLACK_ROOK,
 
         };
 
     for (std::size_t i = 0U; i < expect.size(); ++i)
     {
-        EXPECT_EQ(expect[i], board.getSquarePiece(getSquareForIndex(i)));
+        EXPECT_EQ(toFastType(expect[i]), board.getSquarePiece(getSquareForIndex(i)));
     }
 
     // move counters
