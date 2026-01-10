@@ -32,35 +32,64 @@ namespace hoover_chess_utils::pgn_reader
 /// @addtogroup PgnReaderAPI
 /// @{
 
-/// @brief Type definition helper
+/// @brief Underlying type of @coderef{Square}
 ///
-/// @param Type       Enumeration type name
-/// @param Bits       Minimum number of bits required by the enum (8/16/32/64)
-#define HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Type, Bits)  \
-    using Type ## UnderlyingType = std::uint_fast ## Bits ## _t; \
-    using Type ## CompactType = std::uint ## Bits ## _t
+/// @sa @coderef{SquareCompactType}
+using SquareUnderlyingType = std::uint_fast8_t;
 
-/// @brief Defines types @c SquareUnderlyingType and @c SquareCompactType
-HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Square, 8);
+/// @brief Compact type for @coderef{Square}. The compact type can store all
+/// legal enumeration values.
+using SquareCompactType = std::uint8_t;
 
-/// @brief Defines types @c ColorUnderlyingType and @c ColorCompactType
-HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Color, 8);
+/// @brief Underlying type of @coderef{Color}
+///
+/// @sa @coderef{ColorCompactType}
+using ColorUnderlyingType = std::uint_fast8_t;
 
-/// @brief Defines types @c PieceUnderlyingType and @c PieceCompactType
-HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Piece, 8);
+/// @brief Compact type for @coderef{Color}. The compact type can store all
+/// legal enumeration values.
+using ColorCompactType = std::uint8_t;
 
-/// @brief Defines types @c PieceAndColorUnderlyingType and @c PieceAndColorCompactType
-HOOVER_CHESS_UTILS__TYPEDEF_HELPER(PieceAndColor, 8);
+/// @brief Underlying type of @coderef{Piece}
+///
+/// @sa @coderef{PieceCompactType}
+using PieceUnderlyingType = std::uint_fast8_t;
 
-/// @brief Defines types @c PositionStatusUnderlyingType and @c PositionStatusCompactType
-HOOVER_CHESS_UTILS__TYPEDEF_HELPER(PositionStatus, 8);
+/// @brief Compact type for @coderef{Piece}. The compact type can store all
+/// legal enumeration values.
+using PieceCompactType = std::uint8_t;
 
-/// @brief Defines types @c RowColumnUnderlyingType and @c RowColumnCompactType
-HOOVER_CHESS_UTILS__TYPEDEF_HELPER(RowColumn, 8);
+/// @brief Underlying type of @coderef{PieceAndColor}
+///
+/// @sa @coderef{PieceAndColorCompactType}
+using PieceAndColorUnderlyingType = std::uint_fast8_t;
 
-/// @brief Row/colum coordinate type
+/// @brief Compact type for @coderef{PieceAndColor}. The compact type can store all
+/// legal enumeration values.
+using PieceAndColorCompactType = std::uint8_t;
+
+/// @brief Underlying type of @coderef{PositionStatus}
+///
+/// @sa @coderef{PositionStatusCompactType}
+using PositionStatusUnderlyingType = std::uint_fast8_t;
+
+/// @brief Compact type for @coderef{PositionStatus}. The compact type can store all
+/// legal enumeration values.
+using PositionStatusCompactType = std::uint8_t;
+
+/// @brief Underlying type of @coderef{RowColumn}
+///
+/// @sa @coderef{RowColumnCompactType}
+using RowColumnUnderlyingType = std::uint_fast8_t;
+
+/// @brief Compact type for @coderef{RowColumn}. The compact type can store all
+/// legal enumeration values.
+using RowColumnCompactType = std::uint8_t;
+
+/// @brief Row/column coordinate type. Valid range: [0, 7] signifying ranks 1--8
+/// (as rows) or files A--H (as columns). The numbering is always from White's
+/// point of view.
 using RowColumn = RowColumnUnderlyingType;
-
 
 /// @brief Named square
 ///
@@ -88,6 +117,7 @@ using RowColumn = RowColumnUnderlyingType;
 /// @sa @coderef{isValidValue(Square)}, @coderef{isValidSquare()}
 /// @sa @coderef{makeSquare()}, @coderef{rowOf(Square)}, @coderef{columnOf(Square)}
 /// @sa @coderef{getSquareForIndex()}, @coderef{getIndexOfSquare()}
+/// @sa @coderef{RowColumn}
 enum class Square : SquareUnderlyingType
 {
     A1 = 0U, ///< row 0, column 0
