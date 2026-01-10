@@ -183,6 +183,13 @@ class CompactMove;
 /// @ingroup PgnReaderAPI
 /// @brief A legal move. **Important: see the note!**
 ///
+/// The move object is intended to be passed to functions as a fast type. The
+/// underlying representation is @c std::uint_fast16_t, which may be larger than
+/// 16 bits depending on the target.
+///
+/// When storing moves to memory (e.g., move lists), consider using
+/// @coderef{CompactMove}, instead.
+///
 /// @note Always use one of the move generators to construct a legal
 /// move. @coderef{ChessBoard::doMove()} assumes that the move is legal and it does not
 /// perform any legality checks of its own.
@@ -245,6 +252,9 @@ public:
     /// @brief Move assignment
     Move &operator = (Move &&) noexcept = default;
 
+    /// @brief Constructs a Move from a @coderef{CompactMove}
+    ///
+    /// @param[in] m    Compact move
     constexpr inline Move(const CompactMove &m) noexcept;
 
     /// @brief Destructor
@@ -422,13 +432,25 @@ private:
     std::uint16_t m_encoded { };
 
 public:
+    /// @brief Default constructor (null move)
     CompactMove() = default;
+
+    /// @brief Default copy constructor
     CompactMove(const CompactMove &) = default;
+
+    /// @brief Default move constructor
     CompactMove(CompactMove &&) = default;
+
+    /// @brief Default copy assignment
     CompactMove &operator = (const CompactMove &) & = default;
+
+    /// @brief Default move assignment
     CompactMove &operator = (CompactMove &&) & = default;
+
+    /// @brief Default destructor
     ~CompactMove() = default;
 
+    /// @brief Constructs a compact move from @coderef{Move}
     constexpr CompactMove(const Move &m) noexcept :
         m_encoded(m.getEncodedValue())
     {
@@ -600,6 +622,11 @@ public:
         Square epSquare,
         std::uint_fast8_t halfMoveClock, std::uint_fast32_t plyNum);
 
+    /// @brief Extracts the current position as an @coderef{ArrayBoard}.
+    ///
+    /// @param[out]  out_board     Current position
+    ///
+    /// @sa @coderef{setBoard()}
     void getArrayBoard(ArrayBoard &out_board) const noexcept;
 
     /// @brief Sets the board from @coderef{SquareSet}s (bit board)
