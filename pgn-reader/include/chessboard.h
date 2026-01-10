@@ -178,6 +178,8 @@ enum class MoveTypeAndPromotion : std::uint_fast8_t
     ILLEGAL              = 15U
 };
 
+class CompactMove;
+
 /// @ingroup PgnReaderAPI
 /// @brief A legal move. **Important: see the note!**
 ///
@@ -201,7 +203,7 @@ private:
     ///   <td colspan="6">Source square</td>
     /// </tr>
     /// </table>
-    std::uint16_t m_encoded { };
+    std::uint_fast16_t m_encoded { };
 
 public:
     /// @brief Default constructor (null move)
@@ -242,6 +244,8 @@ public:
 
     /// @brief Move assignment
     Move &operator = (Move &&) noexcept = default;
+
+    constexpr inline Move(const CompactMove &m) noexcept;
 
     /// @brief Destructor
     ~Move() noexcept = default;
@@ -397,16 +401,65 @@ public:
 };
 
 /// @ingroup PgnReaderAPI
+/// @brief Compact representation of @coderef{Move}
+class CompactMove
+{
+private:
+    /// @brief Encoded move
+    ///
+    /// <table>
+    /// <caption>Bitfield</caption>
+    /// <tr>
+    ///   <th>15</th><th>14</th><th>13</th><th>12</th><th>11</th><th>10</th><th>9</th><th>8</th>
+    ///   <th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th>
+    /// </tr>
+    /// <tr>
+    ///   <td colspan="6">Destination square</td>
+    ///   <td colspan="4">Move type and promotion</td>
+    ///   <td colspan="6">Source square</td>
+    /// </tr>
+    /// </table>
+    std::uint16_t m_encoded { };
+
+public:
+    CompactMove() = default;
+    CompactMove(const CompactMove &) = default;
+    CompactMove(CompactMove &&) = default;
+    CompactMove &operator = (const CompactMove &) & = default;
+    CompactMove &operator = (CompactMove &&) & = default;
+    ~CompactMove() = default;
+
+    constexpr CompactMove(const Move &m) noexcept :
+        m_encoded(m.getEncodedValue())
+    {
+        assert(m.getEncodedValue() <= 0xFFFFU);
+    }
+
+    /// @brief Returns raw encoded value. Usually only used in debugging.
+    ///
+    /// @return Encoded value of move
+    constexpr std::uint16_t getEncodedValue() const noexcept
+    {
+        return m_encoded;
+    }
+};
+
+constexpr Move::Move(const CompactMove &m) noexcept :
+    m_encoded { m.getEncodedValue() }
+{
+}
+
+/// @ingroup PgnReaderAPI
 /// @brief Move list returned by @coderef{ChessBoard::generateMoves()}.
 ///
 /// The move list is big enough to store all possible moves for any given position.
-using MoveList = std::array<Move, 256U>;
+using MoveList = std::array<CompactMove, 256U>;
 
 /// @ingroup PgnReaderAPI
 /// @brief Short move list returned by move generators for writing a SAN
 /// move. That is, when the piece type and destination square are known, and
 /// moves need to be generated to resolve the required disambiguation.
-using ShortMoveList = std::array<Move, 8U>;
+using ShortMoveList = std::array<CompactMove, 8U>;
 
 /// @ingroup PgnReaderImpl
 /// @brief Move generator type

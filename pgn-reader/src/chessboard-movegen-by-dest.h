@@ -270,7 +270,7 @@ Move generateSingleMoveForKnightAndDestTempl(const ChessBoard &board, SquareSet 
 template <MoveGenType type>
 std::size_t generateMovesForKnightAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { moves.begin() };
+    ShortMoveList::iterator i { moves.begin() };
     generateMovesForKnightAndDestStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
         board, srcSqMask, dst, i);
     return i - moves.begin();
@@ -333,7 +333,7 @@ Move generateSingleMoveForBishopAndDestTempl(const ChessBoard &board, SquareSet 
 template <MoveGenType type>
 std::size_t generateMovesForBishopAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { moves.begin() };
+    ShortMoveList::iterator i { moves.begin() };
     generateMovesForSliderAndDestStoreFnTempl<
         type, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE, IteratorStoreMoveFn<ShortMoveList::iterator> >(
             board, srcSqMask, dst, i);
@@ -352,7 +352,7 @@ Move generateSingleMoveForRookAndDestTempl(const ChessBoard &board, SquareSet sr
 template <MoveGenType type>
 std::size_t generateMovesForRookAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { moves.begin() };
+    ShortMoveList::iterator i { moves.begin() };
     generateMovesForSliderAndDestStoreFnTempl<
         type, MoveTypeAndPromotion::REGULAR_ROOK_MOVE, IteratorStoreMoveFn<ShortMoveList::iterator> >(
             board, srcSqMask, dst, i);
@@ -371,7 +371,7 @@ Move generateSingleMoveForQueenAndDestTempl(const ChessBoard &board, SquareSet s
 template <MoveGenType type>
 std::size_t generateMovesForQueenAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { moves.begin() };
+    ShortMoveList::iterator i { moves.begin() };
     generateMovesForSliderAndDestStoreFnTempl<
         type, MoveTypeAndPromotion::REGULAR_QUEEN_MOVE, IteratorStoreMoveFn<ShortMoveList::iterator> >(
             board, srcSqMask, dst, i);
@@ -419,7 +419,7 @@ Move generateSingleMoveForKingAndDestTempl(const ChessBoard &board, SquareSet sr
 template <MoveGenType type>
 std::size_t generateMovesForKingAndDestTempl(const ChessBoard &board, ShortMoveList &moves, SquareSet srcSqMask, Square dst) noexcept
 {
-    MoveList::iterator i { moves.begin() };
+    ShortMoveList::iterator i { moves.begin() };
     generateMovesForKingAndDestStoreFnTempl<type, IteratorStoreMoveFn<ShortMoveList::iterator> >(
         board, srcSqMask, dst, i);
     return i - moves.begin();

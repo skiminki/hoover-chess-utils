@@ -41,7 +41,7 @@ constexpr std::tuple<bool, bool> disambiguationTest(
 
     for (size_t i { }; i < numMoves; ++i)
     {
-        const auto &moveCand = moves[i];
+        const Move moveCand = moves[i];
 
         // disambiguation by column
         numMatchesCol += (pgn_reader::columnOf(m.getSrc()) == pgn_reader::columnOf(moveCand.getSrc()));
