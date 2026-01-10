@@ -40,11 +40,22 @@ namespace hoover_chess_utils::pgn_reader
     using Type ## UnderlyingType = std::uint_fast ## Bits ## _t; \
     using Type ## CompactType = std::uint ## Bits ## _t
 
+/// @brief Defines types @c SquareUnderlyingType and @c SquareCompactType
 HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Square, 8);
+
+/// @brief Defines types @c ColorUnderlyingType and @c ColorCompactType
 HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Color, 8);
+
+/// @brief Defines types @c PieceUnderlyingType and @c PieceCompactType
 HOOVER_CHESS_UTILS__TYPEDEF_HELPER(Piece, 8);
+
+/// @brief Defines types @c PieceAndColorUnderlyingType and @c PieceAndColorCompactType
 HOOVER_CHESS_UTILS__TYPEDEF_HELPER(PieceAndColor, 8);
+
+/// @brief Defines types @c PositionStatusUnderlyingType and @c PositionStatusCompactType
 HOOVER_CHESS_UTILS__TYPEDEF_HELPER(PositionStatus, 8);
+
+/// @brief Defines types @c RowColumnUnderlyingType and @c RowColumnCompactType
 HOOVER_CHESS_UTILS__TYPEDEF_HELPER(RowColumn, 8);
 
 /// @brief Row/colum coordinate type
@@ -429,11 +440,21 @@ constexpr inline PieceAndColor makePieceAndColor(Piece p, Color c) noexcept
 }
 
 
+/// @brief Converts @coderef{PieceAndColor} (fast type) to
+/// @coderef{PieceAndColorCompact} (compact type).
+///
+/// @param[in]  pc    Fast representation
+/// @return           Compact representation
 constexpr inline PieceAndColorCompact toCompactType(PieceAndColor pc) noexcept
 {
     return PieceAndColorCompact(static_cast<PieceAndColorUnderlyingType>(pc));
 }
 
+/// @brief Converts @coderef{PieceAndColorCompact} (compact type) to
+/// @coderef{PieceAndColor} (fast type).
+///
+/// @param[in]  pc    Compact representation
+/// @return           Fast representation
 constexpr inline PieceAndColor toFastType(PieceAndColorCompact pc) noexcept
 {
     return PieceAndColor(static_cast<PieceAndColorCompactType>(pc));
