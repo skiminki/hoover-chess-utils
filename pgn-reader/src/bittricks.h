@@ -133,6 +133,27 @@ struct BitTricks
         return _pext_u64(data, mask);
 #elif (HAVE_AARCH64_SVE2_BITPERM)
         return svbext_n_u64(svdup_u64(data), mask)[0U];
+#elif (HAVE_AARCH64)
+        std::uint64_t ret { };
+
+        std::uint64_t bitpos { 1U };
+
+        while (mask)
+        {
+            const std::uint64_t lowestSetBit1 { BitTricks::isolateLowestSetBit(mask) };
+            mask &= ~lowestSetBit1;
+            const std::uint64_t lowestSetBit2 { BitTricks::isolateLowestSetBit(mask) };
+            mask &= ~lowestSetBit2;
+
+            ret |= (data & lowestSetBit1) ? bitpos : 0U;
+            bitpos <<= 1U;
+
+            ret |= (data & lowestSetBit2) ? bitpos : 0U;
+            bitpos <<= 1U;
+        }
+
+        return ret;
+
 #else
         std::uint64_t ret { };
         std::uint64_t count { 1U };
@@ -182,6 +203,23 @@ struct BitTricks
         return _pdep_u64(data, mask);
 #elif (HAVE_AARCH64_SVE2_BITPERM)
         return svbdep_n_u64(svdup_u64(data), mask)[0U];
+#elif (HAVE_AARCH64)
+        std::uint64_t ret { };
+
+        while (mask)
+        {
+            const std::uint64_t maskBit1 { BitTricks::isolateLowestSetBit(static_cast<std::uint64_t>(mask)) };
+            mask &= ~maskBit1;
+            const std::uint64_t maskBit2 { BitTricks::isolateLowestSetBit(static_cast<std::uint64_t>(mask)) };
+            mask &= ~maskBit2;
+
+            ret |= (data & 1U) ? maskBit1 : 0U;
+            ret |= (data & 2U) ? maskBit2 : 0U;
+
+            data >>= 2U;
+        }
+
+        return ret;
 #else
         std::uint64_t ret { };
 
