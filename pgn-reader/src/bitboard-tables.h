@@ -25,6 +25,7 @@
 #define BITBOARD_TABLES_HAVE_X86_BMI2             (HAVE_X86_BMI2)
 #define BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM (HAVE_AARCH64_SVE2_BITPERM)
 #define BITBOARD_TABLES_HAVE_HYPERBOLA            (!(HAVE_X86_BMI2 || HAVE_AARCH64_SVE2_BITPERM))
+#define BITBOARD_TABLES_HAVE_ELEMENTARY           0
 
 namespace hoover_chess_utils::pgn_reader
 {
@@ -77,6 +78,24 @@ struct BitBoardTables
     alignas(64) std::array<std::uint64_t, 64U> bmi2RookMasks;
     alignas(64) std::array<std::uint32_t, 64U> bmi2RookOffsets;
     alignas(64) std::array<std::uint64_t, 5248U + 102400U> bmi2BishopRookAttackData;
+#endif
+
+#if (BITBOARD_TABLES_HAVE_ELEMENTARY)
+    struct MasksAndMultipliers
+    {
+        std::uint64_t masks[3U];
+        std::uint64_t shift;
+        std::uint64_t multipliers[3U];
+        std::uint64_t zeroPadding;
+    };
+
+    static_assert(sizeof(MasksAndMultipliers) == 64);
+
+    alignas(64) std::array<MasksAndMultipliers, 64U> elementaryBishopMaskMults;
+    alignas(64) std::array<std::uint32_t, 64U> elementaryBishopOffsets;
+    alignas(64) std::array<MasksAndMultipliers, 64U> elementaryRookMaskMults;
+    alignas(64) std::array<std::uint32_t, 64U> elementaryRookOffsets;
+    alignas(64) std::array<std::uint64_t, 5248U + 102400U> elementaryBishopRookAttackData;
 #endif
 
 #if (BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM)
