@@ -23,7 +23,12 @@
 #include "chessboard-types-squareset.h"
 
 // the baseline
+#include "bitboard-tables.h"
 #include "bitboard-attacks-portable.h"
+
+#if BITBOARD_TABLES_HAVE_ELEMENTARY
+#include "bitboard-attacks-elementary.h"
+#endif
 
 #if HAVE_AARCH64_SVE2_BITPERM
 #include "bitboard-attacks-aarch64-sve2-bitperm.h"
@@ -215,6 +220,9 @@ public:
 #elif HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getBishopAttackMask(sq, occupancyMask);
+#elif BITBOARD_TABLES_HAVE_ELEMENTARY
+        return
+            Attacks_Elementary_Bitboards::getBishopAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getBishopAttackMask(sq, occupancyMask);
@@ -271,6 +279,9 @@ public:
 #elif HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getRookAttackMask(sq, occupancyMask);
+#elif BITBOARD_TABLES_HAVE_ELEMENTARY
+        return
+            Attacks_Elementary_Bitboards::getRookAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getRookAttackMask(sq, occupancyMask);
@@ -286,6 +297,10 @@ public:
 #elif HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getQueenAttackMask(sq, occupancyMask);
+#elif BITBOARD_TABLES_HAVE_ELEMENTARY
+        return
+            Attacks_Elementary_Bitboards::getBishopAttackMask(sq, occupancyMask) |
+            Attacks_Elementary_Bitboards::getRookAttackMask(sq, occupancyMask);
 #else
         return
             Attacks_Portable::getBishopAttackMask(sq, occupancyMask) |

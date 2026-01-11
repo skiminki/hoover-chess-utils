@@ -522,6 +522,35 @@ const BitBoardTables ctBitBoardTables
     },
 #endif
 
+#if (BITBOARD_TABLES_HAVE_ELEMENTARY)
+
+    // elementaryBishopMaskMults
+    {
+        {
+#include "slider-attacks-elementary-bishop.inc"
+        },
+    },
+
+    // elementaryBishopOffsets
+    generatePextOffsets<std::uint32_t>(generatePextBishopMasks()),
+
+    // elementaryRookMaskMults
+    {
+        {
+#include "slider-attacks-elementary-rook.inc"
+        },
+    },
+
+    // elementaryRookOffsets
+    addConstant(generatePextOffsets<std::uint32_t>(generatePextRookMasks()), static_cast<std::uint32_t>(5248U)),
+
+    // elementaryBishopRookAttackData
+    {
+#include "slider-attacks-pext-pdep-bishop.inc"
+#include "slider-attacks-pext-pdep-rook.inc"
+    },
+#endif
+
 #if (BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM)
 
     // sve2BishopRookMasks
