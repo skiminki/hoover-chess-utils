@@ -107,8 +107,8 @@ public:
 #if HAVE_X86_AVX512VL
     static inline __m128i getAttackedSquaresByPawns128(const SquareSet pawns, Color oppPawnColor) noexcept
     {
-        static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
-        static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
+        static_assert(static_cast<ColorUnderlyingType>(Color::WHITE) == 0);
+        static_assert(static_cast<ColorUnderlyingType>(Color::BLACK) == 8);
 
         const std::uint8_t *rotateData { std::bit_cast<const std::uint8_t *>(ctAttackingPawnRotateLefts.data()) };
 
@@ -122,8 +122,8 @@ public:
 #else
     static inline __m512i getAttackedSquaresByPawns512(const SquareSet pawns, Color oppPawnColor) noexcept
     {
-        static_assert(static_cast<std::int8_t>(Color::WHITE) == 0);
-        static_assert(static_cast<std::int8_t>(Color::BLACK) == 8);
+        static_assert(static_cast<ColorUnderlyingType>(Color::WHITE) == 0);
+        static_assert(static_cast<ColorUnderlyingType>(Color::BLACK) == 8);
 
         const std::uint8_t *rotateData { std::bit_cast<const std::uint8_t *>(ctAttackingPawnRotateLefts.data()) };
 
