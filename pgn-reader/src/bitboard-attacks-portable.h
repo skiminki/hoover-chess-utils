@@ -303,9 +303,9 @@ public:
     static inline SquareSet getHorizRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
         // horizontal attacks
-        const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
-        const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
-        const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+        const SquareUnderlyingType rankShift = static_cast<SquareUnderlyingType>(sq) & 56U;
+        const SquareUnderlyingType sqColumn = static_cast<SquareUnderlyingType>(sq) & 7U;
+        const std::uint64_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift) & 0xFFU;
 
         return SquareSet { ctBitBoardTables.rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift;
     }
@@ -344,9 +344,9 @@ SquareSet Attacks_Portable::getRookAttackMask(Square sq, SquareSet occupancyMask
             pieceBit, occupancyMask, SquareSet { ctBitBoardTables.hyperbolaAttackMasks[getIndexOfSquare(sq)].vertMaskEx }) };
 
     // horizontal attacks
-    const std::uint8_t rankShift = static_cast<std::uint8_t>(sq) & 56U;
-    const std::uint8_t sqColumn = static_cast<std::uint8_t>(sq) & 7U;
-    const std::uint8_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift);
+    const SquareUnderlyingType rankShift = static_cast<SquareUnderlyingType>(sq) & 56U;
+    const SquareUnderlyingType sqColumn = static_cast<SquareUnderlyingType>(sq) & 7U;
+    const std::uint64_t occupancyShifted = static_cast<std::uint64_t>(occupancyMask >> rankShift) & 0xFFU;
 
     return vertAttacks | (SquareSet { ctBitBoardTables.rookHorizAttackMasks[occupancyShifted][sqColumn] } << rankShift);
 }
