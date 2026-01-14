@@ -56,6 +56,7 @@ add_library(
   hoover-pgn-reader STATIC
   ${FLEX_PgnScanner_OUTPUTS}
   src/bitboard-tables.cc
+  src/bittricks.cc
   src/chessboard-bitboard.cc
   src/chessboard-boardsetup.cc
   src/chessboard-loadfen.cc

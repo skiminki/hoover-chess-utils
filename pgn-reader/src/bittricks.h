@@ -1,5 +1,5 @@
 // Hoover Chess Utilities / PGN reader
-// Copyright (C) 2025  Sami Kiminki
+// Copyright (C) 2025-2026  Sami Kiminki
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -100,6 +100,12 @@ struct BitTricks
         }
     }
 
+private:
+    static std::uint64_t parallelExtractPortable(std::uint64_t data, std::uint64_t mask) noexcept;
+    static std::uint64_t parallelDepositPortable(std::uint64_t data, std::uint64_t mask) noexcept;
+
+public:
+
     /// @brief Extracts bits of @c data from bit locations specified by @c mask
     ///
     /// @param[in]  data   Data word
@@ -133,7 +139,8 @@ struct BitTricks
         return _pext_u64(data, mask);
 #elif (HAVE_AARCH64_SVE2_BITPERM)
         return svbext_n_u64(svdup_u64(data), mask)[0U];
-
+#elif 1
+        return parallelExtractPortable(data, mask);
 #else
         std::uint64_t mk { (~mask) << 1U };
         data = data & mask;
@@ -191,7 +198,8 @@ struct BitTricks
         return _pdep_u64(data, mask);
 #elif (HAVE_AARCH64_SVE2_BITPERM)
         return svbdep_n_u64(svdup_u64(data), mask)[0U];
-
+#elif 1
+        return parallelDepositPortable(data, mask);
 #else
         std::uint64_t mk { (~mask) << 1U };
         const std::uint64_t m0 { mask };
