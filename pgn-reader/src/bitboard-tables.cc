@@ -575,6 +575,20 @@ const BitBoardTables ctBitBoardTables
     generateHyperbolaAttackMasks(),
 #endif
 
+#if (BITBOARD_TABLES_HAVE_BLACK_MAGIC)
+    // blackMagicAttacks
+    {
+#include "slider-attacks-black-magic-lookup.inc"
+    },
+    // blackMagicBishopMagics
+    {{
+#include "slider-attacks-black-magic-bishop-magics.inc"
+    }},
+    // blackMagicRookMagics
+    {{
+#include "slider-attacks-black-magic-rook-magics.inc"
+    }},
+#endif
 };
 
 }
