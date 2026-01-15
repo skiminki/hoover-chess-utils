@@ -124,13 +124,18 @@ def checkFile(filename):
         lineCommentStart = '//'
         checkCppHeaderGuardian(filename)
     elif (filename.endswith(".pgn") or filename.endswith(".epd") or filename.endswith(".css") or
+          filename.endswith("pgn-reader/src/bittricks-table-pdep8x8.inc") or
+          filename.endswith("pgn-reader/src/bittricks-table-pext8x8.inc") or
+          filename.endswith("pgn-reader/src/slider-attacks-black-magic-lookup.inc") or
+          filename.endswith("pgn-reader/src/slider-attacks-black-magic-bishop-magics.inc") or
+          filename.endswith("pgn-reader/src/slider-attacks-black-magic-rook-magics.inc") or
           filename.endswith("pgn-reader/src/slider-attacks-elementary-bishop.inc") or
           filename.endswith("pgn-reader/src/slider-attacks-elementary-rook.inc") or
           filename.endswith("pgn-reader/src/slider-attacks-pext-pdep-bishop.inc") or
           filename.endswith("pgn-reader/src/slider-attacks-pext-pdep-rook.inc") or
           filename.endswith("config.h.in") or filename.endswith("README.txt") or
           filename.endswith("README.md") or filename.endswith(".html") or
-          filename.endswith("LICENSE")):
+          filename.endswith("LICENSE") or filename.endswith("CREDITS.txt")):
         # ignore
         return
     else:

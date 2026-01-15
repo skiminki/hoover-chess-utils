@@ -24,8 +24,10 @@
 
 #define BITBOARD_TABLES_HAVE_X86_BMI2             (HAVE_X86_BMI2)
 #define BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM (HAVE_AARCH64_SVE2_BITPERM)
-#define BITBOARD_TABLES_HAVE_HYPERBOLA            (!(HAVE_X86_BMI2 || HAVE_AARCH64_SVE2_BITPERM))
+
 #define BITBOARD_TABLES_HAVE_ELEMENTARY           0
+#define BITBOARD_TABLES_HAVE_BLACK_MAGIC          1
+#define BITBOARD_TABLES_HAVE_HYPERBOLA            (!(HAVE_X86_BMI2 || HAVE_AARCH64_SVE2_BITPERM || BITBOARD_TABLES_HAVE_BLACK_MAGIC))
 
 namespace hoover_chess_utils::pgn_reader
 {
@@ -114,6 +116,18 @@ struct BitBoardTables
     };
 
     alignas(64) std::array<HyperbolaAttackMasks, 64U> hyperbolaAttackMasks;
+#endif
+
+#if (BITBOARD_TABLES_HAVE_BLACK_MAGIC)
+    struct BlackMagicData {
+        const uint64_t attacksOffset;
+        const uint64_t mask;
+        const uint64_t hash;
+    };
+
+    alignas(64) std::array<std::uint64_t, 88507U> blackMagicAttacks;
+    alignas(64) std::array<BlackMagicData, 64U> blackMagicBishopMagics;
+    alignas(64) std::array<BlackMagicData, 64U> blackMagicRookMagics;
 #endif
 
 };

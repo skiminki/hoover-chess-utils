@@ -30,6 +30,10 @@
 #include "bitboard-attacks-elementary.h"
 #endif
 
+#if BITBOARD_TABLES_HAVE_BLACK_MAGIC
+#include "bitboard-attacks-black-magic.h"
+#endif
+
 #if HAVE_AARCH64_SVE2_BITPERM
 #include "bitboard-attacks-aarch64-sve2-bitperm.h"
 #endif
@@ -220,6 +224,9 @@ public:
 #elif HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getBishopAttackMask(sq, occupancyMask);
+#elif BITBOARD_TABLES_HAVE_BLACK_MAGIC
+        return
+            Attacks_BlackMagic::getBishopAttackMask(sq, occupancyMask);
 #elif BITBOARD_TABLES_HAVE_ELEMENTARY
         return
             Attacks_Elementary_Bitboards::getBishopAttackMask(sq, occupancyMask);
@@ -279,6 +286,9 @@ public:
 #elif HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getRookAttackMask(sq, occupancyMask);
+#elif BITBOARD_TABLES_HAVE_BLACK_MAGIC
+        return
+            Attacks_BlackMagic::getRookAttackMask(sq, occupancyMask);
 #elif BITBOARD_TABLES_HAVE_ELEMENTARY
         return
             Attacks_Elementary_Bitboards::getRookAttackMask(sq, occupancyMask);
@@ -297,6 +307,10 @@ public:
 #elif HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getQueenAttackMask(sq, occupancyMask);
+#elif BITBOARD_TABLES_HAVE_BLACK_MAGIC
+        return
+            Attacks_BlackMagic::getBishopAttackMask(sq, occupancyMask) |
+            Attacks_BlackMagic::getRookAttackMask(sq, occupancyMask);
 #elif BITBOARD_TABLES_HAVE_ELEMENTARY
         return
             Attacks_Elementary_Bitboards::getBishopAttackMask(sq, occupancyMask) |
