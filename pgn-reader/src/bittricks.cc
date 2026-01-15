@@ -52,7 +52,6 @@ std::uint64_t BitTricks::parallelExtractPortable(std::uint64_t data, std::uint64
     return ret;
 }
 
-[[gnu::noinline]]
 std::uint64_t BitTricks::parallelDepositPortable(std::uint64_t data, std::uint64_t mask) noexcept
 {
     std::uint64_t ret { };
