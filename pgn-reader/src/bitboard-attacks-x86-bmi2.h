@@ -40,11 +40,10 @@ public:
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
         const std::uint64_t pextMask { ctBitBoardTables.bmi2BishopMasks[static_cast<SquareUnderlyingType>(sq)] };
-        const std::uint32_t offset { ctBitBoardTables.bmi2BishopOffsets[static_cast<SquareUnderlyingType>(sq)] };
+        const std::uint64_t *pextData { ctBitBoardTables.bmi2BishopOffsets[static_cast<SquareUnderlyingType>(sq)] };
 
         return SquareSet {
-            ctBitBoardTables.bmi2BishopRookAttackData[
-                offset +
+            pextData[
                 _pext_u64(
                     static_cast<std::uint64_t>(occupancyMask),
                     pextMask)] };
@@ -54,11 +53,10 @@ public:
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
         const std::uint64_t pextMask { ctBitBoardTables.bmi2RookMasks[static_cast<SquareUnderlyingType>(sq)] };
-        const std::uint32_t offset { ctBitBoardTables.bmi2RookOffsets[static_cast<SquareUnderlyingType>(sq)] };
+        const std::uint64_t *pextData { ctBitBoardTables.bmi2RookOffsets[static_cast<SquareUnderlyingType>(sq)] };
 
         return SquareSet {
-            ctBitBoardTables.bmi2BishopRookAttackData[
-                offset +
+            pextData[
                 _pext_u64(
                     static_cast<std::uint64_t>(occupancyMask),
                     pextMask)] };
