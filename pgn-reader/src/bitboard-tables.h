@@ -76,10 +76,10 @@ struct BitBoardTables
 
 #if (BITBOARD_TABLES_HAVE_X86_BMI2)
     alignas(64) std::array<std::uint64_t, 64U> bmi2BishopMasks;
-    alignas(64) std::array<std::uint32_t, 64U> bmi2BishopOffsets;
+    alignas(64) std::array<const std::uint64_t *, 64U> bmi2BishopOffsets;
     alignas(64) std::array<std::uint64_t, 64U> bmi2RookMasks;
-    alignas(64) std::array<std::uint32_t, 64U> bmi2RookOffsets;
-    alignas(64) std::array<std::uint64_t, 5248U + 102400U> bmi2BishopRookAttackData;
+    alignas(64) std::array<const std::uint64_t *, 64U> bmi2RookOffsets;
+    alignas(64) std::uint64_t bmi2BishopRookAttackData[5248U + 102400U];
 #endif
 
 #if (BITBOARD_TABLES_HAVE_ELEMENTARY)

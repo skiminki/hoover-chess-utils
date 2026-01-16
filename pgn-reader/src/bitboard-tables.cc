@@ -480,6 +480,18 @@ consteval auto generateHyperbolaAttackMasks() noexcept
 }
 #endif
 
+template <typename ValueType, std::size_t N>
+consteval auto
+offsetsToPointers(const ValueType *base, const std::array<ValueType, N> &offsets) noexcept
+{
+    std::array<const ValueType *, N> ret { };
+
+    for (std::size_t i { }; i < N; ++i)
+        ret[i] = &base[offsets[i]];
+
+    return ret;
+}
+
 }
 
 const BitBoardTables ctBitBoardTables
@@ -507,13 +519,21 @@ const BitBoardTables ctBitBoardTables
     generatePextBishopMasks(),
 
     // bmi2BishopOffsets
-    generatePextOffsets<std::uint32_t>(generatePextBishopMasks()),
+    {
+        offsetsToPointers(
+            ctBitBoardTables.bmi2BishopRookAttackData,
+            generatePextOffsets<std::uint64_t>(generatePextBishopMasks()))
+    },
 
     // bmi2RookMasks
     generatePextRookMasks(),
 
     // bmi2RookOffsets
-    addConstant(generatePextOffsets<std::uint32_t>(generatePextRookMasks()), static_cast<std::uint32_t>(5248U)),
+    {
+        offsetsToPointers(
+            ctBitBoardTables.bmi2BishopRookAttackData,
+            addConstant(generatePextOffsets<std::uint64_t>(generatePextRookMasks()), static_cast<std::uint64_t>(5248U)))
+    },
 
     // bmi2BishopRookAttackData
     {
