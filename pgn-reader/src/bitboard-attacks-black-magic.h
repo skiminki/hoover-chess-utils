@@ -40,11 +40,10 @@ public:
         const BitBoardTables::BlackMagicData &data {
             ctBitBoardTables.blackMagicBishopMagics[static_cast<SquareUnderlyingType>(sq)] };
 
-        std::uint64_t offset {
-            data.attacksOffset +
+        const std::uint64_t offset {
             (((static_cast<std::uint64_t>(occupancyMask) | data.mask) * data.hash) >> 55U) };
 
-        return SquareSet { ctBitBoardTables.blackMagicAttacks[offset] };
+        return SquareSet { data.attacksBase[offset] };
     }
 
     /// @brief See @coderef{Attacks::getRookAttackMask()} for documentation
@@ -53,11 +52,10 @@ public:
         const BitBoardTables::BlackMagicData &data {
             ctBitBoardTables.blackMagicRookMagics[static_cast<SquareUnderlyingType>(sq)] };
 
-        std::uint64_t offset {
-            data.attacksOffset +
+        const std::uint64_t offset {
             (((static_cast<std::uint64_t>(occupancyMask) | data.mask) * data.hash) >> 52U) };
 
-        return SquareSet { ctBitBoardTables.blackMagicAttacks[offset] };
+        return SquareSet { data.attacksBase[offset] };
     }
 };
 
