@@ -591,4 +591,16 @@ const BitBoardTables ctBitBoardTables
 #endif
 };
 
+#if (BITBOARD_TABLES_HAVE_BLACK_MAGIC)
+BitBoardTables::BlackMagicData::BlackMagicData(
+    std::uint64_t _attacksOffset,
+    std::uint64_t _mask,
+    std::uint64_t _hash) noexcept :
+    attacksBase { &ctBitBoardTables.blackMagicAttacks[_attacksOffset] },
+    mask { _mask },
+    hash { _hash }
+{
+}
+#endif
+
 }

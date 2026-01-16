@@ -120,9 +120,13 @@ struct BitBoardTables
 
 #if (BITBOARD_TABLES_HAVE_BLACK_MAGIC)
     struct BlackMagicData {
-        const uint64_t attacksOffset;
-        const uint64_t mask;
-        const uint64_t hash;
+        const std::uint64_t *attacksBase;
+        std::uint64_t mask;
+        std::uint64_t hash;
+
+        BlackMagicData(std::uint64_t _attacksOffset,
+                       std::uint64_t _mask,
+                       std::uint64_t _hash) noexcept;
     };
 
     alignas(64) std::array<std::uint64_t, 88507U> blackMagicAttacks;
