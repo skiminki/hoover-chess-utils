@@ -34,11 +34,11 @@
 #include "bitboard-attacks-black-magic.h"
 #endif
 
-#if HAVE_AARCH64_SVE2_BITPERM
+#if BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM
 #include "bitboard-attacks-aarch64-sve2-bitperm.h"
 #endif
 
-#if HAVE_X86_BMI2
+#if BITBOARD_TABLES_HAVE_X86_BMI2
 #include "bitboard-attacks-x86-bmi2.h"
 #endif
 
@@ -218,10 +218,10 @@ public:
     ///
     static inline SquareSet getBishopAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_X86_BMI2
+#if BITBOARD_TABLES_HAVE_X86_BMI2
         return
             Attacks_BMI2::getBishopAttackMask(sq, occupancyMask);
-#elif HAVE_AARCH64_SVE2_BITPERM
+#elif BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getBishopAttackMask(sq, occupancyMask);
 #elif BITBOARD_TABLES_HAVE_BLACK_MAGIC
@@ -280,10 +280,10 @@ public:
     /// </table>
     static inline SquareSet getRookAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_X86_BMI2
+#if BITBOARD_TABLES_HAVE_X86_BMI2
         return
             Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
-#elif HAVE_AARCH64_SVE2_BITPERM
+#elif BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getRookAttackMask(sq, occupancyMask);
 #elif BITBOARD_TABLES_HAVE_BLACK_MAGIC
@@ -300,11 +300,11 @@ public:
 
     static inline SquareSet getQueenAttackMask(Square sq, SquareSet occupancyMask) noexcept
     {
-#if HAVE_X86_BMI2
+#if BITBOARD_TABLES_HAVE_X86_BMI2
         return
             Attacks_BMI2::getBishopAttackMask(sq, occupancyMask) |
             Attacks_BMI2::getRookAttackMask(sq, occupancyMask);
-#elif HAVE_AARCH64_SVE2_BITPERM
+#elif BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM
         return
             Attacks_AArch64_SVE2_BitPerm::getQueenAttackMask(sq, occupancyMask);
 #elif BITBOARD_TABLES_HAVE_BLACK_MAGIC
@@ -375,7 +375,7 @@ public:
     {
         SquareSet attackers { };
 
-#if HAVE_AARCH64_SVE2_BITPERM
+#if BITBOARD_TABLES_HAVE_AARCH64_SVE2_BITPERM
 
         const auto [ diagHits, horizVertHits ] = Attacks_AArch64_SVE2_BitPerm::getBishopAndRookAttackMasks(
             sq,
