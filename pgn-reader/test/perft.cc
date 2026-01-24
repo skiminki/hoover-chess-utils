@@ -76,7 +76,43 @@ void initializeFrame(Frame &frame)
 }
 
 std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
-perftDepth2Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
+perftDepth2(const std::string &fen)
+{
+    std::uint64_t numPositions { };
+
+    ChessBoard board { };
+
+    if (!fen.empty())
+        board.loadFEN(fen.c_str());
+
+    const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
+
+    MoveList moves;
+    std::size_t numMoves { };
+
+    numMoves = board.generateMoves(moves);
+    if (numMoves >= 1U)
+    {
+        std::size_t i;
+
+        for (i = 0U; i < (numMoves - 1U); ++i)
+        {
+            ChessBoard tmpBoard { board };
+            tmpBoard.doMove(moves[i]);
+            numPositions += tmpBoard.getNumberOfLegalMoves();
+        }
+
+        board.doMove(moves[i]);
+        numPositions += board.getNumberOfLegalMoves();
+    }
+
+    const std::chrono::steady_clock::time_point end { std::chrono::steady_clock::now() };
+
+    return std::make_tuple(numPositions, end - begin);
+}
+
+std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
+perftDepth3Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
 {
     std::uint64_t numPositions { };
     std::vector<Frame> stack { };
@@ -87,16 +123,15 @@ perftDepth2Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
 
     const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
 
-    initializeFrame(stack[0]);
+    Frame *curDepth { &stack[0U] };
+    Frame *const zeroDepth { curDepth };
+    Frame *const maxNonLeafDepth { curDepth + (maxDepth - 2U) };
 
-    const std::uint_fast8_t maxNonLeafDepth = maxDepth - 2U;
-    std::uint_fast8_t curDepth { };
+    initializeFrame(*curDepth);
 
     while (true)
     {
-        Frame &frame { stack[curDepth] };
-
-        if (frame.i < frame.numMoves)
+        if (curDepth->i < curDepth->numMoves)
         {
             // new depth
             if (curDepth == maxNonLeafDepth)
@@ -104,32 +139,32 @@ perftDepth2Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
                 // leaf-1 frame: just loop over the depth=1 positions
                 std::size_t i;
 
-                --curDepth;
-
-                for (i = 0U; i < (frame.numMoves - 1U); ++i)
+                for (i = 0U; i < (curDepth->numMoves - 1U); ++i)
                 {
-                    ChessBoard board { frame.board };
-                    board.doMove(frame.moves[i]);
+                    ChessBoard board { curDepth->board };
+                    board.doMove(curDepth->moves[i]);
                     numPositions += board.getNumberOfLegalMoves();
                 }
 
                 // avoid board copy for final move
-                frame.board.doMove(frame.moves[i]);
-                numPositions += frame.board.getNumberOfLegalMoves();
+                curDepth->board.doMove(curDepth->moves[i]);
+                numPositions += curDepth->board.getNumberOfLegalMoves();
+                --curDepth;
             }
             else
             {
+                Frame &frame { *curDepth };
+
                 ++curDepth;
-                Frame &newFrame { stack[curDepth] };
-                newFrame.board = frame.board;
-                newFrame.board.doMove(frame.moves[frame.i++]);
-                initializeFrame(newFrame);
+                curDepth->board = frame.board;
+                curDepth->board.doMove(frame.moves[frame.i++]);
+                initializeFrame(*curDepth);
             }
         }
         else
         {
             // this frame is done, enter previous if any
-            if (curDepth == 0U) [[unlikely]]
+            if (curDepth == zeroDepth) [[unlikely]]
                 break;
 
             --curDepth;
@@ -157,8 +192,12 @@ void perft(const std::string &fen, const std::uint_fast8_t maxDepth)
             std::tie(numPositions, duration) = perftDepth1(fen);
             break;
 
+        case 2U:
+            std::tie(numPositions, duration) = perftDepth2(fen);
+            break;
+
         default:
-            std::tie(numPositions, duration) = perftDepth2Plus(fen, maxDepth);
+            std::tie(numPositions, duration) = perftDepth3Plus(fen, maxDepth);
             break;
     }
 
