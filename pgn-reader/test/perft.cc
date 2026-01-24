@@ -116,16 +116,16 @@ perftDepth3Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
 {
     std::uint64_t numPositions { };
     std::vector<Frame> stack { };
-    stack.resize(maxDepth);
+    stack.resize(maxDepth - 2U);
 
     if (!fen.empty())
-        stack[0].board.loadFEN(fen.c_str());
+        stack[0U].board.loadFEN(fen.c_str());
 
     const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
 
-    Frame *curDepth { &stack[0U] };
+    Frame *curDepth { stack.data() };
     Frame *const zeroDepth { curDepth };
-    Frame *const maxNonLeafDepth { curDepth + (maxDepth - 2U) };
+    Frame *const maxNonLeafDepthMinus2 { curDepth + (maxDepth - 3U) };
 
     initializeFrame(*curDepth);
 
@@ -133,23 +133,33 @@ perftDepth3Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
     {
         if (curDepth->i < curDepth->numMoves)
         {
-            // new depth
-            if (curDepth == maxNonLeafDepth)
+            // new depth, depth <= leaf-2
+
+            if (curDepth == maxNonLeafDepthMinus2)
             {
-                // leaf-1 frame: just loop over the depth=1 positions
-                std::size_t i;
+                Frame &frame { *curDepth };
+                ChessBoard leafMinus1Board { frame.board };
+                leafMinus1Board.doMove(frame.moves[frame.i++]);
 
-                for (i = 0U; i < (curDepth->numMoves - 1U); ++i)
+                MoveList leafMinus1MoveList;
+                std::size_t const leafMinus1NumMoves { leafMinus1Board.generateMoves(leafMinus1MoveList) };
+
+                if (leafMinus1NumMoves >= 1U)
                 {
-                    ChessBoard board { curDepth->board };
-                    board.doMove(curDepth->moves[i]);
-                    numPositions += board.getNumberOfLegalMoves();
-                }
+                    // leaf-1 frame: just loop over the maxDepth-1 (leaf) positions
+                    std::size_t i;
 
-                // avoid board copy for final move
-                curDepth->board.doMove(curDepth->moves[i]);
-                numPositions += curDepth->board.getNumberOfLegalMoves();
-                --curDepth;
+                    for (i = 0U; i < (leafMinus1NumMoves - 1U); ++i)
+                    {
+                        ChessBoard board { leafMinus1Board };
+                        board.doMove(leafMinus1MoveList[i]);
+                        numPositions += board.getNumberOfLegalMoves();
+                    }
+
+                    // avoid board copy for final move
+                    leafMinus1Board.doMove(leafMinus1MoveList[i]);
+                    numPositions += leafMinus1Board.getNumberOfLegalMoves();
+                }
             }
             else
             {
