@@ -43,15 +43,30 @@ void printHelp(const char *exe)
 
 using namespace hoover_chess_utils::pgn_reader;
 
+std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
+perftDepth1(const std::string &fen)
+{
+    ChessBoard board { };
+
+    if (!fen.empty())
+        board.loadFEN(fen.c_str());
+
+    const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
+    const std::uint64_t numLegalMoves { board.getNumberOfLegalMoves() };
+    const std::chrono::steady_clock::time_point end { std::chrono::steady_clock::now() };
+
+    return std::make_tuple(numLegalMoves, end - begin);
+}
+
 struct Frame
 {
 
     // list of moves in the current stack
-    MoveList moves;
-    std::size_t numMoves;
     std::size_t i; // move list iterator
+    std::size_t numMoves;
 
     ChessBoard board; // position of this frame
+    MoveList moves;
 };
 
 void initializeFrame(Frame &frame)
@@ -60,76 +75,94 @@ void initializeFrame(Frame &frame)
     frame.i = 0U;
 }
 
-void perft(const std::string &fen, const std::uint32_t maxDepth)
+std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
+perftDepth2Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
+{
+    std::uint64_t numPositions { };
+    std::vector<Frame> stack { };
+    stack.resize(maxDepth);
+
+    if (!fen.empty())
+        stack[0].board.loadFEN(fen.c_str());
+
+    const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
+
+    initializeFrame(stack[0]);
+
+    const std::uint_fast8_t maxNonLeafDepth = maxDepth - 2U;
+    std::uint_fast8_t curDepth { };
+
+    while (true)
+    {
+        Frame &frame { stack[curDepth] };
+
+        if (frame.i < frame.numMoves)
+        {
+            // new depth
+            if (curDepth == maxNonLeafDepth)
+            {
+                // leaf-1 frame: just loop over the depth=1 positions
+                std::size_t i;
+
+                --curDepth;
+
+                for (i = 0U; i < (frame.numMoves - 1U); ++i)
+                {
+                    ChessBoard board { frame.board };
+                    board.doMove(frame.moves[i]);
+                    numPositions += board.getNumberOfLegalMoves();
+                }
+
+                // avoid board copy for final move
+                frame.board.doMove(frame.moves[i]);
+                numPositions += frame.board.getNumberOfLegalMoves();
+            }
+            else
+            {
+                ++curDepth;
+                Frame &newFrame { stack[curDepth] };
+                newFrame.board = frame.board;
+                newFrame.board.doMove(frame.moves[frame.i++]);
+                initializeFrame(newFrame);
+            }
+        }
+        else
+        {
+            // this frame is done, enter previous if any
+            if (curDepth == 0U) [[unlikely]]
+                break;
+
+            --curDepth;
+        }
+    }
+
+    const std::chrono::steady_clock::time_point end { std::chrono::steady_clock::now() };
+
+    return std::make_tuple(numPositions, end - begin);
+}
+
+void perft(const std::string &fen, const std::uint_fast8_t maxDepth)
 {
     using namespace hoover_chess_utils::pgn_reader;
 
     std::uint64_t numPositions { };
-    std::int64_t usecs { };
+    std::chrono::steady_clock::duration duration { };
 
-    if (maxDepth > 0)
+    switch (maxDepth)
     {
-        std::vector<Frame> stack { };
-        stack.resize(maxDepth);
+        case 0U:
+            break;
 
-        if (fen.empty())
-            stack[0].board.loadStartPos();
-        else
-            stack[0].board.loadFEN(fen.c_str());
+        case 1U:
+            std::tie(numPositions, duration) = perftDepth1(fen);
+            break;
 
-        const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
-
-        initializeFrame(stack[0]);
-
-        if (maxDepth == 1U)
-        {
-            numPositions = stack[0].numMoves;
-        }
-        else
-        {
-            std::uint32_t curDepth { };
-
-            while (true)
-            {
-                Frame &frame { stack[curDepth] };
-
-                if (frame.i < frame.numMoves)
-                {
-                    // new depth
-                    if (curDepth + 2U == maxDepth)
-                    {
-                        // leaf frame
-                        for (std::size_t i = 0U; i < frame.numMoves; ++i)
-                        {
-                            ChessBoard board { frame.board };
-                            board.doMove(frame.moves[i]);
-                            numPositions += board.getNumberOfLegalMoves();
-                        }
-                    }
-                    else
-                    {
-                        Frame &newFrame { stack[curDepth + 1U] };
-                        newFrame.board = frame.board;
-                        newFrame.board.doMove(frame.moves[frame.i++]);
-                        initializeFrame(newFrame);
-                        ++curDepth;
-                        continue;
-                    }
-                }
-
-                // this frame is done, enter previous if any
-                if (curDepth > 0U)
-                    --curDepth;
-                else
-                    break;
-            }
-        }
-
-        const std::chrono::steady_clock::time_point end { std::chrono::steady_clock::now() };
-        usecs = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+        default:
+            std::tie(numPositions, duration) = perftDepth2Plus(fen, maxDepth);
+            break;
     }
 
-
+    const std::int64_t usecs { std::chrono::duration_cast<std::chrono::microseconds>(duration).count() };
     printf("Searched %" PRIu64 " positions in %" PRId64 ".%06" PRId64 " seconds\n",
            numPositions, usecs / 1000000, std::abs(usecs % 1000000));
     if (usecs > 0U)
@@ -149,7 +182,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    std::uint32_t depth { std::numeric_limits<std::uint32_t>::max() };
+    std::uint8_t depth { std::numeric_limits<std::uint8_t>::max() };
     std::string fen { };
 
     // parse arguments
@@ -160,7 +193,7 @@ int main(int argc, char **argv)
             depthArg.data(), depthArg.data() + depthArg.size(),
             depth);
 
-        if (depth == std::numeric_limits<std::uint32_t>::max())
+        if (depth == std::numeric_limits<std::uint8_t>::max())
         {
             fprintf(stderr, "Bad depth: '%s'\n", argv[1]);
             return 2;
