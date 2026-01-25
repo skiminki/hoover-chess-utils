@@ -318,12 +318,7 @@ auto generateMovesForKnight(
     Square sq,
     ParamType legalDestinations) noexcept -> IteratorType
 {
-    // occup  turnColor    valid
-    //     0          0        1
-    //     0          1        1
-    //     1          0        1
-    //     1          1        0
-    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
+    const SquareSet emptyOrCapture { SquareSet::all() &~ board.getPiecesInTurn() };
     const SquareSet dstSquares { Attacks::getKnightAttackMask(sq) & emptyOrCapture & legalDestinations() };
 
     if constexpr (MoveGenIteratorTraits<IteratorType>::storesMoves())
@@ -366,8 +361,7 @@ auto generateMovesForBishop(
     ParamType legalDestinations,
     MoveTypeAndPromotion typeAndPromo) noexcept -> IteratorType
 {
-    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
-
+    const SquareSet emptyOrCapture { SquareSet::all() &~ board.getPiecesInTurn() };
     const SquareSet dstSquares {
         Attacks::getBishopAttackMask(sq, board.getOccupancyMask()) &
         emptyOrCapture &
@@ -414,7 +408,7 @@ auto generateMovesForRook(
     ParamType legalDestinations,
     MoveTypeAndPromotion typeAndPromo) noexcept -> IteratorType
 {
-    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
+    const SquareSet emptyOrCapture { SquareSet::all() &~ board.getPiecesInTurn() };
     const SquareSet dstSquares {
         Attacks::getRookAttackMask(sq, board.getOccupancyMask()) &
         emptyOrCapture &
@@ -455,7 +449,7 @@ auto generateMovesForKing(
     IteratorType i,
     SquareSet attackedSquares) noexcept -> IteratorType
 {
-    const SquareSet emptyOrCapture { ~(board.getOccupancyMask() & board.getPiecesInTurn()) };
+    const SquareSet emptyOrCapture { SquareSet::all() &~ board.getPiecesInTurn() };
 
     const SquareSet dstSquares {
         Attacks::getKingAttackMask(board.getKingInTurn()) & emptyOrCapture &~ attackedSquares };

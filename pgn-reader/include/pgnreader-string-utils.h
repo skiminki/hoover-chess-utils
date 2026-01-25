@@ -490,13 +490,18 @@ public:
     /// </tr>
     /// <tr>
     ///   <td>@coderef{MoveTypeAndPromotion::REGULAR_PAWN_MOVE}</td>
-    ///   <td>None</td>
+    ///   <td>No capture</td>
     ///   <td><tt>&lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
     ///   <td><tt>e4</tt></td>
     /// </tr>
     /// <tr>
-    ///   <td>@coderef{MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE}<br>
-    ///       @coderef{MoveTypeAndPromotion::EN_PASSANT}</td>
+    ///   <td>@coderef{MoveTypeAndPromotion::REGULAR_PAWN_MOVE}</td>
+    ///   <td>Capture</td>
+    ///   <td><tt>&lt;src_file&gt; 'x' &lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
+    ///   <td><tt>exc6</tt><br><tt>cxd6</tt></td>
+    /// </tr>
+    /// <tr>
+    ///   <td>@coderef{MoveTypeAndPromotion::EN_PASSANT}</td>
     ///   <td>None</td>
     ///   <td><tt>&lt;src_file&gt; 'x' &lt;dest_file&gt; &lt;dest_rank&gt;</tt></td>
     ///   <td><tt>exc5</tt><br><tt>cxd6</tt></td>
