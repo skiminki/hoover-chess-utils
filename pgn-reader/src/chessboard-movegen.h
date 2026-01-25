@@ -33,6 +33,7 @@
 #include <cinttypes>
 #include <utility>
 #include <tuple>
+#include <type_traits>
 
 namespace hoover_chess_utils::pgn_reader
 {
@@ -73,19 +74,30 @@ struct CastlingSideSpecificsTempl<true>
 
 inline constexpr MoveTypeAndPromotion pieceToTypeAndPromotion(Piece promotion) noexcept
 {
+    using UnderlyingType = PieceUnderlyingType;
+    static_assert(std::is_same_v<UnderlyingType, PieceUnderlyingType>);
+
+    constexpr UnderlyingType bias =
+        static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT) -
+        static_cast<UnderlyingType>(Piece::KNIGHT);
+
     static_assert(
-        (static_cast<unsigned>(Piece::KNIGHT) | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_KNIGHT));
+        (static_cast<UnderlyingType>(Piece::KNIGHT) + bias) ==
+        static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT));
     static_assert(
-        (static_cast<unsigned>(Piece::BISHOP) | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_BISHOP));
+        (static_cast<UnderlyingType>(Piece::BISHOP) + bias) ==
+        static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_BISHOP));
     static_assert(
-        (static_cast<unsigned>(Piece::ROOK)   | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_ROOK));
+        (static_cast<UnderlyingType>(Piece::ROOK) + bias) ==
+        static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_ROOK));
     static_assert(
-        (static_cast<unsigned>(Piece::QUEEN)  | 0x08U) == static_cast<unsigned>(MoveTypeAndPromotion::PROMO_QUEEN));
+        (static_cast<UnderlyingType>(Piece::KNIGHT) + bias) ==
+        static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT));
 
     assert(promotion >= Piece::KNIGHT && promotion <= Piece::QUEEN);
     [[assume(promotion >= Piece::KNIGHT && promotion <= Piece::QUEEN)]];
 
-    return static_cast<MoveTypeAndPromotion>(static_cast<uint16_t>(promotion) | 0x08U);
+    return static_cast<MoveTypeAndPromotion>(static_cast<UnderlyingType>(promotion) + bias);
 }
 
 // Note about legal destinations during generateMoves().

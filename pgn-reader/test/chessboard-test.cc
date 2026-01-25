@@ -179,7 +179,7 @@ TEST(ChessBoard, moveTypes)
     };
 
     expectRegular(Move { Square::B2, Square::B3, MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
-    expectRegular(Move { Square::B2, Square::A3, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE });
+    expectRegular(Move { Square::B2, Square::A3, MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
     expectRegular(Move { Square::B1, Square::A3, MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE });
     expectRegular(Move { Square::B1, Square::A2, MoveTypeAndPromotion::REGULAR_BISHOP_MOVE });
     expectRegular(Move { Square::B1, Square::A1, MoveTypeAndPromotion::REGULAR_ROOK_MOVE });

@@ -210,7 +210,6 @@ TEST(StringUtils, moveTypeAndPromotionToString)
                 break
 
             C(REGULAR_PAWN_MOVE);
-            C(REGULAR_PAWN_CAPTURE);
             C(REGULAR_KNIGHT_MOVE);
             C(REGULAR_BISHOP_MOVE);
             C(REGULAR_ROOK_MOVE);
@@ -328,6 +327,13 @@ TEST(StringUtils, moveToSan)
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            Square::E2, Square::E3, MoveTypeAndPromotion::REGULAR_PAWN_MOVE).getStringView(),
+        std::string_view("e3"));
+
+    // pawn double advance
+    EXPECT_EQ(
+        posAndMoveToSan(
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
             Square::E2, Square::E4, MoveTypeAndPromotion::REGULAR_PAWN_MOVE).getStringView(),
         std::string_view("e4"));
 
@@ -335,7 +341,7 @@ TEST(StringUtils, moveToSan)
     EXPECT_EQ(
         posAndMoveToSan(
             "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
-            Square::E4, Square::D5, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE).getStringView(),
+            Square::E4, Square::D5, MoveTypeAndPromotion::REGULAR_PAWN_MOVE).getStringView(),
         std::string_view("exd5"));
 
     // en passant pawn capture

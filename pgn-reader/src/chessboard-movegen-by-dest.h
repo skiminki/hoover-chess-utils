@@ -107,7 +107,7 @@ inline void generateMovesForPawnAndDestCaptureStoreFnTempl(
             {
                 if (Attacks::pinCheck(src, SquareSet { dst }, board.getKingInTurn(), board.getPinnedPieces()))
                 {
-                    MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE });
+                    MoveStoreFn::storeMove(store, Move { src, dst, MoveTypeAndPromotion::REGULAR_PAWN_MOVE });
                 }
             });
     }

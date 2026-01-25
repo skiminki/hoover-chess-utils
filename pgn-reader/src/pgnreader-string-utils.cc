@@ -121,19 +121,19 @@ constexpr auto ctSquareNames { initializeSquareNames() };
 
 std::array<std::string_view, 16U> ctMoveTypeAndPromotionNames {
     "REGULAR_PAWN_MOVE",
-    "REGULAR_PAWN_CAPTURE",
     "REGULAR_KNIGHT_MOVE",
     "REGULAR_BISHOP_MOVE",
     "REGULAR_ROOK_MOVE",
     "REGULAR_QUEEN_MOVE",
     "REGULAR_KING_MOVE",
-    "EN_PASSANT",
     "CASTLING_SHORT",
     "CASTLING_LONG",
     "PROMO_KNIGHT",
     "PROMO_BISHOP",
     "PROMO_ROOK",
     "PROMO_QUEEN",
+    "EN_PASSANT",
+    "??",
     "??",
     "ILLEGAL",
 };
@@ -191,16 +191,18 @@ MiniString<7U> StringUtils::moveToSanAndPlay(ChessBoard &board, Move move)
     switch (move.getTypeAndPromotion())
     {
         case MoveTypeAndPromotion::REGULAR_PAWN_MOVE:
-            numMoves = board.generateMovesForPawnAndDestNoCapture(moves, srcBit, move.getDst());
-            *i++ = colChar(move.getDst());
-            *i++ = rowChar(move.getDst());
-            break;
-
-        case MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE:
+            if ((SquareSet { move.getDst() } & board.getOccupancyMask()) != SquareSet { })
+            {
+                // fall-through
         case MoveTypeAndPromotion::EN_PASSANT:
-            *i++ = colChar(move.getSrc());
-            *i++ = 'x';
-            numMoves = board.generateMovesForPawnAndDestCapture(moves, srcBit, move.getDst());
+                numMoves = board.generateMovesForPawnAndDestCapture(moves, srcBit, move.getDst());
+                *i++ = colChar(move.getSrc());
+                *i++ = 'x';
+            }
+            else
+            {
+                numMoves = board.generateMovesForPawnAndDestNoCapture(moves, srcBit, move.getDst());
+            }
             *i++ = colChar(move.getDst());
             *i++ = rowChar(move.getDst());
             break;

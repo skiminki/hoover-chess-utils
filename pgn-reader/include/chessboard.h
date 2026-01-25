@@ -77,6 +77,9 @@ struct BitBoard
     SquareSet whitePieces;
 };
 
+/// @brief Underlying type of @coderef{MoveTypeAndPromotion}
+using MoveTypeAndPromotionUnderlyingType = std::uint_fast8_t;
+
 /// @ingroup PgnReaderAPI
 /// @brief Move type (4 bits, range: 0..15)
 ///
@@ -84,42 +87,26 @@ struct BitBoard
 /// specify the source and destination squares of the move.
 ///
 /// @sa @coderef{Move::getTypeAndPromotion()}
-enum class MoveTypeAndPromotion : std::uint_fast8_t
+enum class MoveTypeAndPromotion : MoveTypeAndPromotionUnderlyingType
 {
-    /// @brief Regular non-capturing, non-promoting pawn move
+    /// @brief Regular non-capturing or capturing move (no promotion or en
+    /// passant)
     REGULAR_PAWN_MOVE    = 0U,
 
-    /// @brief Pawn capture, except en passant
-    REGULAR_PAWN_CAPTURE = 1U,
-
     /// @brief Knight move
-    REGULAR_KNIGHT_MOVE  = 2U,
+    REGULAR_KNIGHT_MOVE  = 1U,
 
     /// @brief Bishop move
-    REGULAR_BISHOP_MOVE  = 3U,
+    REGULAR_BISHOP_MOVE  = 2U,
 
     /// @brief Rook move
-    REGULAR_ROOK_MOVE    = 4U,
+    REGULAR_ROOK_MOVE    = 3U,
 
     /// @brief Queen move
-    REGULAR_QUEEN_MOVE   = 5U,
+    REGULAR_QUEEN_MOVE   = 4U,
 
     /// @brief King move (not castling)
-    REGULAR_KING_MOVE    = 6U,
-
-    /// @brief Pawn en-passant capture
-    ///
-    /// <dl>
-    ///   <dt>Pawn source square</dt>
-    ///   <dd>@coderef{Move::getSrc()}</dd>
-    ///
-    ///   <dt>Pawn destination square</dt>
-    ///   <dd>@coderef{Move::getDst()}</dd>
-    ///
-    ///   <dt>En passant square</dt>
-    ///   <dd><tt>@coderef{makeSquare}(@coderef{columnOf}(@coderef{Move::getDst()}), @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
-    /// </dl>
-    EN_PASSANT           = 7U,
+    REGULAR_KING_MOVE    = 5U,
 
     /// @brief Short castling
     ///
@@ -136,7 +123,7 @@ enum class MoveTypeAndPromotion : std::uint_fast8_t
     ///   <dt>Rook destination square</dt>
     ///   <dd><tt>@coderef{makeSquare}(5U, @coderef{rowOf}(@coderef{Move::getDst()}))</tt></dd>
     /// </dl>
-    CASTLING_SHORT       = 8U,
+    CASTLING_SHORT       = 6U,
 
     /// @brief Long castling
     ///
@@ -153,19 +140,33 @@ enum class MoveTypeAndPromotion : std::uint_fast8_t
     ///   <dt>Rook destination square</dt>
     ///   <dd><tt>@coderef{makeSquare}(3U, @coderef{rowOf}(@coderef{Move::getDst()}))</tt></dd>
     /// </dl>
-    CASTLING_LONG        = 9U,
+    CASTLING_LONG        = 7U,
 
     /// @brief Pawn promotion to knight
-    PROMO_KNIGHT         = 10U,
+    PROMO_KNIGHT         = 8U,
 
     /// @brief Pawn promotion to bishop
-    PROMO_BISHOP         = 11U,
+    PROMO_BISHOP         = 9U,
 
     /// @brief Pawn promotion to rook
-    PROMO_ROOK           = 12U,
+    PROMO_ROOK           = 10U,
 
     /// @brief Pawn promotion to queen
-    PROMO_QUEEN          = 13U,
+    PROMO_QUEEN          = 11U,
+
+    /// @brief Pawn en-passant capture
+    ///
+    /// <dl>
+    ///   <dt>Pawn source square</dt>
+    ///   <dd>@coderef{Move::getSrc()}</dd>
+    ///
+    ///   <dt>Pawn destination square</dt>
+    ///   <dd>@coderef{Move::getDst()}</dd>
+    ///
+    ///   <dt>En passant square</dt>
+    ///   <dd><tt>@coderef{makeSquare}(@coderef{columnOf}(@coderef{Move::getDst()}), @coderef{rowOf}(@coderef{Move::getSrc()}))</tt></dd>
+    /// </dl>
+    EN_PASSANT           = 12U,
 
     /// @brief Illegal move type
     ///
@@ -212,6 +213,13 @@ private:
     /// </table>
     std::uint_fast16_t m_encoded { };
 
+    static constexpr std::uint_fast16_t getMoveTypeAndPromotionMask(
+        MoveTypeAndPromotionUnderlyingType mask) noexcept
+    {
+        assert(mask <= 0x0FU);
+        return std::uint_fast16_t(mask) << 6U;
+    }
+
 public:
     /// @brief Default constructor (null move)
     constexpr Move() noexcept = default;
@@ -236,7 +244,7 @@ public:
     {
         assert(isValidSquare(src));
         assert(isValidSquare(dst));
-        assert((typeAndPromo <= MoveTypeAndPromotion::PROMO_QUEEN) ||
+        assert((typeAndPromo <= MoveTypeAndPromotion::EN_PASSANT) ||
                (typeAndPromo == MoveTypeAndPromotion::ILLEGAL));
     }
 
@@ -290,7 +298,6 @@ public:
     ///
     /// Regular move types are the following:
     /// - @coderef{MoveTypeAndPromotion::REGULAR_PAWN_MOVE}
-    /// - @coderef{MoveTypeAndPromotion::REGULAR_PAWN_CAPTURE}
     /// - @coderef{MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE}
     /// - @coderef{MoveTypeAndPromotion::REGULAR_BISHOP_MOVE}
     /// - @coderef{MoveTypeAndPromotion::REGULAR_ROOK_MOVE}
@@ -298,7 +305,17 @@ public:
     /// - @coderef{MoveTypeAndPromotion::REGULAR_KING_MOVE}
     constexpr bool isRegularMove() const noexcept
     {
-        return getTypeAndPromotion() <= MoveTypeAndPromotion::REGULAR_KING_MOVE;
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::REGULAR_PAWN_MOVE)   == 0U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::REGULAR_KNIGHT_MOVE) == 1U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::REGULAR_BISHOP_MOVE) == 2U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::REGULAR_ROOK_MOVE)   == 3U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::REGULAR_QUEEN_MOVE)  == 4U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::REGULAR_KING_MOVE)   == 5U);
+
+        constexpr auto fieldMask { getMoveTypeAndPromotionMask(0x0FU) };
+        return (m_encoded & fieldMask) <= getMoveTypeAndPromotionMask(0x05U);
+
+        //return getTypeAndPromotion() <= MoveTypeAndPromotion::REGULAR_KING_MOVE;
     }
 
     /// @brief Checks whether the move type is en-passant pawn capture
@@ -323,9 +340,13 @@ public:
     /// - @coderef{MoveTypeAndPromotion::PROMO_QUEEN}
     constexpr bool isPromotionMove() const noexcept
     {
-        return
-            getTypeAndPromotion() >= MoveTypeAndPromotion::PROMO_KNIGHT &&
-            getTypeAndPromotion() <= MoveTypeAndPromotion::PROMO_QUEEN;
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT) == 8U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::PROMO_BISHOP) == 9U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::PROMO_ROOK)   == 10U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::PROMO_QUEEN)  == 11U);
+
+        constexpr auto fieldMask { getMoveTypeAndPromotionMask(0x0CU) };
+        return (m_encoded & fieldMask) == getMoveTypeAndPromotionMask(0x08U);
     }
 
     /// @brief Checks whether a move type is a castling move
@@ -337,9 +358,11 @@ public:
     /// - @coderef{MoveTypeAndPromotion::CASTLING_LONG}
     constexpr bool isCastlingMove() const noexcept
     {
-        return
-            getTypeAndPromotion() >= MoveTypeAndPromotion::CASTLING_SHORT &&
-            getTypeAndPromotion() <= MoveTypeAndPromotion::CASTLING_LONG;
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::CASTLING_SHORT) == 6U);
+        static_assert(static_cast<MoveTypeAndPromotionUnderlyingType>(MoveTypeAndPromotion::CASTLING_LONG) == 7U);
+
+        constexpr auto fieldMask { getMoveTypeAndPromotionMask(0x0EU) };
+        return (m_encoded & fieldMask) == getMoveTypeAndPromotionMask(0x06U);
     }
 
     /// @brief Returns promotion piece of a promotion move
@@ -347,20 +370,27 @@ public:
     {
         assert(isPromotionMove());
 
-        static_assert(
-            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_KNIGHT) & 0x7U) ==
-            static_cast<std::uint8_t>(Piece::KNIGHT));
-        static_assert(
-            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_BISHOP) & 0x7U) ==
-            static_cast<std::uint8_t>(Piece::BISHOP));
-        static_assert(
-            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_ROOK)   & 0x7U) ==
-            static_cast<std::uint8_t>(Piece::ROOK));
-        static_assert(
-            (static_cast<std::uint8_t>(MoveTypeAndPromotion::PROMO_QUEEN)  & 0x7U) ==
-            static_cast<std::uint8_t>(Piece::QUEEN));
+        using UnderlyingType = PieceUnderlyingType;
+        static_assert(std::is_same_v<UnderlyingType, PieceUnderlyingType>);
 
-        return Piece(static_cast<std::uint_fast8_t>(getTypeAndPromotion()) & 0x7U);
+        constexpr UnderlyingType bias =
+            static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT) -
+            static_cast<UnderlyingType>(Piece::KNIGHT);
+
+        static_assert(
+            (static_cast<UnderlyingType>(Piece::KNIGHT) + bias) ==
+            static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT));
+        static_assert(
+            (static_cast<UnderlyingType>(Piece::BISHOP) + bias) ==
+            static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_BISHOP));
+        static_assert(
+            (static_cast<UnderlyingType>(Piece::ROOK) + bias) ==
+            static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_ROOK));
+        static_assert(
+            (static_cast<UnderlyingType>(Piece::KNIGHT) + bias) ==
+            static_cast<UnderlyingType>(MoveTypeAndPromotion::PROMO_KNIGHT));
+
+        return Piece(static_cast<UnderlyingType>(getTypeAndPromotion()) - bias);
     }
 
     /// @brief Checks whether the move type is illegal
