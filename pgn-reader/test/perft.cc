@@ -26,23 +26,70 @@
 namespace
 {
 
+enum class PerftMode
+{
+    BULK_MOVES = 0U,
+    LEAF_MOVES,
+    PLAY_MOVES,
+};
+
+
 void printHelp(const char *exe)
 {
     printf(
         "Performance test for the PGN reader move generator.\n"
         "\n"
-        "Usage: %s <depth> [<FEN>]\n%s",
-        std::filesystem::path(exe).filename().c_str(),
+        "Usage: %s [options] <depth> [<FEN>]\n"
         "\n"
         "  <depth>    Search tree depth.\n"
         "  <FEN>      FEN of the search root. If omitted, standard starting position is\n"
         "             used. Shell quoting is not needed.\n"
-        "\n");
-
+        "\n"
+        "Options:\n"
+        "-- bulk-moves     Compute perft using move list length at leaf depth\n"
+        "-- leaf-moves     Compute perft producing moves also at leaf depth\n"
+        "-- play-moves     Compute perft producing moves and playing all moves\n"
+        "\n",
+        std::filesystem::path(exe).filename().c_str());
 }
 
 using namespace hoover_chess_utils::pgn_reader;
 
+
+template <PerftMode mode>
+inline std::size_t leafNodes(const ChessBoard &board) noexcept
+{
+    std::size_t numPositions;
+
+    if constexpr (mode == PerftMode::BULK_MOVES)
+    {
+        numPositions = board.getNumberOfLegalMoves();
+    }
+    else if constexpr (mode == PerftMode::LEAF_MOVES)
+    {
+        MoveList leafMoveList;
+        numPositions = board.generateMoves(leafMoveList);
+    }
+    else if constexpr (mode == PerftMode::PLAY_MOVES)
+    {
+        MoveList leafMoveList;
+        numPositions = board.generateMoves(leafMoveList);
+
+        for (std::size_t j { }; j < numPositions; ++j)
+        {
+            ChessBoard tmpBoard { board };
+            tmpBoard.doMove(leafMoveList[j]);
+        }
+    }
+    else
+    {
+        static_assert(false, "Unhandled perft mode");
+    }
+
+    return numPositions;
+}
+
+template <PerftMode mode>
 std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
 perftDepth1(const std::string &fen)
 {
@@ -52,7 +99,7 @@ perftDepth1(const std::string &fen)
         board.loadFEN(fen.c_str());
 
     const std::chrono::steady_clock::time_point begin { std::chrono::steady_clock::now() };
-    const std::uint64_t numLegalMoves { board.getNumberOfLegalMoves() };
+    const std::uint64_t numLegalMoves { leafNodes<mode>(board) };
     const std::chrono::steady_clock::time_point end { std::chrono::steady_clock::now() };
 
     return std::make_tuple(numLegalMoves, end - begin);
@@ -75,6 +122,7 @@ void initializeFrame(Frame &frame)
     frame.i = 0U;
 }
 
+template <PerftMode mode>
 std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
 perftDepth2(const std::string &fen)
 {
@@ -99,11 +147,11 @@ perftDepth2(const std::string &fen)
         {
             ChessBoard tmpBoard { board };
             tmpBoard.doMove(moves[i]);
-            numPositions += tmpBoard.getNumberOfLegalMoves();
+            numPositions += leafNodes<mode>(tmpBoard);
         }
 
         board.doMove(moves[i]);
-        numPositions += board.getNumberOfLegalMoves();
+        numPositions += leafNodes<mode>(board);
     }
 
     const std::chrono::steady_clock::time_point end { std::chrono::steady_clock::now() };
@@ -111,6 +159,7 @@ perftDepth2(const std::string &fen)
     return std::make_tuple(numPositions, end - begin);
 }
 
+template <PerftMode mode>
 std::tuple<std::uint64_t, std::chrono::steady_clock::duration>
 perftDepth3Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
 {
@@ -153,12 +202,13 @@ perftDepth3Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
                     {
                         ChessBoard board { leafMinus1Board };
                         board.doMove(leafMinus1MoveList[i]);
-                        numPositions += board.getNumberOfLegalMoves();
+
+                       numPositions += leafNodes<mode>(board);
                     }
 
                     // avoid board copy for final move
                     leafMinus1Board.doMove(leafMinus1MoveList[i]);
-                    numPositions += leafMinus1Board.getNumberOfLegalMoves();
+                    numPositions += leafNodes<mode>(leafMinus1Board);
                 }
             }
             else
@@ -186,6 +236,7 @@ perftDepth3Plus(const std::string &fen, const std::uint_fast8_t maxDepth)
     return std::make_tuple(numPositions, end - begin);
 }
 
+template <PerftMode mode>
 void perft(const std::string &fen, const std::uint_fast8_t maxDepth)
 {
     using namespace hoover_chess_utils::pgn_reader;
@@ -199,15 +250,15 @@ void perft(const std::string &fen, const std::uint_fast8_t maxDepth)
             break;
 
         case 1U:
-            std::tie(numPositions, duration) = perftDepth1(fen);
+            std::tie(numPositions, duration) = perftDepth1<mode>(fen);
             break;
 
         case 2U:
-            std::tie(numPositions, duration) = perftDepth2(fen);
+            std::tie(numPositions, duration) = perftDepth2<mode>(fen);
             break;
 
         default:
-            std::tie(numPositions, duration) = perftDepth3Plus(fen, maxDepth);
+            std::tie(numPositions, duration) = perftDepth3Plus<mode>(fen, maxDepth);
             break;
     }
 
@@ -225,32 +276,79 @@ void perft(const std::string &fen, const std::uint_fast8_t maxDepth)
 
 int main(int argc, char **argv)
 {
+    const char *exeName { argc >= 1 ? argv[0] : "hoover-perft" };
+
     if (argc < 2)
     {
-        printHelp(argc == 1 ? argv[0] : "perft");
+        printHelp(exeName);
         return 1;
     }
 
+    // next arg
+    --argc;
+    ++argv;
+
     std::uint8_t depth { std::numeric_limits<std::uint8_t>::max() };
     std::string fen { };
+    PerftMode perftMode { PerftMode::BULK_MOVES };
 
     // parse arguments
+    while (argc > 0)
     {
-        const std::string_view depthArg { argv[1] };
+        const std::string_view arg { argv[0] };
 
+        if (arg == std::string_view { "--help" })
+        {
+            printHelp(exeName);
+            return 1;
+        }
+        else if (arg == std::string_view { "--bulk-moves" })
+        {
+            perftMode = PerftMode::BULK_MOVES;
+        }
+        else if (arg == std::string_view { "--leaf-moves" })
+        {
+            perftMode = PerftMode::LEAF_MOVES;
+        }
+        else if (arg == std::string_view { "--play-moves" })
+        {
+            perftMode = PerftMode::PLAY_MOVES;
+        }
+        else
+        {
+            break;
+        }
+
+        // next arg
+        --argc;
+        ++argv;
+    }
+
+    if (argc == 0)
+    {
+        printHelp(exeName);
+        return 1;
+    }
+
+    {
+        const std::string_view arg { argv[0] };
         std::from_chars(
-            depthArg.data(), depthArg.data() + depthArg.size(),
+            arg.data(), arg.data() + arg.size(),
             depth);
 
         if (depth == std::numeric_limits<std::uint8_t>::max())
         {
-            fprintf(stderr, "Bad depth: '%s'\n", argv[1]);
+            fprintf(stderr, "Bad depth: '%s'. Try '--help'.\n", argv[0]);
             return 2;
         }
+
+        // next arg
+        --argc;
+        ++argv;
     }
 
     // collect FEN from the commandline arguments
-    for (int i = 2; i < argc; ++i)
+    for (int i = 0; i < argc; ++i)
     {
         if (!fen.empty())
             fen += ' ';
@@ -258,7 +356,20 @@ int main(int argc, char **argv)
         fen += argv[i];
     }
 
-    perft(fen.c_str(), depth);
+    switch (perftMode)
+    {
+        case PerftMode::BULK_MOVES:
+            perft<PerftMode::BULK_MOVES>(fen.c_str(), depth);
+            break;
+
+        case PerftMode::LEAF_MOVES:
+            perft<PerftMode::LEAF_MOVES>(fen.c_str(), depth);
+            break;
+
+        case PerftMode::PLAY_MOVES:
+            perft<PerftMode::PLAY_MOVES>(fen.c_str(), depth);
+            break;
+    }
 
     return 0;
 }
