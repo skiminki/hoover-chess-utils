@@ -25,8 +25,8 @@ import subprocess
 import sys
 import concurrent.futures
 
-def run_single_perft(perft_path, fen, depth):
-    result = subprocess.run([ perft_path, str(depth), fen ], capture_output=True, text=True)
+def run_single_perft(perft_path, fen, depth, perftMode):
+    result = subprocess.run([ perft_path, perftMode, str(depth), fen ], capture_output=True, text=True)
 
     if result.returncode != 0 or len(result.stderr) > 0:
         return -1
@@ -34,7 +34,7 @@ def run_single_perft(perft_path, fen, depth):
     lines = result.stdout.split("\n")
     return int((lines[0].split(' ')[1]))
 
-def run_perft_depths(perft_path, line, maxDepth, lineNum, numLines):
+def run_perft_depths(perft_path, line, maxDepth, lineNum, numLines, perftMode):
     reDepthSpec = re.compile(r'D([0-9]+) ([0-9]+)')
 
     tokens = line.split(';')
@@ -47,7 +47,7 @@ def run_perft_depths(perft_path, line, maxDepth, lineNum, numLines):
 
             if depth <= maxDepth:
                 expect_nodes = int(depthMatch.group(2))
-                perft_nodes = run_single_perft(perft_path, fen, depth)
+                perft_nodes = run_single_perft(perft_path, fen, depth, perftMode)
 
                 print(f"[{lineNum}/{numLines}] {fen} depth={depth} expect_nodes={expect_nodes} perft_nodes={perft_nodes}")
 
@@ -56,7 +56,7 @@ def run_perft_depths(perft_path, line, maxDepth, lineNum, numLines):
 
     return True
 
-def run_perfts(perftPath, suitePath, maxDepth):
+def run_perfts(perftPath, suitePath, maxDepth, perftMode):
     lineList = [ ]
 
     with open(suitePath) as suite:
@@ -73,7 +73,7 @@ def run_perfts(perftPath, suitePath, maxDepth):
             lineNum = lineNum + 1
             line = line.strip()
             futureList.append(
-                executor.submit(run_perft_depths, perftPath, line, maxDepth, lineNum, len(lineList)))
+                executor.submit(run_perft_depths, perftPath, line, maxDepth, lineNum, len(lineList), perftMode))
 
         for future in futureList:
             try:
@@ -90,11 +90,25 @@ def run_perfts(perftPath, suitePath, maxDepth):
         print("Success!")
 
 def help_and_exit():
-    print('Usage: run-ethereal-perft-suite.py <path-to-Perft> <suite.epd> [max_depth]')
+    print('Usage: run-ethereal-perft-suite.py [--bulk-moves|--leaf-moves|--play-moves] <path-to-Perft> <suite.epd> [max_depth]')
     sys.exit(1)
 
 def main(argv):
-    if len(argv) <= 1:
+    perft_mode = "--bulk-moves"
+    if len(argv) >= 1:
+        if argv[0] == "--bulk-moves":
+            perft_mode = "--bulk-moves"
+            argv = argv[1:]
+        elif argv[0] == "--leaf-moves":
+            perft_mode = "--leaf-moves"
+            argv = argv[1:]
+        elif argv[0] == "--play-moves":
+            perft_mode = "--play-moves"
+            argv = argv[1:]
+        elif argv[0] == "--help":
+            help_and_exit()
+
+    if len(argv) < 1:
         help_and_exit()
 
     perft_path = argv[0]
@@ -104,7 +118,7 @@ def main(argv):
     else:
         max_depth = 255
 
-    run_perfts(perft_path, suite_path, max_depth)
+    run_perfts(perft_path, suite_path, max_depth, perft_mode)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
