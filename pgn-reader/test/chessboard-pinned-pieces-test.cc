@@ -45,6 +45,11 @@ TEST(ChessBoard, pinnedPieces)
     board.loadFEN("1k6/7b/8/4Pp2/8/8/2K5/8 w - f6 0 1");
     EXPECT_EQ(board.getPinnedPieces(), SquareSet { });
     EXPECT_EQ(board.getEpSquare(), Square::NONE);
+
+    // fake pinned EP
+    board.loadFEN("2k1rb1r/6p1/p4p2/1p1Pp2P/2n2B2/8/P1N1KPP1/3R3R w - e6 0 26");
+    EXPECT_EQ(board.getPinnedPieces(), SquareSet { });
+    EXPECT_EQ(board.getEpSquare(), Square::E6);
 }
 
 }

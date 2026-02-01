@@ -529,26 +529,28 @@ public:
             out_checkers |= Attacks::getKnightAttackMask(kingSq) & knights;
 
             // rooks and queens
-            const SquareSet firstHVHits { Attacks::getRookAttackMask(kingSq, occupancyMask) };
-            out_checkers |= firstHVHits & rooks;
+            const SquareSet blockersHV { Attacks::getRookAttackMask(kingSq, occupancyMask) };
+            const SquareSet blockersDiag { Attacks::getBishopAttackMask(kingSq, occupancyMask) };
 
-            // bishops and queens
-            const SquareSet firstDiagHits { Attacks::getBishopAttackMask(kingSq, occupancyMask) };
-            out_checkers |= firstDiagHits & bishops;
-
+            out_checkers |= ((blockersHV & rooks) | (blockersDiag & bishops));
             out_checkers &= opponentPieces;
 
-            // Resolve pinned pieces. Notes:
-            // - We'll remove only pinnable pieces from the first hits. The idea is to avoid
-            //   x-rays over non-pinnable pieces in order to minimize the number of pinners
-            // - In the second hit check, we'll remove pieces that are already determined to be checkers.
-            //   The reason is the same as the above.
-            const SquareSet secondHVHits {
-                Attacks::getRookAttackMask(kingSq, (occupancyMask &~ firstHVHits) | opponentPieces) };
-            const SquareSet secondDiagHits {
-                Attacks::getBishopAttackMask(kingSq, (occupancyMask &~ firstDiagHits) | (opponentPieces &~ epCapturable)) };
+            // These x-ray attacks are a bit special: we only remove potentially
+            // pinnable pieces from the blockers. This way non-pinnable blockers
+            // are reported as potential pinners, but since blockers can't also
+            // be pinners, we'll get to remove them before we loop over the
+            // potential pinners. This saves some cycles.
 
-            pinners = ((rooks & secondHVHits) | (bishops & secondDiagHits)) & opponentPieces &~ out_checkers;
+            // In xraysHV, none of the opponent pieces can be pinned:
+            // - vertically fake-pinned EP pawn is never actually pinned, since
+            //   the capturer ends up on the same file
+            // - horizontal pin is checked later
+            const SquareSet xraysHV { Attacks::getRookAttackMask(kingSq, (occupancyMask &~ blockersHV) | opponentPieces) };
+
+            // In xraysDiag, the EP-capturable pawn can be pinned
+            const SquareSet xraysDiag { Attacks::getBishopAttackMask(kingSq, (occupancyMask &~ blockersDiag) | (opponentPieces &~ epCapturable)) };
+
+            pinners = ((xraysHV & rooks) | (xraysDiag & bishops)) & opponentPieces;
         }
 #endif
         out_pinnedPieces = SquareSet { };
@@ -561,16 +563,19 @@ public:
             });
 #endif
         // The rest of this function is EP capture legality checking. Short-circuit if there's no EP to capture
-        if (epCapturable == SquareSet { })
+        if (epCapturable == SquareSet { } ||
+            (epCapturable & out_pinnedPieces) != SquareSet { })
             return;
 
         // If we're in check and the only checker is not the EP pawn, EP capture
         // is not legal
         if ((out_checkers &~ epCapturable) != SquareSet { })
+        {
             out_pinnedPieces |= epCapturable;
+            return;
+        }
 
         // If not marked illegal yet, check whether the EP capture is legal.
-        if ((epCapturable &~ out_pinnedPieces) != SquareSet { })
         {
             // Adjacent pawns. This leaves one pawn in case there's
             // adjacent pawns both sides.
