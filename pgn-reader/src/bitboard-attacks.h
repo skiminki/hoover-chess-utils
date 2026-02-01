@@ -550,7 +550,7 @@ public:
             // In xraysDiag, the EP-capturable pawn can be pinned
             const SquareSet xraysDiag { Attacks::getBishopAttackMask(kingSq, (occupancyMask &~ blockersDiag) | (opponentPieces &~ epCapturable)) };
 
-            pinners = ((xraysHV & rooks) | (xraysDiag & bishops)) & opponentPieces;
+            pinners = ((xraysHV & rooks) | (xraysDiag & bishops)) & opponentPieces &~ (blockersHV | blockersDiag);
         }
 #endif
         out_pinnedPieces = SquareSet { };
